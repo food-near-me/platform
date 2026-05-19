@@ -16,6 +16,9 @@
     "llms_txt": {
       "url": "/llms.txt"
     },
+    "llms_full_txt": {
+      "url": "/llms-full.txt"
+    },
     "skill_file": {
       "url": "/SKILL.md"
     }

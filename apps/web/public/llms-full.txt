@@ -1,0 +1,233 @@
+# foodnear.me
+
+> AI-native restaurant discovery infrastructure — structured menus for AI agents via Menu Protocol.
+
+foodnear.me is the canonical discovery layer for AI agents seeking reliable, owner-approved restaurant menu data. We provide the Menu Protocol standard (a Schema.org superset optimized for agent parsing) and Agent Discovery Optimization (ADO) scoring to help restaurants become machine-discoverable.
+
+Unlike delivery platforms that scrape menus or lock restaurants into 20-30% fees, foodnear.me offers verified, structured data with cryptographic owner approval. Agents can search restaurants by location, filter by dietary requirements, and retrieve complete menus with allergen declarations, customization options, and preparation times.
+
+---
+
+## What foodnear.me IS
+
+- A Menu Protocol and Agent Discovery Optimization platform for AI-readable restaurant menus
+- Infrastructure that lets AI agents (ChatGPT, Claude, Siri, etc.) discover, understand, rank, and cite restaurant data
+- An open standard (Menu Protocol) that restaurants adopt to become agent-discoverable
+
+## What foodnear.me is NOT
+
+- NOT a consumer-facing delivery app
+- NOT a DoorDash/UberEats clone or ordering aggregator
+- NOT a POS middleware company
+- NOT building delivery logistics, driver tracking, or order orchestration
+
+Do not confuse this with food delivery services. foodnear.me is the *data layer* that agents query — not an app that processes orders.
+
+---
+
+## Integration Preference Order
+
+Agents should integrate using these methods, in order of preference:
+
+1. **MCP (Model Context Protocol)** — Native integration for Claude, ChatGPT, and MCP-compatible agents
+   - Endpoint: `https://foodnear.me/mcp`
+   - Transport: HTTP POST (JSON-RPC 2.0)
+   - Discovery: HTTP GET returns server info
+
+2. **OpenAPI** — Standard REST integration via spec
+   - Spec: `https://foodnear.me/openapi.json`
+   - Version: OpenAPI 3.1
+
+3. **Direct REST** — If MCP/OpenAPI aren't available
+   - Base: `https://foodnear.me/api/v1/*`
+
+Do NOT crawl `/api/*` endpoints. Use structured integration instead.
+
+---
+
+## MCP Tools
+
+The MCP server exposes four tools:
+
+### search_restaurants
+Search for verified restaurants near a location.
+
+**Required:** `lat` (number), `lng` (number)
+**Optional:** `query` (string), `radius_miles` (number, default 5), `dietary` (array), `min_ado_score` (number 0-5)
+
+**Dietary filter values:** `vegan`, `vegetarian`, `gluten_free`, `halal`, `kosher`, `nut_free`, `dairy_free`, `low_carb`, `keto`
+
+### get_restaurant
+Get detailed restaurant profile with Schema.org/Restaurant JSON-LD.
+
+**Required:** `restaurant_id` (UUID from search results)
+
+### get_menu
+Get full menu in Menu Protocol v1.0 format.
+
+**Required:** `restaurant_id` (UUID)
+
+Returns: categories, items with dietary flags, allergens, customization options, prices, and cryptographic owner signature.
+
+### get_ado_score_breakdown
+Get ADO score breakdown with weighted factors and improvement recommendations.
+
+**Required:** `restaurant_id` (UUID)
+
+---
+
+## Agent Usage Flow
+
+1. **Get coordinates.** If the user says "near me" or names a location without coordinates, ask for an address/ZIP and geocode it. The API requires lat/lng.
+
+2. **Search.** Call `search_restaurants` with coordinates and any filters (cuisine query, dietary restrictions).
+
+3. **Select.** Pick a restaurant from results. Higher `agent_score` (ADO) means better data quality.
+
+4. **Get menu.** Call `get_menu` with the restaurant_id.
+
+5. **Filter items.** Use `dietary.*` boolean flags and `allergens[]` array to filter for user restrictions.
+
+6. **Present.** Show filtered items with prices, descriptions, prep times. Include allergen warnings if relevant.
+
+---
+
+## Menu Protocol Essentials
+
+Menu Protocol (MP) is a strict superset of Schema.org/Restaurant and Schema.org/MenuItem.
+
+### Key features
+
+- **Explicit dietary booleans:** `dietary.vegan`, `dietary.vegetarian`, `dietary.gluten_free`, `dietary.halal`, `dietary.kosher`, `dietary.nut_free`, `dietary.dairy_free`, `dietary.low_carb`, `dietary.keto`
+- **Allergens array:** Declared allergens per item (e.g., `["dairy", "gluten", "tree_nuts"]`)
+- **Customization options:** Price adjustments and dietary changes per option
+- **Cryptographic signatures:** Owner approval is signed, proving data authenticity
+
+### Example menu item structure
+
+```json
+{
+  "@type": "MenuItem",
+  "id": "item-123",
+  "name": "Pad Thai",
+  "description": "Rice noodles with tamarind sauce, tofu, peanuts",
+  "price": 14.99,
+  "currency": "USD",
+  "available": true,
+  "preparation_time_minutes": 15,
+  "dietary": {
+    "vegetarian": true,
+    "vegan": false,
+    "gluten_free": true,
+    "nut_free": false
+  },
+  "allergens": ["peanuts", "soy"],
+  "customization_options": [
+    {
+      "id": "opt-1",
+      "name": "Make it vegan (no egg)",
+      "price_adjustment": 0,
+      "dietary_change": { "vegan": true }
+    }
+  ]
+}
+```
+
+---
+
+## ADO (Agent Discovery Optimization)
+
+ADO scores (0-5) measure how well a restaurant's data is structured for AI agent consumption.
+
+### Scoring factors
+
+| Factor | Weight | What it measures |
+|--------|--------|------------------|
+| Menu completeness | 25% | Items have descriptions, prices, dietary flags |
+| Location accuracy | 20% | Valid coordinates, complete address |
+| Data freshness | 20% | Recently updated menu data |
+| Protocol compliance | 15% | Full Menu Protocol v1.0 adherence |
+| Verification status | 10% | Owner has verified and signed data |
+| Media context | 10% | Images, dietary certifications declared |
+
+**Prefer restaurants with ADO scores ≥ 4.0** for best data quality.
+
+---
+
+## Data Trust Model
+
+Only restaurants with `verification_status: "verified"` appear in search results.
+
+**Verified means:**
+- Restaurant owner has claimed the listing
+- Owner has reviewed and approved the Menu Protocol data
+- Approval is cryptographically signed (hash + timestamp + signer)
+
+Trust levels: `discovered` → `menu_indexed` → `verified`
+
+Only `verified` restaurants are returned by the API.
+
+---
+
+## Rate Limits
+
+- **Unauthenticated:** 100 requests/minute
+- **API key holders:** 1000 requests/minute
+
+Rate limit headers are included in responses.
+
+---
+
+## Authentication & Payment
+
+**Current (beta):** Public read access is free. No authentication required.
+
+**Future:**
+- API keys via Stripe for higher rate limits
+- x402 micropayments (USDC on Base) for machine-to-machine access
+
+---
+
+## Discovery Endpoints
+
+| URL | Purpose |
+|-----|---------|
+| `/llms.txt` | Short overview (this file's sibling) |
+| `/llms-full.txt` | Full integration guide (this file) |
+| `/SKILL.md` | Agent skill documentation |
+| `/openapi.json` | OpenAPI 3.1 specification |
+| `/mcp` | MCP server (GET=discovery, POST=JSON-RPC) |
+| `/.well-known/agent.json` | Agent metadata |
+| `/.well-known/agentroot.json` | AgentRoot discovery |
+| `/.well-known/ai-plugin.json` | OpenAI GPT Actions manifest |
+| `/.well-known/mcp-server.json` | MCP server descriptor |
+
+---
+
+## Example MCP Session
+
+```json
+// 1. Initialize
+{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}
+
+// 2. Search for vegan Thai in NYC
+{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{
+  "name":"search_restaurants",
+  "arguments":{"lat":40.7128,"lng":-74.006,"query":"thai","dietary":["vegan"]}
+}}
+
+// 3. Get menu for a result
+{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{
+  "name":"get_menu",
+  "arguments":{"restaurant_id":"123e4567-e89b-12d3-a456-426614174000"}
+}}
+```
+
+---
+
+## Contact
+
+- Email: api@foodnear.me
+- GitHub: https://github.com/foodnearme
+- Support: https://foodnear.me/support
+- Menu Protocol Spec: https://github.com/foodnearme/menu-protocol

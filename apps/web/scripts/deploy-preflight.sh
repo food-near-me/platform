@@ -10,6 +10,8 @@ BASE="${BASE%/}"
 
 paths=(
   "/llms.txt"
+  "/llms-full.txt"
+  "/robots.txt"
   "/SKILL.md"
   "/openapi.json"
   "/.well-known/agentroot.json"

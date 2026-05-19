@@ -149,6 +149,8 @@ export default function RootLayout({
           href="https://foodnear.me/openapi.json"
           title="OpenAPI Specification"
         />
+        <link rel="llms-txt" href="/llms.txt" />
+        <link rel="llms-full-txt" href="/llms-full.txt" />
       </head>
       <body className="min-h-full">{children}</body>
     </html>

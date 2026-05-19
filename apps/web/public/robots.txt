@@ -1,0 +1,76 @@
+# foodnear.me robots.txt
+# AI-native restaurant discovery infrastructure
+
+User-agent: *
+Allow: /
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /account/
+Disallow: /api/
+
+# AI crawlers - explicit rules
+# Allow discovery files, block raw API crawling
+
+User-agent: GPTBot
+User-agent: ChatGPT-User
+User-agent: OAI-SearchBot
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /SKILL.md
+Allow: /openapi.json
+Allow: /mcp
+Allow: /.well-known/
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /account/
+Disallow: /api/
+
+User-agent: ClaudeBot
+User-agent: Claude-Web
+User-agent: anthropic-ai
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /SKILL.md
+Allow: /openapi.json
+Allow: /mcp
+Allow: /.well-known/
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /account/
+Disallow: /api/
+
+User-agent: Google-Extended
+User-agent: Googlebot
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /SKILL.md
+Allow: /openapi.json
+Allow: /.well-known/
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /account/
+Disallow: /api/
+
+User-agent: PerplexityBot
+User-agent: Applebot-Extended
+User-agent: cohere-ai
+User-agent: Bytespider
+User-agent: Amazonbot
+User-agent: Meta-ExternalAgent
+Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /SKILL.md
+Allow: /openapi.json
+Allow: /mcp
+Allow: /.well-known/
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /account/
+Disallow: /api/
+
+# Note: Agents should use MCP (https://foodnear.me/mcp) or OpenAPI,
+# not crawl /api/* endpoints directly.
