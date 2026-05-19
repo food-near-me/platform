@@ -31,7 +31,7 @@ export function checkX402Access(
     return null;
   }
 
-  if (hasPaidAuth(request, cfg)) {
+  if (hasPaidAuth(request)) {
     return null;
   }
 

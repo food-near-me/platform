@@ -1,10 +1,8 @@
-import type { X402Config } from "./config";
-
 /**
  * Phase A: presence-only auth check (Bearer or SIWX header non-empty).
  * Phase B will verify API keys against Stripe and SIWX signatures against wallets.
  */
-export function hasPaidAuth(request: Request, _cfg: X402Config): boolean {
+export function hasPaidAuth(request: Request): boolean {
   const authorization = request.headers.get("authorization");
   if (authorization?.startsWith("Bearer ") && authorization.length > "Bearer ".length) {
     return true;

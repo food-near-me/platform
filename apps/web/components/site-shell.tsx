@@ -4,9 +4,16 @@ import type { ReactNode } from "react";
 type SiteShellProps = {
   children: ReactNode;
   crumb?: string;
+  mobileCtaHref?: string;
+  mobileCtaLabel?: string;
 };
 
-export function SiteShell({ children, crumb = "infrastructure" }: SiteShellProps) {
+export function SiteShell({
+  children,
+  crumb = "infrastructure",
+  mobileCtaHref = "#launch-offer",
+  mobileCtaLabel = "Get free ADO audit",
+}: SiteShellProps) {
   return (
     <>
       <div className="bg-glow" aria-hidden />
@@ -33,6 +40,9 @@ export function SiteShell({ children, crumb = "infrastructure" }: SiteShellProps
           <Link href="/tokenization" className="nav-link">
             tokenization
           </Link>
+          <Link href="/pricing" className="nav-link">
+            pricing
+          </Link>
         </header>
         <main className="page">{children}</main>
         <footer className="foot">
@@ -53,8 +63,8 @@ export function SiteShell({ children, crumb = "infrastructure" }: SiteShellProps
         </footer>
       </div>
       <div className="mobile-cta">
-        <a href="#launch-offer" className="btn">
-          Get free ADO audit
+        <a href={mobileCtaHref} className="btn">
+          {mobileCtaLabel}
         </a>
       </div>
     </>
