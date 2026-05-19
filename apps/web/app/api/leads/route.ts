@@ -9,6 +9,7 @@ type LeadPayload = {
   city: string;
   email: string;
   companyWebsite?: string;
+  source?: string;
 };
 
 const SCRIPTED_UA_PATTERN =
@@ -37,6 +38,13 @@ function validatePayload(payload: Partial<LeadPayload>) {
   if (!payload.city?.trim()) return "City is required";
   if (!payload.email?.trim()) return "Email is required";
   return null;
+}
+
+function normalizeLeadSource(source: string | undefined) {
+  const value = source?.trim().toLowerCase() ?? "";
+  if (!value) return "homepage";
+  if (!/^[a-z0-9:_-]{1,64}$/.test(value)) return "homepage";
+  return value;
 }
 
 function getAllowedOrigins() {
@@ -128,6 +136,7 @@ export async function POST(request: Request) {
       restaurantName: body.restaurantName!.trim(),
       city: body.city!.trim(),
       email: body.email!.trim().toLowerCase(),
+      source: normalizeLeadSource(body.source),
     };
 
     const forwardedFor = request.headers.get("x-forwarded-for");
@@ -180,7 +189,7 @@ export async function POST(request: Request) {
       restaurant_name: lead.restaurantName,
       city: lead.city,
       email: lead.email,
-      source: "homepage",
+      source: lead.source,
     });
 
     if (insertError) {
@@ -205,7 +214,7 @@ export async function POST(request: Request) {
           `Restaurant: ${lead.restaurantName}`,
           `City: ${lead.city}`,
           `Email: ${lead.email}`,
-          "Source: homepage",
+          `Source: ${lead.source}`,
         ].join("\n"),
       });
     }

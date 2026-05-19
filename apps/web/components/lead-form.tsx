@@ -4,7 +4,19 @@ import { FormEvent, useState } from "react";
 
 type FormState = "idle" | "submitting" | "success" | "error";
 
-export function LeadForm() {
+type LeadFormProps = {
+  source?: string;
+  submitLabel?: string;
+  note?: string;
+  successMessage?: string;
+};
+
+export function LeadForm({
+  source = "homepage",
+  submitLabel = "Request audit",
+  note = "No spam. We use this to schedule your ADO audit.",
+  successMessage = "Request captured. We will follow up with your ADO audit details.",
+}: LeadFormProps) {
   const [status, setStatus] = useState<FormState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -18,6 +30,7 @@ export function LeadForm() {
       city: String(formData.get("city") ?? ""),
       email: String(formData.get("email") ?? ""),
       companyWebsite: String(formData.get("companyWebsite") ?? ""),
+      source,
     };
 
     setStatus("submitting");
@@ -82,13 +95,13 @@ export function LeadForm() {
       </label>
       <div className="form-foot">
         <button type="submit" className="btn" disabled={status === "submitting"}>
-          {status === "submitting" ? "Submitting…" : "Request audit"}
+          {status === "submitting" ? "Submitting..." : submitLabel}
         </button>
-        <p className="form-note">No spam. We use this to schedule your ADO audit.</p>
+        <p className="form-note">{note}</p>
       </div>
       {status === "success" ? (
         <p className="alert ok" role="status">
-          Request captured. We will follow up with your ADO audit details.
+          {successMessage}
         </p>
       ) : null}
       {status === "error" ? (
