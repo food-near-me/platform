@@ -13,6 +13,10 @@
     "lint": "npm run lint -w web",
     "typecheck": "npm run typecheck -w web",
     "test:mcp-flows": "npm run test:mcp-flows -w web",
-    "test:mcp-flows:http": "npm run test:mcp-flows:http -w web"
+    "test:mcp-flows:http": "npm run test:mcp-flows:http -w web",
+    "db:migrate:audit-leads": "node scripts/apply-audit-leads.mjs"
+  },
+  "devDependencies": {
+    "pg": "^8.21.0"
   }
 }

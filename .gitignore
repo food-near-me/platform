@@ -12,6 +12,7 @@ coverage/
 # OS and editor
 .DS_Store
 .vscode/
+*.code-workspace
 
 # Build artifacts
 *.log
