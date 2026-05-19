@@ -1,0 +1,18 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "me.foodnear/foodnear-me",
+  "title": "Food Near Me",
+  "description": "AI-native restaurant discovery with verified Menu Protocol data.",
+  "version": "1.0.0",
+  "websiteUrl": "https://foodnear.me",
+  "repository": {
+    "url": "https://github.com/food-near-me/platform",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://foodnear.me/mcp"
+    }
+  ]
+}

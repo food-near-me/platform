@@ -8,6 +8,8 @@ coverage/
 .env
 .env.local
 .env.*.local
+key.pem
+mcp-registry-auth
 
 # OS and editor
 .DS_Store

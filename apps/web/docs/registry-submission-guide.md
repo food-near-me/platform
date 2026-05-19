@@ -23,25 +23,61 @@ foodnear.me is now AI-agent-ready with the following discovery endpoints:
 
 ## Tier 1: MCP Registries
 
-### 1. Official Anthropic MCP Registry
+### 1. Official MCP Registry
 
-**Status**: Planned (registry not yet public)
+**URL**: https://modelcontextprotocol.io/registry/quickstart
 
-When Anthropic launches their official MCP registry:
+**Repo file**: [`server.json`](../../../server.json) at monorepo root (remote streamable-http server).
 
-1. Visit the MCP registry portal
-2. Submit the following:
-   - **Server Name**: `foodnear.me`
-   - **MCP Endpoint**: `https://foodnear.me/mcp`
-   - **Transport**: HTTP (POST JSON-RPC)
-   - **Protocol Version**: `2024-11-05`
-   - **Description**: AI-native restaurant discovery API. Search restaurants, retrieve Menu Protocol formatted menus with dietary flags and allergens.
-   - **Categories**: Food & Dining, Local Services, APIs
+| Field | Value |
+|-------|--------|
+| Registry name | `me.foodnear/foodnear-me` |
+| MCP URL | `https://foodnear.me/mcp` |
+| Auth | DNS on `foodnear.me` (matches discovery TXT you added) |
+
+**Important — two kinds of DNS TXT:**
+
+| Purpose | Example | You may already have this |
+|---------|---------|---------------------------|
+| Discovery (`_mcp`, `_agentroot`, `_llms`) | Points agents at your manifests | Yes |
+| **Registry proof** (`v=MCPv1; k=ed25519; p=...`) | Proves you own the domain for publish | Add when `mcp-publisher login` prints it |
+
+Do not reuse discovery TXT for registry auth — run `login` and paste the **exact** record the CLI prints.
+
+**Publish steps** (from repo root):
+
+```bash
+cd /Users/home/projects/FoodNearMe
+
+# 1) Generate key once (skip if you already have key.pem from when you added DNS)
+openssl genpkey -algorithm Ed25519 -out key.pem
+chmod 600 key.pem
+
+# 2) Show TXT to add (or verify it matches live DNS)
+./scripts/mcp-registry-show-txt.sh
+dig +short TXT foodnear.me   # must include v=MCPv1; k=ed25519; p=...
+
+# 3) Login — private key MUST match the TXT on foodnear.me (see troubleshooting below)
+mcp-publisher login dns --domain foodnear.me \
+  --private-key "$(./scripts/mcp-registry-key-hex.sh)"
+
+mcp-publisher publish
+```
+
+**Do not run** `mcp-publisher login dns` without `--private-key` — the CLI will error: `ed25519 private key (hex) is required`.
+
+**Alternative auth**: `mcp-publisher login github` → name must be `io.github.food-near-me/foodnear-me` (change `name` in `server.json` to match).
+
+**Verify after publish**:
+
+```bash
+curl "https://registry.modelcontextprotocol.io/v0.1/servers?search=me.foodnear/foodnear-me"
+```
 
 **Preparation**:
-- Ensure MCP endpoint returns valid `initialize` response
-- Test all four tools work correctly
-- Have logo.png ready at `https://foodnear.me/logo.png`
+- Preflight passes (`./apps/web/scripts/deploy-preflight.sh`)
+- MCP `initialize` and `tools/list` return 200
+- Logo at `https://foodnear.me/logo.png`
 
 ### 2. mcp.so (Community Registry)
 
