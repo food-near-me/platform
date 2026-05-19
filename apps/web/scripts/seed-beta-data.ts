@@ -230,13 +230,6 @@ function createPoint(lng: number, lat: number): string {
   return `SRID=4326;POINT(${lng} ${lat})`;
 }
 
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-}
-
 async function seed() {
   console.log("🌱 Seeding beta restaurants for Williamsburg, Brooklyn...\n");
 
