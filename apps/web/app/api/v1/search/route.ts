@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { checkX402Access } from "@/lib/x402";
 
 export async function GET(request: Request) {
+  const paymentRequired = checkX402Access(request, "search");
+  if (paymentRequired) return paymentRequired;
+
   const { searchParams } = new URL(request.url);
   
   // Extract agent search parameters

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { checkX402Access } from "@/lib/x402";
 
 const PRICE_RANGE_MAP: Record<number, string> = {
   1: "$",
@@ -12,6 +13,9 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const paymentRequired = checkX402Access(request, "restaurant");
+  if (paymentRequired) return paymentRequired;
+
   const { id } = await params;
 
   try {
