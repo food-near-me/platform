@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_APP_URL: https://foodnear.me
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: test-anon-key
+      SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
+      RESEND_API_KEY: test-resend-api-key
+      LEADS_NOTIFICATION_TO: team@example.com
+      LEADS_FROM_EMAIL: noreply@example.com
+      LEADS_ALLOWED_ORIGINS: https://foodnear.me
+      X402_RECIPIENT_WALLET: test-wallet
+      USDC_CONTRACT_ADDRESS: 0x0000000000000000000000000000000000000000
+      BASE_CHAIN_ID: "8453"
+      STRIPE_SECRET_KEY: test-stripe-key
+      STRIPE_WEBHOOK_SECRET: test-webhook-secret
+      DOMA_API_KEY: test-doma-key
+      THIRDWEB_SECRET_KEY: test-thirdweb-key
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
