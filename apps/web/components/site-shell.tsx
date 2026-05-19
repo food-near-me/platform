@@ -16,7 +16,7 @@ export function SiteShell({ children, crumb = "infrastructure" }: SiteShellProps
         <header className="topbar">
           <Link href="/" className="brand">
             <span className="brand-mark" aria-hidden>
-              fn
+              FNM
             </span>
             <span>
               foodnear<span style={{ color: "var(--accent)" }}>.</span>me
@@ -38,6 +38,12 @@ export function SiteShell({ children, crumb = "infrastructure" }: SiteShellProps
         <footer className="foot">
           <span>© {new Date().getFullYear()} foodnear.me · Menu Protocol v1.0</span>
           <span>
+            <Link href="/terms">terms</Link>
+            {" · "}
+            <Link href="/privacy">privacy</Link>
+            {" · "}
+            <Link href="/support">support</Link>
+            {" · "}
             <a href="https://foodnear.me/openapi.json">openapi</a>
             {" · "}
             <a href="https://foodnear.me/.well-known/mcp-server.json">mcp</a>
