@@ -1,0 +1,529 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "foodnear.me API",
+    "version": "1.0.0",
+    "description": "AI-native restaurant discovery API. Search for restaurants by location and retrieve structured menus in Menu Protocol format — a Schema.org superset optimized for agent parsing.",
+    "contact": {
+      "name": "foodnear.me API Support",
+      "email": "api@foodnear.me",
+      "url": "https://foodnear.me"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://foodnear.me",
+      "description": "Production"
+    }
+  ],
+  "paths": {
+    "/api/v1/search": {
+      "get": {
+        "operationId": "searchRestaurants",
+        "summary": "Search for restaurants",
+        "description": "Find verified restaurants by location, cuisine, dietary filters, and ADO (Agent Discovery Optimization) score. Only returns restaurants with verified Menu Protocol data.",
+        "tags": ["Search"],
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "description": "Food type, cuisine, or restaurant name (e.g., 'thai', 'pizza', 'sushi')",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "thai"
+          },
+          {
+            "name": "lat",
+            "in": "query",
+            "description": "Latitude of search center",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "double"
+            },
+            "example": 40.7128
+          },
+          {
+            "name": "lng",
+            "in": "query",
+            "description": "Longitude of search center",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "double"
+            },
+            "example": -74.006
+          },
+          {
+            "name": "radius",
+            "in": "query",
+            "description": "Search radius in miles",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "default": 5
+            },
+            "example": 3
+          },
+          {
+            "name": "dietary",
+            "in": "query",
+            "description": "Filter by dietary certifications. Can be repeated for multiple filters.",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["vegan", "vegetarian", "gluten_free", "halal", "kosher", "nut_free", "dairy_free"]
+              }
+            },
+            "example": ["vegan"]
+          },
+          {
+            "name": "ado_min",
+            "in": "query",
+            "description": "Minimum ADO (Agent Discovery Optimization) score (0-5)",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 5,
+              "default": 0
+            },
+            "example": 4.0
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponse"
+                },
+                "example": {
+                  "metadata": {
+                    "query": "thai",
+                    "location": { "lat": 40.7128, "lng": -74.006 },
+                    "radius_miles": 3,
+                    "radius_meters": 4828.02,
+                    "min_ado_score": 0,
+                    "dietary_filters": ["vegan"],
+                    "results_count": 1
+                  },
+                  "data": [
+                    {
+                      "id": "123e4567-e89b-12d3-a456-426614174000",
+                      "name": "Thai Garden",
+                      "slug": "thai-garden-nyc",
+                      "distance_meters": 1200,
+                      "agent_score": 4.8,
+                      "cuisine_type": ["thai", "asian"],
+                      "links": {
+                        "profile": "/api/v1/restaurant/123e4567-e89b-12d3-a456-426614174000",
+                        "menu": "/api/v1/restaurant/123e4567-e89b-12d3-a456-426614174000/menu.mp"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing required parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Missing required location parameters: lat, lng"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/restaurant/{id}": {
+      "get": {
+        "operationId": "getRestaurant",
+        "summary": "Get restaurant profile",
+        "description": "Retrieve a detailed restaurant profile with Schema.org/Restaurant JSON-LD markup and Menu Protocol extensions.",
+        "tags": ["Restaurant"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Restaurant UUID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Restaurant profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestaurantProfile"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Restaurant not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/restaurant/{id}/menu.mp": {
+      "get": {
+        "operationId": "getMenu",
+        "summary": "Get menu in Menu Protocol format",
+        "description": "Retrieve the full menu in Menu Protocol v1.0 format. Includes all items with dietary flags, allergens, customization options, and cryptographic owner approval signature.",
+        "tags": ["Menu"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Restaurant UUID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Menu Protocol payload",
+            "headers": {
+              "Cache-Control": {
+                "description": "Caching directive for agents",
+                "schema": {
+                  "type": "string",
+                  "example": "public, s-maxage=3600, stale-while-revalidate=86400"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MenuProtocol"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Restaurant or menu not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SearchResponse": {
+        "type": "object",
+        "properties": {
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "query": { "type": "string" },
+              "location": {
+                "type": "object",
+                "properties": {
+                  "lat": { "type": "number" },
+                  "lng": { "type": "number" }
+                }
+              },
+              "radius_miles": { "type": "number" },
+              "radius_meters": { "type": "number" },
+              "min_ado_score": { "type": "number" },
+              "dietary_filters": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "results_count": { "type": "integer" }
+            }
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RestaurantSearchResult"
+            }
+          }
+        }
+      },
+      "RestaurantSearchResult": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "slug": { "type": "string" },
+          "distance_meters": { "type": "number" },
+          "agent_score": { "type": "number", "minimum": 0, "maximum": 5 },
+          "cuisine_type": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "links": {
+            "type": "object",
+            "properties": {
+              "profile": { "type": "string" },
+              "menu": { "type": "string" }
+            }
+          }
+        }
+      },
+      "RestaurantProfile": {
+        "type": "object",
+        "description": "Schema.org/Restaurant with Menu Protocol extensions",
+        "properties": {
+          "@context": { "type": "string", "const": "https://schema.org" },
+          "@type": { "type": "string", "const": "Restaurant" },
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "slug": { "type": "string" },
+          "address": { "$ref": "#/components/schemas/PostalAddress" },
+          "geo": { "$ref": "#/components/schemas/GeoCoordinates" },
+          "telephone": { "type": "string" },
+          "url": { "type": "string", "format": "uri" },
+          "servesCuisine": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "priceRange": { "type": "string" },
+          "agent_score": { "type": "number", "minimum": 0, "maximum": 5 },
+          "verification_status": {
+            "type": "string",
+            "enum": ["discovered", "menu_indexed", "verified"]
+          },
+          "delivery_radius_miles": { "type": "number" },
+          "payment_methods": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "dietary_certifications": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "links": {
+            "type": "object",
+            "properties": {
+              "menu": { "type": "string" }
+            }
+          }
+        }
+      },
+      "PostalAddress": {
+        "type": "object",
+        "properties": {
+          "@type": { "type": "string", "const": "PostalAddress" },
+          "streetAddress": { "type": "string" },
+          "addressLocality": { "type": "string" },
+          "addressRegion": { "type": "string" },
+          "postalCode": { "type": "string" },
+          "addressCountry": { "type": "string" }
+        }
+      },
+      "GeoCoordinates": {
+        "type": "object",
+        "properties": {
+          "@type": { "type": "string", "const": "GeoCoordinates" },
+          "latitude": { "type": "number" },
+          "longitude": { "type": "number" }
+        }
+      },
+      "MenuProtocol": {
+        "type": "object",
+        "description": "Menu Protocol v1.0 payload",
+        "properties": {
+          "version": { "type": "string", "const": "1.0" },
+          "domain": { "type": "string", "const": "foodnear.me" },
+          "restaurant": { "$ref": "#/components/schemas/MPRestaurant" },
+          "menu": { "$ref": "#/components/schemas/MPMenu" }
+        },
+        "required": ["version", "domain", "restaurant", "menu"]
+      },
+      "MPRestaurant": {
+        "type": "object",
+        "description": "Restaurant with cryptographic signature",
+        "allOf": [
+          { "$ref": "#/components/schemas/RestaurantProfile" },
+          {
+            "type": "object",
+            "properties": {
+              "signature": {
+                "type": "object",
+                "description": "Cryptographic proof of owner approval",
+                "properties": {
+                  "signer": { "type": "string", "description": "Wallet address or user ID" },
+                  "timestamp": { "type": "string", "format": "date-time" },
+                  "hash": { "type": "string", "description": "SHA-256 hash of menu payload" }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "MPMenu": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "restaurant_id": { "type": "string" },
+          "last_updated": { "type": "string", "format": "date-time" },
+          "language": { "type": "string", "default": "en" },
+          "currency": { "type": "string", "default": "USD" },
+          "categories": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/MPCategory" }
+          },
+          "items": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/MPMenuItem" }
+          }
+        }
+      },
+      "MPCategory": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "sort_order": { "type": "integer" }
+        }
+      },
+      "MPMenuItem": {
+        "type": "object",
+        "description": "Menu item with Schema.org/MenuItem base and Menu Protocol extensions",
+        "properties": {
+          "@type": { "type": "string", "const": "MenuItem" },
+          "id": { "type": "string" },
+          "category_id": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "offers": {
+            "type": "object",
+            "properties": {
+              "@type": { "type": "string", "const": "Offer" },
+              "price": { "type": "number" },
+              "priceCurrency": { "type": "string" },
+              "availability": {
+                "type": "string",
+                "enum": ["https://schema.org/InStock", "https://schema.org/OutOfStock", "https://schema.org/PreOrder"]
+              }
+            }
+          },
+          "available": { "type": "boolean" },
+          "preparation_time": { "type": "integer", "description": "Minutes" },
+          "dietary": { "$ref": "#/components/schemas/DietaryFlags" },
+          "allergens": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Declared allergens present in item"
+          },
+          "customization_options": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CustomizationOption" }
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": { "type": "string", "format": "uri" },
+                "alt": { "type": "string" }
+              }
+            }
+          },
+          "popularity_score": { "type": "number", "minimum": 0, "maximum": 5 },
+          "spice_level": { "type": "integer", "minimum": 0, "maximum": 5 },
+          "calories": { "type": "integer" },
+          "serving_size": { "type": "string" }
+        }
+      },
+      "DietaryFlags": {
+        "type": "object",
+        "description": "Explicit boolean dietary flags for reliable agent filtering",
+        "properties": {
+          "vegetarian": { "type": "boolean", "default": false },
+          "vegan": { "type": "boolean", "default": false },
+          "gluten_free": { "type": "boolean", "default": false },
+          "nut_free": { "type": "boolean", "default": false },
+          "dairy_free": { "type": "boolean", "default": false },
+          "low_carb": { "type": "boolean", "default": false },
+          "keto": { "type": "boolean", "default": false },
+          "halal": { "type": "boolean", "default": false },
+          "kosher": { "type": "boolean", "default": false }
+        }
+      },
+      "CustomizationOption": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "price_adjustment": { "type": "number" },
+          "dietary_change": {
+            "description": "If selected, these flags override the item's base dietary profile",
+            "$ref": "#/components/schemas/DietaryFlags"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Search",
+      "description": "Find restaurants by location and filters"
+    },
+    {
+      "name": "Restaurant",
+      "description": "Restaurant profile operations"
+    },
+    {
+      "name": "Menu",
+      "description": "Menu Protocol operations"
+    }
+  ]
+}

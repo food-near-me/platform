@@ -1,0 +1,96 @@
+{
+  "name": "foodnear.me",
+  "version": "1.0.0",
+  "description": "MCP server for AI-native restaurant discovery. Search restaurants, retrieve Menu Protocol formatted menus, and check ADO scores.",
+  "protocol_version": "2024-11-05",
+  "transport": {
+    "type": "http",
+    "endpoint": "https://foodnear.me/mcp",
+    "methods": ["POST"],
+    "discovery": "https://foodnear.me/mcp"
+  },
+  "capabilities": {
+    "tools": {
+      "listChanged": false
+    },
+    "resources": {
+      "listChanged": false,
+      "subscribe": false
+    }
+  },
+  "tools": [
+    {
+      "name": "search_restaurants",
+      "description": "Search for verified restaurants near a location with cuisine, dietary, and ADO filters",
+      "required_params": ["lat", "lng"]
+    },
+    {
+      "name": "get_restaurant",
+      "description": "Get detailed restaurant profile with Schema.org JSON-LD markup",
+      "required_params": ["restaurant_id"]
+    },
+    {
+      "name": "get_menu",
+      "description": "Get full menu in Menu Protocol v1.0 format with dietary flags, allergens, and signatures",
+      "required_params": ["restaurant_id"]
+    },
+    {
+      "name": "get_ado_score_breakdown",
+      "description": "Get ADO score breakdown with weighted factors and improvement recommendations",
+      "required_params": ["restaurant_id"]
+    }
+  ],
+  "resources": [
+    {
+      "uri": "foodnearme://spec/menu-protocol",
+      "name": "Menu Protocol Specification",
+      "mimeType": "text/markdown"
+    },
+    {
+      "uri": "foodnearme://spec/openapi",
+      "name": "OpenAPI Specification",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "foodnearme://agent/skill",
+      "name": "Agent Skill File",
+      "mimeType": "text/markdown"
+    }
+  ],
+  "usage": {
+    "initialization": {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "method": "initialize",
+      "params": {}
+    },
+    "example_search": {
+      "jsonrpc": "2.0",
+      "id": 2,
+      "method": "tools/call",
+      "params": {
+        "name": "search_restaurants",
+        "arguments": {
+          "lat": 40.7128,
+          "lng": -74.006,
+          "query": "thai",
+          "dietary": ["vegan"]
+        }
+      }
+    }
+  },
+  "authentication": {
+    "required": false,
+    "note": "Free during beta. API keys available for higher rate limits."
+  },
+  "rate_limits": {
+    "unauthenticated": "100 requests/minute",
+    "authenticated": "1000 requests/minute"
+  },
+  "links": {
+    "documentation": "https://foodnear.me/docs",
+    "openapi": "https://foodnear.me/openapi.json",
+    "skill_file": "https://foodnear.me/SKILL.md",
+    "github": "https://github.com/foodnearme/menu-protocol"
+  }
+}

@@ -1,0 +1,56 @@
+import Link from "next/link";
+import type { ReactNode } from "react";
+
+type SiteShellProps = {
+  children: ReactNode;
+  crumb?: string;
+};
+
+export function SiteShell({ children, crumb = "infrastructure" }: SiteShellProps) {
+  return (
+    <>
+      <div className="bg-glow" aria-hidden />
+      <div className="bg-grid" aria-hidden />
+      <div className="scanlines" aria-hidden />
+      <div className="shell">
+        <header className="topbar">
+          <Link href="/" className="brand">
+            <span className="brand-mark" aria-hidden>
+              fn
+            </span>
+            <span>
+              foodnear<span style={{ color: "var(--accent)" }}>.</span>me
+            </span>
+          </Link>
+          <span className="crumb">
+            / <b>{crumb}</b>
+          </span>
+          <span className="spacer" />
+          <span className="pill hide-sm">
+            <span className="dot live" aria-hidden />
+            agent-ready
+          </span>
+          <Link href="/tokenization" className="nav-link">
+            tokenization
+          </Link>
+        </header>
+        <main className="page">{children}</main>
+        <footer className="foot">
+          <span>© {new Date().getFullYear()} foodnear.me · Menu Protocol v1.0</span>
+          <span>
+            <a href="https://foodnear.me/openapi.json">openapi</a>
+            {" · "}
+            <a href="https://foodnear.me/.well-known/mcp-server.json">mcp</a>
+            {" · "}
+            <a href="mailto:api@foodnear.me">api@foodnear.me</a>
+          </span>
+        </footer>
+      </div>
+      <div className="mobile-cta">
+        <a href="#launch-offer" className="btn">
+          Get free ADO audit
+        </a>
+      </div>
+    </>
+  );
+}

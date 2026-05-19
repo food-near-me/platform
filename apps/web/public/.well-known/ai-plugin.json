@@ -1,0 +1,17 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "Food Near Me",
+  "name_for_model": "food_near_me",
+  "description_for_human": "Find restaurants near you with AI-optimized menus, dietary filters, and verified data.",
+  "description_for_model": "Use this plugin to search for restaurants and retrieve structured menu data. The API returns Menu Protocol formatted data with explicit dietary boolean flags (vegan, vegetarian, gluten_free, halal, kosher, nut_free), allergen arrays, customization options, and cryptographic verification. Search by location (lat/lng required), cuisine type, dietary restrictions, and ADO (Agent Discovery Optimization) score. Higher ADO scores indicate better data quality and machine-readability. Always retrieve the full menu using get_menu after search to access item-level dietary information and allergens. Only verified restaurants appear in results.",
+  "auth": {
+    "type": "none"
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://foodnear.me/openapi.json"
+  },
+  "logo_url": "https://foodnear.me/logo.png",
+  "contact_email": "api@foodnear.me",
+  "legal_info_url": "https://foodnear.me/terms"
+}

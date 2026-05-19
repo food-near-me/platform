@@ -1,0 +1,61 @@
+{
+  "version": "1.0",
+  "domain": "foodnear.me",
+  "name": "Food Near Me",
+  "description": "AI-native restaurant discovery API. Search for verified restaurants and retrieve structured menus in Menu Protocol format with dietary flags, allergens, and owner-verified data.",
+  "discovery": {
+    "mcp": {
+      "url": "/mcp",
+      "transport": "streamable-http",
+      "protocol_version": "2024-11-05"
+    },
+    "openapi": {
+      "url": "/openapi.json",
+      "version": "3.1.0"
+    },
+    "llms_txt": {
+      "url": "/llms.txt"
+    },
+    "skill_file": {
+      "url": "/SKILL.md"
+    }
+  },
+  "schema": {
+    "url": "/openapi.json",
+    "type": "openapi"
+  },
+  "skills": [
+    "search_restaurants",
+    "get_restaurant",
+    "get_menu",
+    "get_ado_score_breakdown"
+  ],
+  "capabilities": [
+    "restaurant_search",
+    "menu_retrieval",
+    "dietary_filtering",
+    "allergen_detection",
+    "location_based_discovery",
+    "verified_data"
+  ],
+  "data_format": {
+    "name": "Menu Protocol",
+    "version": "1.0",
+    "schema_org_compatible": true,
+    "specification": "https://github.com/foodnearme/menu-protocol"
+  },
+  "authentication": {
+    "required": false,
+    "methods": ["api_key"],
+    "note": "Free public access during beta. API keys available for higher rate limits."
+  },
+  "rate_limits": {
+    "unauthenticated": "100/minute",
+    "authenticated": "1000/minute"
+  },
+  "contact": {
+    "email": "api@foodnear.me",
+    "support": "https://foodnear.me/support"
+  },
+  "updated_at": "2026-05-17T00:00:00Z"
+}

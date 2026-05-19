@@ -1,0 +1,36 @@
+{
+  "name": "Food Near Me",
+  "description": "Search for restaurants and get AI-optimized menus with dietary information, allergens, and verified owner data.",
+  "logo_url": "https://foodnear.me/logo.png",
+  "contact_email": "api@foodnear.me",
+  "privacy_policy_url": "https://foodnear.me/privacy",
+  "terms_of_service_url": "https://foodnear.me/terms",
+  "auth": {
+    "type": "NONE"
+  },
+  "api_spec": {
+    "url": "https://foodnear.me/openapi.json",
+    "format": "OPENAPI_3_1"
+  },
+  "instructions": "Use this extension to help users find restaurants near them. Always require latitude and longitude for searches. When a user asks about food options, dietary restrictions, or restaurant recommendations, search using the search_restaurants endpoint with appropriate filters. After finding restaurants, retrieve full menu details using the menu.mp endpoint to provide accurate dietary information and allergen warnings. ADO scores indicate data quality - prefer restaurants with scores above 4.0. Only verified restaurants appear in results, ensuring data accuracy.",
+  "capabilities": [
+    {
+      "name": "search_restaurants",
+      "description": "Search for verified restaurants by location, cuisine, and dietary filters"
+    },
+    {
+      "name": "get_restaurant",
+      "description": "Get detailed restaurant profile with Schema.org JSON-LD"
+    },
+    {
+      "name": "get_menu",
+      "description": "Get full menu in Menu Protocol format with dietary flags and allergens"
+    }
+  ],
+  "sample_prompts": [
+    "Find vegan restaurants near Times Square",
+    "What Thai places have gluten-free options in Brooklyn?",
+    "Show me highly-rated restaurants with outdoor seating near me",
+    "Find halal restaurants within 2 miles"
+  ]
+}

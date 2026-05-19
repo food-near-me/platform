@@ -1,0 +1,96 @@
+{
+  "schema_version": "1.0",
+  "name": "foodnear.me",
+  "description": "AI-native restaurant discovery API. Find restaurants by location and retrieve structured menus in Menu Protocol format — a Schema.org superset optimized for agent parsing.",
+  "homepage": "https://foodnear.me",
+  "logo": "https://foodnear.me/logo.png",
+  "contact_email": "api@foodnear.me",
+
+  "capabilities": [
+    {
+      "name": "search",
+      "description": "Search for verified restaurants by location, cuisine, dietary filters, and ADO score.",
+      "endpoint": "/api/v1/search",
+      "method": "GET"
+    },
+    {
+      "name": "restaurant",
+      "description": "Get detailed restaurant profile with Schema.org JSON-LD markup.",
+      "endpoint": "/api/v1/restaurant/{id}",
+      "method": "GET"
+    },
+    {
+      "name": "menu",
+      "description": "Get full menu in Menu Protocol v1.0 format with dietary flags, allergens, and cryptographic owner signature.",
+      "endpoint": "/api/v1/restaurant/{id}/menu.mp",
+      "method": "GET"
+    }
+  ],
+
+  "data_format": {
+    "protocol": "Menu Protocol",
+    "version": "1.0",
+    "schema_org_compatible": true,
+    "includes": [
+      "dietary_flags",
+      "allergens",
+      "customization_options",
+      "preparation_time",
+      "availability",
+      "cryptographic_signatures"
+    ]
+  },
+
+  "coverage": {
+    "regions": ["US"],
+    "note": "Beta launch focused on select US cities. Expanding based on restaurant onboarding."
+  },
+
+  "performance": {
+    "typical_response_time_ms": 200,
+    "uptime_target": "99.9%"
+  },
+
+  "authentication": {
+    "required": false,
+    "methods": ["api_key"],
+    "note": "Unauthenticated access available with rate limits. API keys provide higher limits."
+  },
+
+  "rate_limits": {
+    "unauthenticated": "100 requests/minute",
+    "authenticated": "1000 requests/minute"
+  },
+
+  "payment": {
+    "current": "free_beta",
+    "future": ["api_key_subscription", "x402_micropayments"],
+    "note": "x402 on Base (USDC) under consideration for machine-to-machine access."
+  },
+
+  "links": {
+    "openapi": "https://foodnear.me/openapi.json",
+    "skill_file": "https://foodnear.me/SKILL.md",
+    "documentation": "https://foodnear.me/docs",
+    "github": "https://github.com/foodnearme/menu-protocol"
+  },
+
+  "mcp": {
+    "status": "live",
+    "endpoint": "https://foodnear.me/mcp",
+    "protocol_version": "2024-11-05",
+    "transport": "http",
+    "tools": [
+      "search_restaurants",
+      "get_restaurant",
+      "get_menu",
+      "get_ado_score_breakdown"
+    ],
+    "resources": [
+      "foodnearme://spec/menu-protocol",
+      "foodnearme://spec/openapi",
+      "foodnearme://agent/skill"
+    ],
+    "note": "Read-only MCP endpoint. POST JSON-RPC requests to /mcp. GET /mcp for discovery."
+  }
+}

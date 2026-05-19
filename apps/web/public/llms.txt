@@ -1,0 +1,75 @@
+# foodnear.me
+
+> AI-native restaurant discovery infrastructure — structured menus for AI agents via Menu Protocol.
+
+foodnear.me is the canonical discovery layer for AI agents seeking reliable, owner-approved restaurant menu data. We provide the Menu Protocol standard (a Schema.org superset optimized for agent parsing) and Agent Discovery Optimization (ADO) scoring to help restaurants become machine-discoverable.
+
+Unlike delivery platforms that scrape menus or lock restaurants into 20-30% fees, foodnear.me offers verified, structured data with cryptographic owner approval. Agents can search restaurants by location, filter by dietary requirements, and retrieve complete menus with allergen declarations, customization options, and preparation times.
+
+Our MCP (Model Context Protocol) endpoint enables Claude, ChatGPT, and other LLM-based agents to natively integrate restaurant discovery without custom API wrappers.
+
+## Services / Features
+
+- **Restaurant Search**: Find verified restaurants by location, cuisine type, dietary filters (vegan, vegetarian, gluten-free, halal, kosher), and ADO score
+- **Menu Protocol Menus**: Retrieve full menus in MP v1.0 format with explicit boolean dietary flags, allergen arrays, customization options, and owner signatures
+- **ADO Scoring**: Agent Discovery Optimization scores (0-5) indicate data quality, verification status, and machine-readability
+- **Restaurant Profiles**: Schema.org/Restaurant JSON-LD with Menu Protocol extensions
+
+## API & Machine Integration
+
+- **MCP Server**: https://foodnear.me/mcp (POST JSON-RPC, GET for discovery)
+- **OpenAPI Spec**: https://foodnear.me/openapi.json (OpenAPI 3.1)
+- **REST API**: https://foodnear.me/api/v1/*
+- **Agent Metadata**: https://foodnear.me/.well-known/agent.json
+- **AgentRoot**: https://foodnear.me/.well-known/agentroot.json
+- **GPT Plugin**: https://foodnear.me/.well-known/ai-plugin.json
+
+## MCP Tools Available
+
+1. `search_restaurants` - Search by lat/lng, cuisine, dietary filters, ADO score
+2. `get_restaurant` - Get detailed restaurant profile with Schema.org markup
+3. `get_menu` - Get full Menu Protocol v1.0 formatted menu
+4. `get_ado_score_breakdown` - Get scoring breakdown with improvement recommendations
+
+## Key URLs
+
+- Homepage: https://foodnear.me
+- OpenAPI Spec: https://foodnear.me/openapi.json
+- MCP Endpoint: https://foodnear.me/mcp
+- Agent Skill File: https://foodnear.me/SKILL.md
+- Documentation: https://foodnear.me/docs
+- Menu Protocol Spec: https://github.com/foodnearme/menu-protocol
+
+## Example API Usage
+
+Search for vegan Thai restaurants in NYC:
+```
+GET /api/v1/search?query=thai&lat=40.7128&lng=-74.0060&dietary=vegan
+```
+
+Get menu for a restaurant:
+```
+GET /api/v1/restaurant/{id}/menu.mp
+```
+
+## Data Trust Model
+
+Only restaurants with `verification_status: "verified"` appear in search results. Verified means:
+- Restaurant owner has claimed the listing
+- Owner has approved the Menu Protocol data
+- Approval is cryptographically signed
+
+## Rate Limits
+
+- Unauthenticated: 100 requests/minute
+- API key holders: 1000 requests/minute
+
+## Authentication
+
+Public read access is free during beta. Future paid tiers will use API keys (Stripe) and x402 micropayments (USDC on Base) for machine-to-machine access.
+
+## Contact
+
+- Email: api@foodnear.me
+- GitHub: https://github.com/foodnearme
+- Support: https://foodnear.me/support

@@ -1,0 +1,18 @@
+{
+  "name": "foodnearme",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w web",
+    "build": "npm run build -w web",
+    "start": "npm run start -w web",
+    "lint": "npm run lint -w web",
+    "typecheck": "npm run typecheck -w web",
+    "test:mcp-flows": "npm run test:mcp-flows -w web",
+    "test:mcp-flows:http": "npm run test:mcp-flows:http -w web"
+  }
+}

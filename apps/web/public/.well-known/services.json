@@ -1,0 +1,109 @@
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "foodnear.me Services",
+  "description": "AI-native restaurant discovery services and APIs",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "item": {
+        "@type": "Service",
+        "@id": "https://foodnear.me/api/v1/search",
+        "name": "Restaurant Search API",
+        "description": "Search for verified restaurants by location, cuisine type, dietary restrictions, and ADO score. Returns structured data optimized for AI agent consumption.",
+        "provider": {
+          "@type": "Organization",
+          "name": "foodnear.me"
+        },
+        "serviceType": "API",
+        "url": "https://foodnear.me/api/v1/search",
+        "documentation": "https://foodnear.me/openapi.json"
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "item": {
+        "@type": "Service",
+        "@id": "https://foodnear.me/api/v1/restaurant",
+        "name": "Restaurant Profile API",
+        "description": "Retrieve detailed restaurant profiles with Schema.org/Restaurant JSON-LD markup and Menu Protocol extensions including ADO scores and verification status.",
+        "provider": {
+          "@type": "Organization",
+          "name": "foodnear.me"
+        },
+        "serviceType": "API",
+        "url": "https://foodnear.me/api/v1/restaurant/{id}",
+        "documentation": "https://foodnear.me/openapi.json"
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "item": {
+        "@type": "Service",
+        "@id": "https://foodnear.me/api/v1/menu",
+        "name": "Menu Protocol API",
+        "description": "Get full restaurant menus in Menu Protocol v1.0 format with explicit dietary flags, allergen arrays, customization options, and cryptographic owner approval signatures.",
+        "provider": {
+          "@type": "Organization",
+          "name": "foodnear.me"
+        },
+        "serviceType": "API",
+        "url": "https://foodnear.me/api/v1/restaurant/{id}/menu.mp",
+        "documentation": "https://foodnear.me/openapi.json"
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 4,
+      "item": {
+        "@type": "Service",
+        "@id": "https://foodnear.me/mcp",
+        "name": "MCP Server",
+        "description": "Model Context Protocol server for native integration with Claude, ChatGPT, and other LLM-based AI agents. Provides tools for restaurant search, menu retrieval, and ADO scoring.",
+        "provider": {
+          "@type": "Organization",
+          "name": "foodnear.me"
+        },
+        "serviceType": "MCP",
+        "url": "https://foodnear.me/mcp",
+        "documentation": "https://foodnear.me/.well-known/mcp-server.json"
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 5,
+      "item": {
+        "@type": "Service",
+        "@id": "https://foodnear.me/services/ado-audit",
+        "name": "ADO Audit",
+        "description": "Free Agent Discovery Optimization audit for restaurants. Analyze your menu data quality, get an ADO score breakdown, and receive actionable recommendations to improve AI agent discoverability.",
+        "provider": {
+          "@type": "Organization",
+          "name": "foodnear.me"
+        },
+        "serviceType": "Consulting",
+        "url": "https://foodnear.me/#launch-offer"
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 6,
+      "item": {
+        "@type": "Service",
+        "@id": "https://foodnear.me/services/menu-protocol-validation",
+        "name": "Menu Protocol Validation",
+        "description": "Validate your restaurant menu data against the Menu Protocol v1.0 specification. Ensure compliance for optimal AI agent integration.",
+        "provider": {
+          "@type": "Organization",
+          "name": "foodnear.me"
+        },
+        "serviceType": "Validation",
+        "url": "https://foodnear.me/dashboard/menu/verify"
+      }
+    }
+  ],
+  "numberOfItems": 6
+}
