@@ -13,11 +13,12 @@ type JsonRpcResponse = {
 };
 
 export function createHttpMcpClient(baseUrl: string): McpFlowClient {
-  const base = baseUrl.replace(/\/$/, "");
+  const normalized = baseUrl.replace(/\/$/, "");
+  const endpoint = normalized.endsWith("/mcp") ? normalized : `${normalized}/mcp`;
   let requestId = 1;
 
   async function jsonRpc(method: string, params?: unknown): Promise<unknown> {
-    const res = await fetch(`${base}/mcp`, {
+    const res = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -29,7 +30,7 @@ export function createHttpMcpClient(baseUrl: string): McpFlowClient {
     });
 
     if (!res.ok) {
-      throw new Error(`HTTP ${res.status} from POST /mcp (${method})`);
+      throw new Error(`HTTP ${res.status} from POST ${new URL(endpoint).pathname} (${method})`);
     }
 
     const data = (await res.json()) as JsonRpcResponse;

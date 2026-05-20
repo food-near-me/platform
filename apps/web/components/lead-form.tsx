@@ -9,6 +9,9 @@ type LeadFormProps = {
   submitLabel?: string;
   note?: string;
   successMessage?: string;
+  defaultRestaurantName?: string;
+  defaultCity?: string;
+  lockRestaurantName?: boolean;
 };
 
 export function LeadForm({
@@ -16,6 +19,9 @@ export function LeadForm({
   submitLabel = "Request audit",
   note = "No spam. We use this to schedule your ADO audit.",
   successMessage = "Request captured. We will follow up with your ADO audit details.",
+  defaultRestaurantName,
+  defaultCity = "Brooklyn, NY",
+  lockRestaurantName = false,
 }: LeadFormProps) {
   const [status, setStatus] = useState<FormState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -78,11 +84,18 @@ export function LeadForm({
           required
           name="restaurantName"
           placeholder="Joe's Pizza"
+          defaultValue={defaultRestaurantName}
+          readOnly={lockRestaurantName}
         />
       </label>
       <label>
         City
-        <input required name="city" placeholder="Austin, TX" />
+        <input
+          required
+          name="city"
+          placeholder="Brooklyn, NY"
+          defaultValue={defaultCity}
+        />
       </label>
       <label className="span-2">
         Work email

@@ -30,9 +30,11 @@ function parseArgs(argv: string[]) {
     const arg = argv[i];
     if (arg === "--url" && argv[i + 1]) {
       url = argv[++i];
+    } else if (arg.startsWith("--url=")) {
+      url = arg.slice("--url=".length);
     } else if (arg === "--help" || arg === "-h") {
       console.log(`Usage: npx tsx scripts/mcp-flow-test.ts [--url BASE_URL]`);
-      console.log(`Default: http://localhost:3000 (POST {url}/mcp)`);
+      console.log(`Base URL or MCP endpoint accepted (POST {url}/mcp when needed)`);
       process.exit(0);
     }
   }
@@ -42,8 +44,8 @@ function parseArgs(argv: string[]) {
 
 async function main() {
   const { url } = parseArgs(process.argv.slice(2));
-
-  console.log(`[mcp-flow-test] url=${url}/mcp`);
+  const endpoint = url.endsWith("/mcp") ? url : `${url}/mcp`;
+  console.log(`[mcp-flow-test] url=${endpoint}`);
 
   if (!isSupabaseConfigured()) {
     console.warn("[mcp-flow-test] Supabase env not set locally — DB flows will be skipped");

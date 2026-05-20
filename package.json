@@ -16,7 +16,11 @@
     "test:mcp-flows:http": "npm run test:mcp-flows:http -w web",
     "smoke:mcp": "npm run smoke:mcp -w web",
     "preflight": "npm run preflight -w web",
-    "db:migrate:audit-leads": "node scripts/apply-audit-leads.mjs"
+    "db:migrate:audit-leads": "node scripts/apply-audit-leads.mjs",
+    "db:migrate:discovered-layer": "node scripts/apply-discovered-layer.mjs",
+    "db:migrate:import-dedup": "node scripts/apply-import-dedup.mjs",
+    "db:import:discovered": "npm run db:import:discovered -w web",
+    "db:import:discovered:brooklyn": "npm run db:import:discovered:brooklyn -w web"
   },
   "devDependencies": {
     "pg": "^8.21.0"

@@ -21,6 +21,16 @@ CREATE TABLE restaurants (
     payment_methods TEXT[] DEFAULT '{}',
     dietary_certifications TEXT[] DEFAULT '{}',
     
+    -- Provenance (discovered layer imports)
+    source TEXT,
+    source_record_id TEXT,
+    import_confidence NUMERIC(3,2) DEFAULT 0.5 CHECK (import_confidence >= 0 AND import_confidence <= 1),
+    discovered_at TIMESTAMPTZ,
+    last_external_update TIMESTAMPTZ,
+    website_url TEXT,
+    phone TEXT,
+    health_inspection_grade TEXT,
+    
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     
@@ -138,36 +148,50 @@ CREATE OR REPLACE FUNCTION search_restaurants_for_agents(
     slug TEXT,
     distance_meters DOUBLE PRECISION,
     agent_score NUMERIC,
-    cuisine_type TEXT[]
+    cuisine_type TEXT[],
+    verification_status TEXT,
+    menu_available BOOLEAN,
+    data_source TEXT
 ) LANGUAGE plpgsql AS $$
 DECLARE
     search_point GEOGRAPHY := ST_SetSRID(ST_MakePoint(lng, lat), 4326)::geography;
 BEGIN
     RETURN QUERY
-    SELECT 
+    SELECT
         r.id,
         r.name,
         r.slug,
         ST_Distance(r.location, search_point) AS distance_meters,
         r.agent_score,
-        r.cuisine_type
+        r.cuisine_type,
+        r.verification_status,
+        EXISTS (
+            SELECT 1 FROM menus m
+            WHERE m.restaurant_id = r.id
+              AND m.status = 'published'
+              AND r.verification_status = 'verified'
+        ) AS menu_available,
+        r.source AS data_source
     FROM restaurants r
-    WHERE 
-        -- Geospatial radius filter (both sides are geography type)
+    WHERE
         ST_DWithin(r.location, search_point, radius_meters)
-        -- Full-text search filter (if query provided)
         AND (search_query = '' OR r.fts @@ plainto_tsquery('english', search_query))
-        -- Minimum ADO score filter
-        AND r.agent_score >= min_agent_score
-        -- Only show verified restaurants to agents
-        AND r.verification_status = 'verified'
-        -- Dietary certifications filter (if provided)
-        AND (array_length(dietary_filters, 1) IS NULL OR r.dietary_certifications @> dietary_filters)
-    ORDER BY 
-        -- Rank by a combination of text relevance, distance, and ADO score
-        (r.agent_score * 10) + 
-        (CASE WHEN search_query = '' THEN 0 ELSE ts_rank(r.fts, plainto_tsquery('english', search_query)) * 20 END) - 
-        (ST_Distance(r.location, search_point) / 1000) DESC
+        AND (
+            r.verification_status = 'discovered'
+            OR (
+                r.verification_status = 'verified'
+                AND r.agent_score >= min_agent_score
+                AND (
+                    array_length(dietary_filters, 1) IS NULL
+                    OR r.dietary_certifications @> dietary_filters
+                )
+            )
+        )
+    ORDER BY
+        CASE r.verification_status WHEN 'verified' THEN 0 ELSE 1 END,
+        (r.agent_score * 10)
+        + (CASE WHEN search_query = '' THEN 0 ELSE ts_rank(r.fts, plainto_tsquery('english', search_query)) * 20 END)
+        - (ST_Distance(r.location, search_point) / 1000) DESC
     LIMIT 50;
 END;
 $$;

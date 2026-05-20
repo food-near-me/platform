@@ -52,13 +52,21 @@ export async function GET(request: Request) {
       distance_meters: number;
       agent_score: number;
       cuisine_type: string[];
-    }) => ({
-      ...restaurant,
-      links: {
-        profile: `/api/v1/restaurant/${restaurant.id}`,
-        menu: `/api/v1/restaurant/${restaurant.id}/menu.mp`
-      }
-    }));
+      verification_status: string;
+      menu_available: boolean;
+      data_source: string | null;
+    }) => {
+      const menuAvailable = Boolean(restaurant.menu_available);
+      return {
+        ...restaurant,
+        links: {
+          profile: `/api/v1/restaurant/${restaurant.id}`,
+          ...(menuAvailable
+            ? { menu: `/api/v1/restaurant/${restaurant.id}/menu.mp` }
+            : { claim: `/claim/${restaurant.id}` }),
+        },
+      };
+    });
 
     return NextResponse.json({
       metadata: {

@@ -13,6 +13,13 @@
     "smoke:mcp": "tsx scripts/mcp-smoke-probes.ts",
     "test:x402-flows": "tsx scripts/x402-flow-test.ts",
     "db:seed": "tsx scripts/seed-beta-data.ts",
+    "db:import:discovered": "tsx scripts/import-discovered.ts --region=williamsburg",
+    "db:import:discovered:brooklyn": "tsx scripts/import-discovered.ts --region=brooklyn",
+    "db:import:discovered:manhattan": "tsx scripts/import-discovered.ts --region=manhattan",
+    "db:import:discovered:dry-run": "tsx scripts/import-discovered.ts --region=williamsburg --dry-run",
+    "db:import:discovered:list": "tsx scripts/import-discovered.ts --list-regions",
+    "db:import:discovered:batch": "tsx scripts/import-discovered-batch.ts",
+    "db:import:discovered:nyc-boroughs": "tsx scripts/import-discovered-batch.ts --preset=nyc-boroughs --pending-only --update-status",
     "preflight": "./scripts/deploy-preflight.sh"
   },
   "dependencies": {

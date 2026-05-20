@@ -1,0 +1,378 @@
+{
+  "version": 1,
+  "defaultRegion": "williamsburg",
+  "regions": {
+    "williamsburg": {
+      "label": "Williamsburg, Brooklyn",
+      "tier": 1,
+      "status": "imported",
+      "bbox": {
+        "south": 40.708,
+        "west": -73.972,
+        "north": 40.722,
+        "east": -73.94
+      },
+      "dataSources": [
+        "osm",
+        "nyc_open_data"
+      ]
+    },
+    "brooklyn": {
+      "label": "Brooklyn (borough)",
+      "tier": 1,
+      "status": "imported",
+      "bbox": {
+        "south": 40.57,
+        "west": -74.04,
+        "north": 40.74,
+        "east": -73.83
+      },
+      "dataSources": [
+        "osm",
+        "nyc_open_data"
+      ]
+    },
+    "manhattan": {
+      "label": "Manhattan",
+      "tier": 1,
+      "status": "imported",
+      "bbox": {
+        "south": 40.7,
+        "west": -74.02,
+        "north": 40.882,
+        "east": -73.907
+      },
+      "dataSources": [
+        "osm",
+        "nyc_open_data"
+      ]
+    },
+    "queens": {
+      "label": "Queens",
+      "tier": 1,
+      "status": "imported",
+      "bbox": {
+        "south": 40.541,
+        "west": -73.962,
+        "north": 40.8,
+        "east": -73.7
+      },
+      "dataSources": [
+        "osm",
+        "nyc_open_data"
+      ]
+    },
+    "bronx": {
+      "label": "Bronx",
+      "tier": 1,
+      "status": "imported",
+      "bbox": {
+        "south": 40.785,
+        "west": -73.933,
+        "north": 40.917,
+        "east": -73.765
+      },
+      "dataSources": [
+        "osm",
+        "nyc_open_data"
+      ]
+    },
+    "staten_island": {
+      "label": "Staten Island",
+      "tier": 1,
+      "status": "imported",
+      "bbox": {
+        "south": 40.496,
+        "west": -74.256,
+        "north": 40.651,
+        "east": -74.052
+      },
+      "dataSources": [
+        "osm",
+        "nyc_open_data"
+      ]
+    },
+    "nyc": {
+      "label": "New York City (full)",
+      "tier": 1,
+      "status": "pending",
+      "bbox": {
+        "south": 40.496,
+        "west": -74.256,
+        "north": 40.917,
+        "east": -73.7
+      },
+      "dataSources": [
+        "osm",
+        "nyc_open_data"
+      ],
+      "notes": "Large job — prefer per-borough imports"
+    },
+    "la": {
+      "label": "Los Angeles",
+      "tier": 1,
+      "status": "pending",
+      "bbox": {
+        "south": 33.703,
+        "west": -118.668,
+        "north": 34.337,
+        "east": -118.155
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "sf_bay": {
+      "label": "San Francisco Bay Area",
+      "tier": 1,
+      "status": "pending",
+      "bbox": {
+        "south": 37.124,
+        "west": -122.515,
+        "north": 38.057,
+        "east": -121.469
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "chicago": {
+      "label": "Chicago",
+      "tier": 1,
+      "status": "pending",
+      "bbox": {
+        "south": 41.644,
+        "west": -87.94,
+        "north": 42.023,
+        "east": -87.524
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "houston": {
+      "label": "Houston",
+      "tier": 1,
+      "status": "pending",
+      "bbox": {
+        "south": 29.523,
+        "west": -95.91,
+        "north": 30.11,
+        "east": -95.014
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "dallas": {
+      "label": "Dallas–Fort Worth",
+      "tier": 1,
+      "status": "pending",
+      "bbox": {
+        "south": 32.617,
+        "west": -97.038,
+        "north": 33.124,
+        "east": -96.463
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "austin": {
+      "label": "Austin",
+      "tier": 1,
+      "status": "pending",
+      "bbox": {
+        "south": 30.098,
+        "west": -97.938,
+        "north": 30.516,
+        "east": -97.562
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "miami": {
+      "label": "Miami",
+      "tier": 1,
+      "status": "pending",
+      "bbox": {
+        "south": 25.709,
+        "west": -80.319,
+        "north": 25.855,
+        "east": -80.139
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "dc": {
+      "label": "Washington DC",
+      "tier": 1,
+      "status": "pending",
+      "bbox": {
+        "south": 38.791,
+        "west": -77.119,
+        "north": 38.995,
+        "east": -76.909
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "boston": {
+      "label": "Boston",
+      "tier": 1,
+      "status": "pending",
+      "bbox": {
+        "south": 42.227,
+        "west": -71.191,
+        "north": 42.407,
+        "east": -70.923
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "philly": {
+      "label": "Philadelphia",
+      "tier": 1,
+      "status": "pending",
+      "bbox": {
+        "south": 39.867,
+        "west": -75.28,
+        "north": 40.137,
+        "east": -74.955
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "seattle": {
+      "label": "Seattle",
+      "tier": 1,
+      "status": "pending",
+      "bbox": {
+        "south": 47.491,
+        "west": -122.459,
+        "north": 47.734,
+        "east": -122.224
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "denver": {
+      "label": "Denver",
+      "tier": 1,
+      "status": "pending",
+      "bbox": {
+        "south": 39.614,
+        "west": -105.11,
+        "north": 39.914,
+        "east": -104.6
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "atlanta": {
+      "label": "Atlanta",
+      "tier": 1,
+      "status": "pending",
+      "bbox": {
+        "south": 33.647,
+        "west": -84.551,
+        "north": 33.887,
+        "east": -84.289
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "phoenix": {
+      "label": "Phoenix",
+      "tier": 1,
+      "status": "pending",
+      "bbox": {
+        "south": 33.29,
+        "west": -112.324,
+        "north": 33.75,
+        "east": -111.926
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "lv": {
+      "label": "Las Vegas",
+      "tier": 1,
+      "status": "pending",
+      "bbox": {
+        "south": 36,
+        "west": -115.315,
+        "north": 36.3,
+        "east": -115.032
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "portland": {
+      "label": "Portland",
+      "tier": 1,
+      "status": "pending",
+      "bbox": {
+        "south": 45.421,
+        "west": -122.836,
+        "north": 45.653,
+        "east": -122.472
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "nashville": {
+      "label": "Nashville",
+      "tier": 1,
+      "status": "pending",
+      "bbox": {
+        "south": 36.03,
+        "west": -86.92,
+        "north": 36.217,
+        "east": -86.58
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "san_diego": {
+      "label": "San Diego",
+      "tier": 1,
+      "status": "pending",
+      "bbox": {
+        "south": 32.534,
+        "west": -117.283,
+        "north": 33.114,
+        "east": -116.908
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "minneapolis": {
+      "label": "Minneapolis–St Paul",
+      "tier": 1,
+      "status": "pending",
+      "bbox": {
+        "south": 44.89,
+        "west": -93.329,
+        "north": 45.051,
+        "east": -93.094
+      },
+      "dataSources": [
+        "osm"
+      ]
+    }
+  }
+}

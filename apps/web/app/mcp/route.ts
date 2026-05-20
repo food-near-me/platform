@@ -52,7 +52,7 @@ const VALID_DIETARY_FILTERS = [
 const TOOLS = [
   {
     name: "search_restaurants",
-    description: "Search for verified restaurants near a location. Returns restaurants ranked by ADO (Agent Discovery Optimization) score, with cuisine types, distance, and links to full profiles and menus. Only verified restaurants with owner-approved Menu Protocol data are returned.",
+    description: "Search for restaurants near a location. Returns verified venues first (owner-approved Menu Protocol menus), then discovered venues (basic listing only — no authoritative menu). Use menu_available and verification_status on each result. Call get_menu only when menu_available is true.",
     inputSchema: {
       type: "object" as const,
       properties: {
@@ -313,19 +313,36 @@ async function searchRestaurants(args: Record<string, unknown>) {
     distance_meters: number;
     agent_score: number;
     cuisine_type: string[];
-  }) => ({
-    id: r.id,
-    name: r.name,
-    slug: r.slug,
-    distance_meters: Math.round(r.distance_meters),
-    distance_miles: Math.round(r.distance_meters / 1609.34 * 10) / 10,
-    agent_score: r.agent_score,
-    cuisine_type: r.cuisine_type,
-    links: {
-      profile: `https://foodnear.me/api/v1/restaurant/${r.id}`,
-      menu: `https://foodnear.me/api/v1/restaurant/${r.id}/menu.mp`
-    }
-  }));
+    verification_status: string;
+    menu_available: boolean;
+    data_source: string | null;
+  }) => {
+    const verified = r.verification_status === "verified";
+    const menuAvailable = Boolean(r.menu_available);
+    return {
+      id: r.id,
+      name: r.name,
+      slug: r.slug,
+      distance_meters: Math.round(r.distance_meters),
+      distance_miles: Math.round(r.distance_meters / 1609.34 * 10) / 10,
+      agent_score: r.agent_score,
+      cuisine_type: r.cuisine_type,
+      verification_status: r.verification_status,
+      menu_available: menuAvailable,
+      data_source: r.data_source,
+      trust_notice: verified
+        ? menuAvailable
+          ? "Owner-verified Menu Protocol menu available."
+          : "Verified listing; menu not yet published."
+        : "Discovered listing only. Do not cite menu items — use get_menu only when menu_available is true.",
+      links: {
+        profile: `https://foodnear.me/api/v1/restaurant/${r.id}`,
+        ...(menuAvailable
+          ? { menu: `https://foodnear.me/api/v1/restaurant/${r.id}/menu.mp` }
+          : { claim: `https://foodnear.me/claim/${r.id}` }),
+      },
+    };
+  });
 
   return {
     query: query || "(all cuisines)",
@@ -352,12 +369,12 @@ async function getRestaurant(args: Record<string, unknown>) {
     .from("restaurants")
     .select("*")
     .eq("id", restaurantId)
-    .eq("verification_status", "verified")
+    .in("verification_status", ["discovered", "verified", "menu_indexed"])
     .single();
 
   if (error?.code === "PGRST116" || !data) {
     throw new ResourceNotFoundError(
-      `Restaurant ${restaurantId} not found or not verified`,
+      `Restaurant ${restaurantId} not found`,
       "Call search_restaurants first, then use an id from results."
     );
   }
@@ -366,7 +383,19 @@ async function getRestaurant(args: Record<string, unknown>) {
   }
 
   const priceRangeMap: Record<number, string> = { 1: "$", 2: "$$", 3: "$$$", 4: "$$$$" };
-  
+  const verified = data.verification_status === "verified";
+
+  const { data: publishedMenu } = verified
+    ? await supabase
+        .from("menus")
+        .select("id")
+        .eq("restaurant_id", restaurantId)
+        .eq("status", "published")
+        .maybeSingle()
+    : { data: null };
+
+  const menuAvailable = verified && Boolean(publishedMenu);
+
   return {
     "@context": "https://schema.org",
     "@type": "Restaurant",
@@ -378,13 +407,25 @@ async function getRestaurant(args: Record<string, unknown>) {
     priceRange: data.price_range ? priceRangeMap[data.price_range] : null,
     agent_score: data.agent_score,
     verification_status: data.verification_status,
+    menu_available: menuAvailable,
+    data_source: data.source ?? null,
+    trust_notice: menuAvailable
+      ? "Owner-verified Menu Protocol data."
+      : "Basic listing only. Menu not owner-verified — do not infer dishes or prices.",
     delivery_radius_miles: data.delivery_radius_miles,
     payment_methods: data.payment_methods || [],
     dietary_certifications: data.dietary_certifications || [],
+    website_url: data.website_url ?? null,
+    phone: data.phone ?? null,
+    health_inspection_grade: data.health_inspection_grade ?? null,
     links: {
-      menu: `https://foodnear.me/api/v1/restaurant/${data.id}/menu.mp`,
-      mcp_menu: `Use get_menu tool with restaurant_id: "${data.id}"`
-    }
+      ...(menuAvailable
+        ? {
+            menu: `https://foodnear.me/api/v1/restaurant/${data.id}/menu.mp`,
+            mcp_menu: `Use get_menu tool with restaurant_id: "${data.id}"`,
+          }
+        : { claim: `https://foodnear.me/claim/${data.id}` }),
+    },
   };
 }
 

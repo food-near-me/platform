@@ -171,7 +171,7 @@ Restaurant id: ${restaurantId}
 2. Call validate_menu_protocol with payload and strict: ${strict}.
 3. If valid is false, list each error and recommendation in plain language.
 4. If valid is true, summarize remaining warnings and ADO improvement tips.
-5. Remind me that only owner-verified, published menus appear in search_restaurants results.`,
+5. Prefer results with menu_available true for menu retrieval; discovered listings have no authoritative menu.`,
           },
         },
       ],

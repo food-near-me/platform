@@ -277,8 +277,12 @@ export async function runMcpFlows(
         const first = resultsList[0];
         assert(typeof first.id === "string", "Result missing id");
         assert(typeof first.name === "string", "Result missing name");
-        assert(typeof first.agent_score === "number", "Result missing agent_score");
-        sampleRestaurantId = first.id as string;
+        assert(
+          typeof first.verification_status === "string",
+          "Result missing verification_status"
+        );
+        const withMenu = resultsList.find((r) => r.menu_available === true);
+        if (withMenu?.id) sampleRestaurantId = withMenu.id as string;
       }
     })
   );
@@ -294,9 +298,13 @@ export async function runMcpFlows(
         ) as Record<string, unknown>;
         const resultsList = search.results as Array<Record<string, unknown>>;
         if (!Array.isArray(resultsList) || resultsList.length === 0) {
-          throw new Error("SKIP: No verified restaurants in seed data — add beta restaurants");
+          throw new Error("SKIP: No restaurants in search area — run db:import:discovered or seed beta data");
         }
-        sampleRestaurantId = resultsList[0].id as string;
+        const withMenu = resultsList.find((r) => r.menu_available === true);
+        if (!withMenu?.id) {
+          throw new Error("SKIP: No menu_available restaurants — seed verified beta data");
+        }
+        sampleRestaurantId = withMenu.id as string;
       }
 
       const menu = requireData(
