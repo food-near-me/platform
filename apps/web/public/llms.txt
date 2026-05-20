@@ -52,6 +52,14 @@ Connect with Claude Desktop, Cursor, or any MCP client:
 - `foodnearme://agent/skill` - Agent skill summary
 - `foodnearme://examples/search-flow` - Example search → menu flow
 
+## MCP Prompts (3)
+
+Pre-built user intents (call `prompts/get` then follow with tools):
+
+- `find_dinner_near_me` — `location` (required), optional `cuisine`, `dietary` → search_restaurants → get_menu
+- `dietary_constrained_menu` — `restaurant_id`, `restrictions` → get_menu with explicit dietary/allergen filtering
+- `validate_my_menu` — optional `strict` → validate_menu_protocol
+
 ## Key URLs
 
 - Homepage: https://foodnear.me

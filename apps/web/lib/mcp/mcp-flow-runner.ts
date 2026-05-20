@@ -20,6 +20,12 @@ export const EXPECTED_MCP_RESOURCES = [
   "foodnearme://examples/search-flow",
 ] as const;
 
+export const EXPECTED_MCP_PROMPTS = [
+  "find_dinner_near_me",
+  "dietary_constrained_menu",
+  "validate_my_menu",
+] as const;
+
 /** Default test coordinates — NYC (Brooklyn Bridge area). */
 export const DEFAULT_TEST_LOCATION = {
   lat: 40.7128,
@@ -43,9 +49,15 @@ export type McpToolCallResult = {
   error?: McpToolErrorMeta;
 };
 
+export type McpPromptResult = {
+  messages: Array<{ role: string; content: { type: string; text?: string } }>;
+};
+
 export type McpFlowClient = {
   listTools: () => Promise<string[]>;
   listResources: () => Promise<string[]>;
+  listPrompts: () => Promise<string[]>;
+  getPrompt: (name: string, args?: Record<string, string>) => Promise<McpPromptResult>;
   callTool: (name: string, args: Record<string, unknown>) => Promise<McpToolCallResult>;
 };
 
@@ -115,6 +127,40 @@ export async function runMcpFlows(
       for (let i = 0; i < expected.length; i++) {
         assert(uris[i] === expected[i], `Resource mismatch at ${i}: expected ${expected[i]}, got ${uris[i]}`);
       }
+    })
+  );
+
+  results.push(
+    await runFlow("prompts-list", "List all 3 MCP prompts", async () => {
+      const names = (await client.listPrompts()).sort();
+      const expected = [...EXPECTED_MCP_PROMPTS].sort();
+      assert(names.length === expected.length, `Expected ${expected.length} prompts, got ${names.length}`);
+      for (let i = 0; i < expected.length; i++) {
+        assert(names[i] === expected[i], `Prompt mismatch at ${i}: expected ${expected[i]}, got ${names[i]}`);
+      }
+    })
+  );
+
+  results.push(
+    await runFlow("prompt-get-dinner", "Get find_dinner_near_me prompt", async () => {
+      const result = await client.getPrompt("find_dinner_near_me", {
+        location: "Brooklyn Bridge",
+        cuisine: "thai",
+        dietary: "vegan",
+      });
+      assert(Array.isArray(result.messages) && result.messages.length > 0, "Expected messages");
+      const text = result.messages[0]?.content?.text ?? "";
+      assert(text.includes("search_restaurants"), "Prompt should reference search_restaurants");
+      assert(text.includes("get_menu"), "Prompt should reference get_menu");
+      assert(text.toLowerCase().includes("dietary"), "Prompt should mention dietary handling");
+    })
+  );
+
+  results.push(
+    await runFlow("prompt-get-validate", "Get validate_my_menu prompt", async () => {
+      const result = await client.getPrompt("validate_my_menu", { strict: "true" });
+      const text = result.messages[0]?.content?.text ?? "";
+      assert(text.includes("validate_menu_protocol"), "Prompt should reference validate_menu_protocol");
     })
   );
 

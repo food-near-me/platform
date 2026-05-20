@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { toolErrorResult } from "@/lib/mcp/tool-errors";
+import { promptDefinitions, handleGetPrompt } from "@/lib/mcp/prompts";
 
 /**
  * MCP (Model Context Protocol) Server for foodnear.me
@@ -195,8 +196,9 @@ const SERVER_INFO = {
   protocolVersion: MCP_VERSION,
   capabilities: {
     tools: { listChanged: false },
-    resources: { listChanged: false, subscribe: false }
-  }
+    resources: { listChanged: false, subscribe: false },
+    prompts: { listChanged: false },
+  },
 };
 
 // =============================================================================
@@ -924,6 +926,34 @@ async function handleRpcRequest(method: string, params?: unknown): Promise<unkno
           text: content
         }]
       };
+    }
+
+    case "prompts/list":
+      return { prompts: promptDefinitions };
+
+    case "prompts/get": {
+      if (!params || typeof params !== "object") {
+        throw makeRpcError(RPC_ERRORS.INVALID_PARAMS, "params required for prompts/get");
+      }
+
+      const { name, arguments: promptArgs } = params as {
+        name?: string;
+        arguments?: Record<string, string>;
+      };
+
+      if (!name || typeof name !== "string") {
+        throw makeRpcError(RPC_ERRORS.INVALID_PARAMS, "prompt name required");
+      }
+
+      try {
+        return handleGetPrompt(name, promptArgs);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (message.includes("not found")) {
+          throw makeRpcError(RPC_ERRORS.METHOD_NOT_FOUND, message);
+        }
+        throw makeRpcError(RPC_ERRORS.INVALID_PARAMS, message);
+      }
     }
 
     case "ping":

@@ -82,6 +82,24 @@ Validate a Menu Protocol v1.0 JSON payload before publish or integration.
 
 ---
 
+## MCP Prompts
+
+Call `prompts/get` with a prompt name, then execute the tool sequence in the returned message.
+
+### find_dinner_near_me
+**Args:** `location` (required), `cuisine` (optional), `dietary` (optional, comma-separated)  
+**Flow:** geocode if needed → `search_restaurants` → `get_menu` → summarize with explicit dietary flags
+
+### dietary_constrained_menu
+**Args:** `restaurant_id` (required), `restrictions` (required)  
+**Flow:** `get_menu` → filter using `dietary.*` booleans and `allergens[]` only
+
+### validate_my_menu
+**Args:** `strict` (optional, `true` for strict validation)  
+**Flow:** `validate_menu_protocol` → explain errors and ADO recommendations
+
+---
+
 ## Agent Usage Flow
 
 1. **Get coordinates.** If the user says "near me" or names a location without coordinates, ask for an address/ZIP and geocode it. The API requires lat/lng.

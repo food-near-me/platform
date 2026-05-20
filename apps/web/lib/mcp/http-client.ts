@@ -1,6 +1,7 @@
 import {
   parseMcpToolResult,
   type McpFlowClient,
+  type McpPromptResult,
   type McpToolCallResult,
 } from "./mcp-flow-runner";
 
@@ -47,6 +48,14 @@ export function createHttpMcpClient(baseUrl: string): McpFlowClient {
     listResources: async () => {
       const result = (await jsonRpc("resources/list")) as { resources: Array<{ uri: string }> };
       return result.resources.map((r) => r.uri);
+    },
+    listPrompts: async () => {
+      const result = (await jsonRpc("prompts/list")) as { prompts: Array<{ name: string }> };
+      return result.prompts.map((p) => p.name);
+    },
+    getPrompt: async (name, args) => {
+      const result = (await jsonRpc("prompts/get", { name, arguments: args })) as McpPromptResult;
+      return result;
     },
     callTool: async (name, args): Promise<McpToolCallResult> => {
       const result = await jsonRpc("tools/call", { name, arguments: args });

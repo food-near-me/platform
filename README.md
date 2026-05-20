@@ -4,7 +4,7 @@
 
 [![MCP Registry](https://img.shields.io/badge/MCP-me.foodnear%2Ffoodnear--me-blue)](https://registry.modelcontextprotocol.io/v0.1/servers?search=me.foodnear/foodnear-me)
 
-**Production endpoint:** `https://foodnear.me/mcp` · **5 tools** · **4 resources** · **No API key** (beta)
+**Production endpoint:** `https://foodnear.me/mcp` · **5 tools** · **4 resources** · **3 prompts** · **No API key** (beta)
 
 ---
 
@@ -58,9 +58,13 @@ Your agent should call `search_restaurants` → `get_menu` (or `get_restaurant` 
 | `foodnearme://agent/skill` | Agent skill summary |
 | `foodnearme://examples/search-flow` | Example search → menu flow |
 
-### Prompts
+### Prompts (3)
 
-None yet — use `foodnearme://examples/search-flow` and [`SKILL.md`](https://foodnear.me/SKILL.md) for guided flows.
+| Prompt | Args | Guides agent to |
+|--------|------|-----------------|
+| `find_dinner_near_me` | `location` (required), `cuisine?`, `dietary?` | `search_restaurants` → `get_menu` |
+| `dietary_constrained_menu` | `restaurant_id`, `restrictions` | `get_menu` with explicit MP flags/allergens |
+| `validate_my_menu` | `strict?` (`true` for strict mode) | `validate_menu_protocol` |
 
 ---
 
@@ -117,7 +121,7 @@ Human-readable text is still in `content[0].text` for hosts that ignore `_meta`.
 From repo root (with `apps/web` dev server running for localhost):
 
 ```bash
-# Automated agent flows (10 flows when Supabase + seed configured)
+# Automated agent flows (13 flows when Supabase + seed configured; 10 without DB)
 npm run test:mcp-flows
 
 # Against production

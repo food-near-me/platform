@@ -11,6 +11,7 @@
 import {
   EXPECTED_MCP_TOOLS,
   EXPECTED_MCP_RESOURCES,
+  EXPECTED_MCP_PROMPTS,
 } from "../lib/mcp/mcp-flow-runner";
 
 type JsonRpcResponse = {
@@ -92,6 +93,13 @@ async function main() {
     const uris = resourcesResult.resources.map((r) => r.uri);
     assertSortedEqual(uris, EXPECTED_MCP_RESOURCES, "resources/list");
     console.log(`OK  resources/list  ${uris.length} resources`);
+
+    const promptsResult = (await jsonRpc(base, "prompts/list")) as {
+      prompts: Array<{ name: string }>;
+    };
+    const promptNames = promptsResult.prompts.map((p) => p.name);
+    assertSortedEqual(promptNames, EXPECTED_MCP_PROMPTS, "prompts/list");
+    console.log(`OK  prompts/list  ${promptNames.length} prompts`);
 
     console.log("");
     console.log("All MCP smoke probes passed.");

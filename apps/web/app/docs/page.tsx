@@ -27,7 +27,8 @@ export default function DocsPage() {
         <p className="text-lg text-zinc-400 mb-8">
           Plug foodnear.me into Claude Desktop, Cursor, or any MCP host —{" "}
           <strong className="text-zinc-200">5 tools</strong>,{" "}
-          <strong className="text-zinc-200">4 resources</strong>, no API key during beta.
+          <strong className="text-zinc-200">4 resources</strong>,{" "}
+          <strong className="text-zinc-200">3 prompts</strong>, no API key during beta.
         </p>
 
         <section id="quick-start" className="scroll-mt-8 mb-10 rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
@@ -85,6 +86,21 @@ export default function DocsPage() {
             <li>foodnearme://spec/openapi</li>
             <li>foodnearme://agent/skill</li>
             <li>foodnearme://examples/search-flow</li>
+          </ul>
+        </section>
+
+        <section className="mb-10">
+          <h2 className="text-xl font-medium mb-3">Prompts</h2>
+          <ul className="space-y-2 text-sm text-zinc-400">
+            <li>
+              <code className="text-amber-200/90">find_dinner_near_me</code> — location + optional cuisine/dietary
+            </li>
+            <li>
+              <code className="text-amber-200/90">dietary_constrained_menu</code> — restaurant_id + restrictions
+            </li>
+            <li>
+              <code className="text-amber-200/90">validate_my_menu</code> — validate Menu Protocol JSON before publish
+            </li>
           </ul>
         </section>
 
