@@ -38,7 +38,25 @@
       "name": "get_ado_score_breakdown",
       "description": "Get ADO score breakdown with weighted factors and improvement recommendations",
       "required_params": ["restaurant_id"]
+    },
+    {
+      "name": "validate_menu_protocol",
+      "description": "Validate a Menu Protocol v1.0 JSON payload; returns errors and ADO improvement hints",
+      "required_params": ["payload"]
     }
+  ],
+  "resource_uris": [
+    "foodnearme://spec/menu-protocol",
+    "foodnearme://spec/openapi",
+    "foodnearme://agent/skill",
+    "foodnearme://examples/search-flow"
+  ],
+  "tool_names": [
+    "search_restaurants",
+    "get_restaurant",
+    "get_menu",
+    "get_ado_score_breakdown",
+    "validate_menu_protocol"
   ],
   "resources": [
     {
@@ -88,7 +106,8 @@
     "authenticated": "1000 requests/minute"
   },
   "links": {
-    "documentation": "https://foodnear.me/docs",
+    "documentation": "https://foodnear.me/docs#quick-start",
+    "github_readme": "https://github.com/food-near-me/platform#quick-start",
     "openapi": "https://foodnear.me/openapi.json",
     "skill_file": "https://foodnear.me/SKILL.md",
     "github": "https://github.com/foodnearme/menu-protocol"

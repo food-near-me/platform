@@ -47,7 +47,7 @@ Do NOT crawl `/api/*` endpoints. Use structured integration instead.
 
 ## MCP Tools
 
-The MCP server exposes four tools:
+The MCP server exposes five tools:
 
 ### search_restaurants
 Search for verified restaurants near a location.
@@ -73,6 +73,12 @@ Returns: categories, items with dietary flags, allergens, customization options,
 Get ADO score breakdown with weighted factors and improvement recommendations.
 
 **Required:** `restaurant_id` (UUID)
+
+### validate_menu_protocol
+Validate a Menu Protocol v1.0 JSON payload before publish or integration.
+
+**Required:** `payload` (object)  
+**Optional:** `strict` (boolean) — also check optional fields and Schema.org best practices
 
 ---
 

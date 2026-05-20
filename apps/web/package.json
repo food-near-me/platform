@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test:mcp-flows": "tsx scripts/mcp-flow-test.ts",
     "test:mcp-flows:http": "tsx scripts/mcp-flow-test.ts --url=${MCP_URL:-https://foodnear.me}",
+    "smoke:mcp": "tsx scripts/mcp-smoke-probes.ts",
     "test:x402-flows": "tsx scripts/x402-flow-test.ts",
     "db:seed": "tsx scripts/seed-beta-data.ts",
     "preflight": "./scripts/deploy-preflight.sh"

@@ -71,7 +71,7 @@
   "links": {
     "openapi": "https://foodnear.me/openapi.json",
     "skill_file": "https://foodnear.me/SKILL.md",
-    "documentation": "https://foodnear.me/docs",
+    "documentation": "https://foodnear.me/docs#quick-start",
     "github": "https://github.com/foodnearme/menu-protocol"
   },
 

@@ -31,7 +31,8 @@
     "search_restaurants",
     "get_restaurant",
     "get_menu",
-    "get_ado_score_breakdown"
+    "get_ado_score_breakdown",
+    "validate_menu_protocol"
   ],
   "capabilities": [
     "restaurant_search",

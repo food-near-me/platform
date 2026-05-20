@@ -3,7 +3,7 @@
 > **Purpose:** Scripted multi-turn workflows that prove foodnear.me is usable by real agents — not just documented. Use for registry submissions, QA, demos, and `SKILL.md` expansion.
 >
 > **Last updated:** 2026-05-19  
-> **Related:** [`SKILL.md`](https://foodnear.me/SKILL.md) · [`openapi.json`](https://foodnear.me/openapi.json) · [08-application-food-near-me.md](../../../../Claude%20Learnings/remix/08-application-food-near-me.md)
+> **Related:** [Host README (canonical)](https://github.com/food-near-me/platform#quick-start) · [`SKILL.md`](https://foodnear.me/SKILL.md) · [`openapi.json`](https://foodnear.me/openapi.json) · [08-application-food-near-me.md](../../../../Claude%20Learnings/remix/08-application-food-near-me.md)
 
 ---
 

@@ -1,0 +1,35 @@
+name: MCP Production Smoke
+
+# Post-deploy contract check: discovery parity + tools/list + resources/list.
+# Does not gate PR merges — catches production regressions after deploy.
+
+on:
+  schedule:
+    - cron: "0 14 * * *"
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Base URL to probe (no trailing slash)
+        required: false
+        default: https://foodnear.me
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --include=optional
+
+      - name: MCP smoke probes
+        env:
+          BASE_URL: ${{ github.event.inputs.base_url || 'https://foodnear.me' }}
+        run: npm run smoke:mcp

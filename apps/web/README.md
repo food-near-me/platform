@@ -1,60 +1,26 @@
-# FoodNearMe Web App
+# apps/web — foodnear.me
 
-Next.js App Router frontend and API routes for `foodnear.me`.
+Next.js app: landing, API routes, and the **MCP server** at `/mcp`.
 
-## Core Routes
+## MCP host onboarding
 
-- `/` marketing landing page
-- `/tokenization` tokenization explainer page
-- `POST /api/leads` lead capture endpoint (Supabase insert + optional Resend email)
-- `GET /api/health/leads` integration health check
+**Start here (Venice-style canonical doc):** [../../README.md#quick-start](../../README.md#quick-start)
 
-## Anti-Spam Controls
+- **Production MCP:** `https://foodnear.me/mcp`
+- **Public quick reference:** https://foodnear.me/docs#quick-start
+- **Implementation:** [`app/mcp/route.ts`](app/mcp/route.ts) · [`lib/mcp/`](lib/mcp/)
 
-Lead endpoint includes:
-- honeypot field (`companyWebsite`)
-- IP burst protection
-- IP rolling-window rate limit
-- email rolling-window rate limit
-- origin/referrer allowlist check
-- lightweight scripted-client user-agent filter (silently ignored)
-- randomized response delay (250-450ms) for silently ignored spam-like requests
-- randomized response delay (250-450ms) for 429 rate-limit responses
-
-## Setup
-
-1. Copy root `.env.example` values into your local `.env`.
-2. Apply DB migration:
-   - `database/migrations/20260505_create_audit_leads.sql`
-3. Start dev server from repo root:
+## Local development
 
 ```bash
-npm run dev
+cp .env.example .env.local   # Supabase
+npm run dev                    # :3000
+npm run test:mcp-flows         # MCP flows against localhost
+npm run smoke:mcp              # list/count probes
+./scripts/deploy-preflight.sh  # post-deploy discovery checks
 ```
 
-## Validate Lead Integration
+## Other docs
 
-Call health endpoint:
-
-```bash
-curl -s http://localhost:3000/api/health/leads
-```
-
-If correctly configured, returns:
-
-```json
-{ "ok": true, "message": "Lead capture integration is healthy", "resendConfigured": true }
-```
-
-## Required Environment Variables (Lead Capture)
-
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
-
-## Optional (Email Notifications)
-
-- `RESEND_API_KEY`
-- `LEADS_NOTIFICATION_TO`
-- `LEADS_FROM_EMAIL`
-- `LEADS_ALLOWED_ORIGINS` (comma-separated; optional but recommended)
-
+- [`docs/example-agent-flows.md`](docs/example-agent-flows.md) — scripted agent QA flows
+- [`docs/registry-submission-guide.md`](docs/registry-submission-guide.md) — MCP registry submissions

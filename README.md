@@ -1,51 +1,212 @@
-# FoodNearMe
+# Food Near Me — MCP Server
 
-AI-native local food discovery and ordering infrastructure.
+> **Model Context Protocol server for AI-native restaurant discovery** — search verified restaurants, retrieve Menu Protocol menus, and validate structured menu data. Plug into Claude Desktop, Cursor, ChatGPT, or any MCP host in about 30 seconds.
 
-## Repository Layout
+[![MCP Registry](https://img.shields.io/badge/MCP-me.foodnear%2Ffoodnear--me-blue)](https://registry.modelcontextprotocol.io/v0.1/servers?search=me.foodnear/foodnear-me)
 
-- `apps/web` - Next.js app (landing, dashboard, API routes, public agent files)
-- `apps/admin` - optional separate internal admin panel
-- `services/api` - optional standalone backend service
-- `services/worker` - background jobs (ADO scoring, sync tasks, webhooks)
-- `services/ingestion` - menu import/extraction pipeline (PDF/image -> MP)
-- `packages/menu-protocol` - shared Menu Protocol schema, validators, and types
-- `packages/x402-middleware` - shared x402 payment middleware
-- `packages/shared` - shared utilities and domain types
-- `database/migrations` - SQL migrations
-- `database/seeds` - local/dev seed data
-- `database/views` - analytics/KPI SQL views
-- `database/schema.sql` - canonical schema snapshot
-- `infra` - deployment and infra configs (Vercel, Supabase, Meilisearch, monitoring)
-- `scripts` - one-off and repeatable maintenance scripts
-- `tests/e2e` - end-to-end tests
-- `tests/integration` - integration tests
-- `tests/contracts` - smart contract/payment flow tests
-- `docs/strategy` - business strategy docs
-- `docs/product` - product/technical planning docs
-- `docs/ops` - operating docs, checklists, and metrics
+**Production endpoint:** `https://foodnear.me/mcp` · **5 tools** · **4 resources** · **No API key** (beta)
 
-## First Setup Steps
+---
 
-1. Initialize git and package manager workspace.
-2. Scaffold `apps/web` with Next.js App Router.
-3. Connect Supabase and apply migrations in `database/migrations`.
-4. Implement x402 middleware in `packages/x402-middleware`.
-5. Publish `apps/web/SKILL.md` and `apps/web/.well-known/agent.json`.
+## Quick start {#quick-start}
 
-## Notes
+### 1. Add this to your MCP host config
 
-- This structure is optimized for scaling from single-app MVP to multi-service architecture.
-- Keep business docs in `docs/*` and implementation code in `apps/services/packages`.
+**Cursor** — `~/.cursor/mcp.json` (macOS/Linux) or `%USERPROFILE%\.cursor\mcp.json` (Windows)
 
-## Lead Capture Integration
+**Claude Desktop** — `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS), `%APPDATA%\Claude\claude_desktop_config.json` (Windows)
 
-Food landing page lead form is wired to:
-- Supabase table: `public.audit_leads`
-- Optional notification emails via Resend
+```json
+{
+  "mcpServers": {
+    "foodnear-me": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://foodnear.me/mcp"]
+    }
+  }
+}
+```
 
-Migration:
-- `database/migrations/20260505_create_audit_leads.sql`
+### 2. Restart your MCP host
 
-Health check endpoint:
-- `GET /api/health/leads`
+### 3. Try a prompt
+
+> “Find vegan Thai restaurants near Brooklyn Bridge and show me a menu for the top result.”
+
+Your agent should call `search_restaurants` → `get_menu` (or `get_restaurant` first).
+
+---
+
+## What you get
+
+### Tools (5)
+
+| Tool | Description |
+|------|-------------|
+| `search_restaurants` | Search verified restaurants by `lat`/`lng`, cuisine query, dietary filters, ADO score |
+| `get_restaurant` | Restaurant profile with Schema.org JSON-LD + Menu Protocol extensions |
+| `get_menu` | Full Menu Protocol v1.0 menu (dietary flags, allergens, signatures) |
+| `get_ado_score_breakdown` | ADO score factors and improvement recommendations |
+| `validate_menu_protocol` | Validate a Menu Protocol JSON payload before publish |
+
+### Resources (4)
+
+| URI | Content |
+|-----|---------|
+| `foodnearme://spec/menu-protocol` | Menu Protocol v1.0 specification |
+| `foodnearme://spec/openapi` | OpenAPI 3.1 spec pointer |
+| `foodnearme://agent/skill` | Agent skill summary |
+| `foodnearme://examples/search-flow` | Example search → menu flow |
+
+### Prompts
+
+None yet — use `foodnearme://examples/search-flow` and [`SKILL.md`](https://foodnear.me/SKILL.md) for guided flows.
+
+---
+
+## Configuration
+
+| Setting | Value |
+|---------|--------|
+| **MCP URL** | `https://foodnear.me/mcp` |
+| **Transport** | HTTP JSON-RPC (`POST`); discovery via `GET /mcp` |
+| **Auth** | None during beta (rate limits apply) |
+| **Registry** | `me.foodnear/foodnear-me` ([official MCP Registry](https://registry.modelcontextprotocol.io/v0.1/servers?search=me.foodnear/foodnear-me)) |
+
+**Preview / local:** Replace the URL with `http://localhost:3000/mcp` when running `npm run dev` in `apps/web`.
+
+---
+
+## Architecture
+
+```
+┌─────────────────────┐     POST /mcp (JSON-RPC)     ┌─────────────────────────┐
+│  MCP host           │ ────────────────────────────▶│  apps/web/app/mcp       │
+│  (Cursor / Claude)  │     GET /mcp (discovery)     │  Next.js route handler  │
+└─────────────────────┘                              └────────────┬────────────┘
+                                                                │
+                                                                ▼
+                                                   ┌─────────────────────────┐
+                                                   │  Supabase + PostGIS     │
+                                                   │  Menu Protocol (MP)     │
+                                                   └─────────────────────────┘
+```
+
+Implementation: [`apps/web/app/mcp/route.ts`](apps/web/app/mcp/route.ts) · Flow runner: [`apps/web/lib/mcp/mcp-flow-runner.ts`](apps/web/lib/mcp/mcp-flow-runner.ts)
+
+---
+
+## Tool error contract
+
+Failed `tools/call` responses include structured metadata in `_meta.error`:
+
+| Field | Meaning |
+|-------|---------|
+| `code` | `VALIDATION_ERROR` · `NOT_FOUND` · `UPSTREAM` · `RATE_LIMITED` · `UNKNOWN` |
+| `message` | What went wrong |
+| `hint` | How to fix the request |
+| `retryable` | Whether the agent should retry |
+| `docs` | https://foodnear.me/docs#quick-start |
+
+Human-readable text is still in `content[0].text` for hosts that ignore `_meta`.
+
+---
+
+## Verify
+
+From repo root (with `apps/web` dev server running for localhost):
+
+```bash
+# Automated agent flows (10 flows when Supabase + seed configured)
+npm run test:mcp-flows
+
+# Against production
+npm run test:mcp-flows:http
+
+# Discovery GETs + MCP tools/list count
+npm run smoke:mcp
+
+# Full deploy gate (13 checks)
+npm run preflight -w web
+# or: ./apps/web/scripts/deploy-preflight.sh https://foodnear.me
+```
+
+**Production monitoring:** GitHub Actions workflow `MCP Production Smoke` runs `smoke:mcp` daily and on manual dispatch (`.github/workflows/mcp-smoke.yml`).
+
+---
+
+## Agent discovery
+
+| File | URL |
+|------|-----|
+| `llms.txt` | https://foodnear.me/llms.txt |
+| `llms-full.txt` | https://foodnear.me/llms-full.txt |
+| MCP manifest | https://foodnear.me/.well-known/mcp-server.json |
+| AgentRoot | https://foodnear.me/.well-known/agentroot.json |
+| Skill file | https://foodnear.me/SKILL.md |
+| OpenAPI | https://foodnear.me/openapi.json |
+| Web quick reference | https://foodnear.me/docs |
+
+Scripted flows: [`apps/web/docs/example-agent-flows.md`](apps/web/docs/example-agent-flows.md)
+
+---
+
+## Data trust model
+
+- Only **`verification_status: verified`** restaurants appear in `search_restaurants`.
+- Menus include owner-approved Menu Protocol data with explicit dietary booleans and allergen arrays — agents must not guess from item names alone.
+- Read `dietary.*` flags and `allergens[]`; do not infer from dish titles.
+
+---
+
+## FAQ
+
+**Do I need an API key?**  
+No for beta MCP access. Future paid tiers may use API keys or x402 (USDC on Base). See `x402-prepaid-spec.md` in your local `docs/Food Near Me` playbook.
+
+**Tools not showing after restart?**  
+Confirm the config URL ends with `/mcp`. Restart the host completely. Run `npm run smoke:mcp` against your target base URL.
+
+**Empty search results?**  
+Beta data is seeded for specific metros (e.g. Williamsburg, NYC). Use coordinates near `40.7128, -74.006` for demos, or run `npm run db:seed -w web` locally.
+
+**Cursor vs Claude config path?**  
+See Quick start above — each host uses a different JSON file; only the `mcpServers` block matters.
+
+**How is this different from DoorDash / Uber Eats APIs?**  
+We expose **owner-verified Menu Protocol** data for agents — not scraped aggregator menus or ordering checkout.
+
+---
+
+## Monorepo layout
+
+This repository ships the MCP server inside the `foodnear.me` web app:
+
+| Path | Purpose |
+|------|---------|
+| [`apps/web`](apps/web) | Next.js app — **MCP at `/mcp`**, landing, API routes |
+| [`packages/menu-protocol`](packages/menu-protocol) | Menu Protocol schema + validators |
+| [`database`](database) | Migrations, seeds, schema |
+| [`server.json`](server.json) | Official MCP Registry metadata |
+
+Business strategy and runbooks live in a **separate local docs folder** (not in this repo) — see your team's `docs/Food Near Me` playbook.
+
+---
+
+## Development
+
+```bash
+npm install
+cd apps/web && cp .env.example .env.local   # Supabase keys
+npm run dev                                 # http://localhost:3000
+npm run test:mcp-flows                      # POST localhost:3000/mcp
+```
+
+---
+
+## Links
+
+- **Website:** https://foodnear.me  
+- **GitHub:** https://github.com/food-near-me/platform  
+- **Menu Protocol spec:** https://github.com/foodnearme/menu-protocol  
+- **Support:** https://foodnear.me/support · api@foodnear.me

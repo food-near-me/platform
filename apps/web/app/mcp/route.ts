@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { toolErrorResult } from "@/lib/mcp/tool-errors";
 
 /**
  * MCP (Model Context Protocol) Server for foodnear.me
@@ -209,13 +210,22 @@ function isValidUUID(str: string): boolean {
 
 function validateLatLng(lat: unknown, lng: unknown): { lat: number; lng: number } {
   if (typeof lat !== "number" || typeof lng !== "number") {
-    throw new ValidationError("lat and lng must be numbers");
+    throw new ValidationError(
+      "lat and lng must be numbers",
+      "Pass decimal degrees, e.g. lat: 40.7128, lng: -74.006."
+    );
   }
   if (lat < -90 || lat > 90) {
-    throw new ValidationError("lat must be between -90 and 90");
+    throw new ValidationError(
+      "lat must be between -90 and 90",
+      `Received lat=${lat}. Use a valid latitude.`
+    );
   }
   if (lng < -180 || lng > 180) {
-    throw new ValidationError("lng must be between -180 and 180");
+    throw new ValidationError(
+      "lng must be between -180 and 180",
+      `Received lng=${lng}. Use a valid longitude.`
+    );
   }
   return { lat, lng };
 }
@@ -223,11 +233,14 @@ function validateLatLng(lat: unknown, lng: unknown): { lat: number; lng: number 
 function validateDietaryFilters(dietary: unknown): string[] {
   if (!dietary) return [];
   if (!Array.isArray(dietary)) {
-    throw new ValidationError("dietary must be an array");
+    throw new ValidationError("dietary must be an array", 'Pass dietary as a string array, e.g. ["vegan"].');
   }
   const invalid = dietary.filter(d => !VALID_DIETARY_FILTERS.includes(d as typeof VALID_DIETARY_FILTERS[number]));
   if (invalid.length > 0) {
-    throw new ValidationError(`Invalid dietary filters: ${invalid.join(", ")}. Valid options: ${VALID_DIETARY_FILTERS.join(", ")}`);
+    throw new ValidationError(
+      `Invalid dietary filters: ${invalid.join(", ")}`,
+      `Valid options: ${VALID_DIETARY_FILTERS.join(", ")}`
+    );
   }
   return dietary as string[];
 }
@@ -237,16 +250,22 @@ function validateDietaryFilters(dietary: unknown): string[] {
 // =============================================================================
 
 class ValidationError extends Error {
-  constructor(message: string) {
+  readonly hint?: string;
+
+  constructor(message: string, hint?: string) {
     super(message);
     this.name = "ValidationError";
+    this.hint = hint;
   }
 }
 
 class ResourceNotFoundError extends Error {
-  constructor(message: string) {
+  readonly hint?: string;
+
+  constructor(message: string, hint?: string) {
     super(message);
     this.name = "ResourceNotFoundError";
+    this.hint = hint;
   }
 }
 
@@ -319,7 +338,10 @@ async function searchRestaurants(args: Record<string, unknown>) {
 async function getRestaurant(args: Record<string, unknown>) {
   const restaurantId = args.restaurant_id;
   if (typeof restaurantId !== "string" || !isValidUUID(restaurantId)) {
-    throw new ValidationError("restaurant_id must be a valid UUID");
+    throw new ValidationError(
+      "restaurant_id must be a valid UUID",
+      "Use an id from search_restaurants results."
+    );
   }
 
   const supabase = createClient();
@@ -332,7 +354,10 @@ async function getRestaurant(args: Record<string, unknown>) {
     .single();
 
   if (error?.code === "PGRST116" || !data) {
-    throw new ResourceNotFoundError(`Restaurant ${restaurantId} not found or not verified`);
+    throw new ResourceNotFoundError(
+      `Restaurant ${restaurantId} not found or not verified`,
+      "Call search_restaurants first, then use an id from results."
+    );
   }
   if (error) {
     throw new Error(`Database error: ${error.message}`);
@@ -364,7 +389,10 @@ async function getRestaurant(args: Record<string, unknown>) {
 async function getMenu(args: Record<string, unknown>) {
   const restaurantId = args.restaurant_id;
   if (typeof restaurantId !== "string" || !isValidUUID(restaurantId)) {
-    throw new ValidationError("restaurant_id must be a valid UUID");
+    throw new ValidationError(
+      "restaurant_id must be a valid UUID",
+      "Use an id from search_restaurants results."
+    );
   }
 
   const supabase = createClient();
@@ -378,7 +406,10 @@ async function getMenu(args: Record<string, unknown>) {
     .single();
 
   if (rErr?.code === "PGRST116" || !restaurant) {
-    throw new ResourceNotFoundError(`Restaurant ${restaurantId} not found or not verified`);
+    throw new ResourceNotFoundError(
+      `Restaurant ${restaurantId} not found or not verified`,
+      "Call search_restaurants first, then use an id from results."
+    );
   }
 
   // Fetch menu
@@ -390,7 +421,10 @@ async function getMenu(args: Record<string, unknown>) {
     .single();
 
   if (mErr?.code === "PGRST116" || !menu) {
-    throw new ResourceNotFoundError(`No published menu found for restaurant ${restaurantId}`);
+    throw new ResourceNotFoundError(
+      `No published menu found for restaurant ${restaurantId}`,
+      "This restaurant may not have a published Menu Protocol menu yet."
+    );
   }
 
   // Fetch categories
@@ -480,7 +514,10 @@ async function getMenu(args: Record<string, unknown>) {
 async function getAdoScoreBreakdown(args: Record<string, unknown>) {
   const restaurantId = args.restaurant_id;
   if (typeof restaurantId !== "string" || !isValidUUID(restaurantId)) {
-    throw new ValidationError("restaurant_id must be a valid UUID");
+    throw new ValidationError(
+      "restaurant_id must be a valid UUID",
+      "Use an id from search_restaurants results."
+    );
   }
 
   const supabase = createClient();
@@ -492,7 +529,10 @@ async function getAdoScoreBreakdown(args: Record<string, unknown>) {
     .single();
 
   if (error?.code === "PGRST116" || !restaurant) {
-    throw new ResourceNotFoundError(`Restaurant ${restaurantId} not found`);
+    throw new ResourceNotFoundError(
+      `Restaurant ${restaurantId} not found`,
+      "Call search_restaurants first, then use an id from results."
+    );
   }
 
   // In production, calculate these from actual data
@@ -561,7 +601,10 @@ function validateMenuProtocol(args: Record<string, unknown>) {
   const strict = args.strict === true;
   
   if (!payload || typeof payload !== "object") {
-    throw new ValidationError("payload must be a JSON object");
+    throw new ValidationError(
+      "payload must be a JSON object",
+      "Pass a Menu Protocol v1.0 object with version, restaurant, and menu fields."
+    );
   }
 
   const errors: string[] = [];
@@ -828,18 +871,28 @@ async function handleRpcRequest(method: string, params?: unknown): Promise<unkno
         };
       } catch (err) {
         if (err instanceof ValidationError) {
-          return {
-            content: [{ type: "text", text: `Validation error: ${err.message}` }],
-            isError: true
-          };
+          return toolErrorResult({
+            code: "VALIDATION_ERROR",
+            message: err.message,
+            hint: err.hint,
+            retryable: false,
+          });
         }
         if (err instanceof ResourceNotFoundError) {
-          return {
-            content: [{ type: "text", text: `Not found: ${err.message}` }],
-            isError: true
-          };
+          return toolErrorResult({
+            code: "NOT_FOUND",
+            message: err.message,
+            hint: err.hint ?? "Use search_restaurants to find a valid restaurant_id.",
+            retryable: false,
+          });
         }
-        throw err;
+        console.error(`MCP tool ${name} error:`, err);
+        return toolErrorResult({
+          code: "UPSTREAM",
+          message: err instanceof Error ? err.message : "An unexpected error occurred",
+          hint: "Retry the request. If the problem persists, check service status.",
+          retryable: true,
+        });
       }
     }
 

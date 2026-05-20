@@ -24,12 +24,33 @@ Our MCP (Model Context Protocol) endpoint enables Claude, ChatGPT, and other LLM
 - **AgentRoot**: https://foodnear.me/.well-known/agentroot.json
 - **GPT Plugin**: https://foodnear.me/.well-known/ai-plugin.json
 
-## MCP Tools Available
+Connect with Claude Desktop, Cursor, or any MCP client:
+
+```json
+{
+  "mcpServers": {
+    "foodnear-me": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://foodnear.me/mcp"]
+    }
+  }
+}
+```
+
+## MCP Tools Available (5)
 
 1. `search_restaurants` - Search by lat/lng, cuisine, dietary filters, ADO score
 2. `get_restaurant` - Get detailed restaurant profile with Schema.org markup
 3. `get_menu` - Get full Menu Protocol v1.0 formatted menu
 4. `get_ado_score_breakdown` - Get scoring breakdown with improvement recommendations
+5. `validate_menu_protocol` - Validate Menu Protocol JSON; schema errors and ADO hints
+
+## MCP Resources (4)
+
+- `foodnearme://spec/menu-protocol` - Menu Protocol v1.0 spec
+- `foodnearme://spec/openapi` - OpenAPI 3.1 pointer
+- `foodnearme://agent/skill` - Agent skill summary
+- `foodnearme://examples/search-flow` - Example search → menu flow
 
 ## Key URLs
 
@@ -37,7 +58,8 @@ Our MCP (Model Context Protocol) endpoint enables Claude, ChatGPT, and other LLM
 - OpenAPI Spec: https://foodnear.me/openapi.json
 - MCP Endpoint: https://foodnear.me/mcp
 - Agent Skill File: https://foodnear.me/SKILL.md
-- Documentation: https://foodnear.me/docs
+- Host docs (web): https://foodnear.me/docs#quick-start
+- Host docs (canonical): https://github.com/food-near-me/platform#quick-start
 - Menu Protocol Spec: https://github.com/foodnearme/menu-protocol
 
 ## Example API Usage

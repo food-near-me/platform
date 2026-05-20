@@ -3,6 +3,8 @@
  * Mirrors apps/web/docs/example-agent-flows.md
  */
 
+import type { McpToolErrorMeta } from "./tool-errors";
+
 export const EXPECTED_MCP_TOOLS = [
   "search_restaurants",
   "get_restaurant",
@@ -38,6 +40,7 @@ export type McpToolCallResult = {
   data?: unknown;
   isError?: boolean;
   rawText?: string;
+  error?: McpToolErrorMeta;
 };
 
 export type McpFlowClient = {
@@ -94,7 +97,7 @@ export async function runMcpFlows(
   const results: FlowResult[] = [];
 
   results.push(
-    await runFlow("tools-list", "List all 4 MCP tools", async () => {
+    await runFlow("tools-list", "List all 5 MCP tools", async () => {
       const names = (await client.listTools()).sort();
       const expected = [...EXPECTED_MCP_TOOLS].sort();
       assert(names.length === expected.length, `Expected ${expected.length} tools, got ${names.length}: ${names.join(", ")}`);
@@ -126,6 +129,8 @@ export async function runMcpFlows(
         (result.rawText ?? "").toLowerCase().includes("lat"),
         "Validation message should mention lat"
       );
+      assert(result.error?.code === "VALIDATION_ERROR", "Expected VALIDATION_ERROR code in _meta");
+      assert(result.error?.retryable === false, "Validation errors should not be retryable");
     })
   );
 
@@ -316,6 +321,7 @@ export function parseMcpToolResult(result: unknown): McpToolCallResult {
   const payload = result as {
     content?: Array<{ type: string; text?: string }>;
     isError?: boolean;
+    _meta?: { error?: McpToolErrorMeta };
   };
 
   const text = payload.content?.find((c) => c.type === "text")?.text;
@@ -324,7 +330,11 @@ export function parseMcpToolResult(result: unknown): McpToolCallResult {
   }
 
   if (payload.isError) {
-    return { isError: true, rawText: text };
+    return {
+      isError: true,
+      rawText: text,
+      error: payload._meta?.error,
+    };
   }
 
   try {
