@@ -2,7 +2,7 @@
 
 Populate `verification_status = discovered` restaurants from public data.
 
-**Regions config:** `scripts/data/import-regions.json` (27 metros + NYC boroughs)
+**Regions config:** `scripts/data/import-regions.json` (42 metros + NYC boroughs; tiers 1–3)
 
 ## Prerequisites
 
@@ -35,6 +35,8 @@ npm run db:import:discovered:batch -- --preset=nyc-boroughs --dry-run
 npm run db:import:discovered:batch -- --preset=tier1-osm --pending-only
 npm run db:import:discovered:batch -- --preset=tier2-osm --pending-only --dry-run
 npm run db:import:discovered:tier2
+npm run db:import:discovered:batch -- --preset=tier3-osm --pending-only --dry-run
+npm run db:import:discovered:tier3
 
 # Default: Williamsburg
 npm run db:import:discovered
@@ -73,6 +75,8 @@ Non-NYC metros import **OSM only** until municipal feeds are added per region.
 - Never overwrites `verified` or `menu_indexed` rows
 - Idempotent on `(source, source_record_id)`
 - **M3 dedup:** source-id map in memory; spatial match via PostGIS `find_nearby_for_import` (80 m + name similarity)
+- **M5 extended OSM pass** (default): second Overpass query for `restaurant=yes` and hotel restaurants; skip with `--no-osm-extended`
+- Overpass **retries with backoff** on 429/502/504
 - Cross-source **enrich:** NYC inspection grade on OSM rows; OSM website/phone on NYC rows
 - Progress every 100 rows; real imports logged to `import_runs`
 - NYC Open Data filtered by region **bbox** (not Brooklyn-only)

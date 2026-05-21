@@ -583,6 +583,202 @@
       "dataSources": [
         "osm"
       ]
+    },
+    "sacramento": {
+      "label": "Sacramento",
+      "tier": 3,
+      "status": "pending",
+      "bbox": {
+        "south": 38.44,
+        "west": -121.56,
+        "north": 38.65,
+        "east": -121.35
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "jacksonville": {
+      "label": "Jacksonville",
+      "tier": 3,
+      "status": "pending",
+      "bbox": {
+        "south": 30.2,
+        "west": -81.85,
+        "north": 30.45,
+        "east": -81.55
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "memphis": {
+      "label": "Memphis",
+      "tier": 3,
+      "status": "pending",
+      "bbox": {
+        "south": 35,
+        "west": -90.15,
+        "north": 35.25,
+        "east": -89.75
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "louisville": {
+      "label": "Louisville",
+      "tier": 3,
+      "status": "pending",
+      "bbox": {
+        "south": 38.15,
+        "west": -85.9,
+        "north": 38.35,
+        "east": -85.55
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "buffalo": {
+      "label": "Buffalo",
+      "tier": 3,
+      "status": "pending",
+      "bbox": {
+        "south": 42.85,
+        "west": -78.95,
+        "north": 43,
+        "east": -78.75
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "cincinnati": {
+      "label": "Cincinnati",
+      "tier": 3,
+      "status": "pending",
+      "bbox": {
+        "south": 39.05,
+        "west": -84.6,
+        "north": 39.2,
+        "east": -84.4
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "okc": {
+      "label": "Oklahoma City",
+      "tier": 3,
+      "status": "pending",
+      "bbox": {
+        "south": 35.4,
+        "west": -97.65,
+        "north": 35.6,
+        "east": -97.4
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "albuquerque": {
+      "label": "Albuquerque",
+      "tier": 3,
+      "status": "pending",
+      "bbox": {
+        "south": 35.05,
+        "west": -106.75,
+        "north": 35.2,
+        "east": -106.55
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "tucson": {
+      "label": "Tucson",
+      "tier": 3,
+      "status": "pending",
+      "bbox": {
+        "south": 32.15,
+        "west": -111.05,
+        "north": 32.3,
+        "east": -110.85
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "honolulu": {
+      "label": "Honolulu",
+      "tier": 3,
+      "status": "pending",
+      "bbox": {
+        "south": 21.28,
+        "west": -157.88,
+        "north": 21.38,
+        "east": -157.65
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "providence": {
+      "label": "Providence",
+      "tier": 3,
+      "status": "pending",
+      "bbox": {
+        "south": 41.78,
+        "west": -71.5,
+        "north": 41.87,
+        "east": -71.35
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "richmond": {
+      "label": "Richmond",
+      "tier": 3,
+      "status": "pending",
+      "bbox": {
+        "south": 37.5,
+        "west": -77.55,
+        "north": 37.6,
+        "east": -77.4
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "birmingham": {
+      "label": "Birmingham",
+      "tier": 3,
+      "status": "pending",
+      "bbox": {
+        "south": 33.45,
+        "west": -86.95,
+        "north": 33.65,
+        "east": -86.65
+      },
+      "dataSources": [
+        "osm"
+      ]
+    },
+    "tulsa": {
+      "label": "Tulsa",
+      "tier": 3,
+      "status": "pending",
+      "bbox": {
+        "south": 36.05,
+        "west": -96.05,
+        "north": 36.25,
+        "east": -95.85
+      },
+      "dataSources": [
+        "osm"
+      ]
     }
   }
 }

@@ -61,6 +61,11 @@ function getTier2OsmRegionKeys(): string[] {
   return getTierOsmRegionKeys(2);
 }
 
+/** Tier-3 metros (OSM only). */
+function getTier3OsmRegionKeys(): string[] {
+  return getTierOsmRegionKeys(3);
+}
+
 const args = process.argv.slice(2);
 
 if (args.includes("--help")) {
@@ -68,7 +73,7 @@ if (args.includes("--help")) {
 Batch discovered import
 
 Options:
-  --preset=<name>       ${Object.keys(PRESETS).join(" | ")} | tier1-osm | tier2-osm (from import-regions.json)
+  --preset=<name>       ${Object.keys(PRESETS).join(" | ")} | tier1-osm | tier2-osm | tier3-osm
   --regions=a,b,c       Comma-separated region keys
   --pending-only        Skip regions with status "imported"
   --dry-run             Pass --dry-run to each import
@@ -101,10 +106,13 @@ function resolveRegionList(): string[] {
     if (name === "tier2-osm") {
       return getTier2OsmRegionKeys();
     }
+    if (name === "tier3-osm") {
+      return getTier3OsmRegionKeys();
+    }
     const preset = PRESETS[name];
     if (!preset) {
       throw new Error(
-        `Unknown preset "${name}". Available: ${Object.keys(PRESETS).join(", ")}, tier1-osm, tier2-osm`,
+        `Unknown preset "${name}". Available: ${Object.keys(PRESETS).join(", ")}, tier1-osm, tier2-osm, tier3-osm`,
       );
     }
     return preset;

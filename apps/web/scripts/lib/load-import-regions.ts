@@ -93,6 +93,7 @@ Options:
   --batch-size=N    Insert batch size (default 200, max 500)
   --osm-only        Skip municipal open-data feeds
   --nyc-only        NYC inspections only (NYC regions only)
+  --no-osm-extended Skip M5 second OSM pass (restaurant=yes, hotel restaurants)
   --help            Show this message
 
 Examples:

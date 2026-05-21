@@ -55,6 +55,7 @@ const NYC_INSPECTIONS_URL =
 const dryRun = args.includes("--dry-run");
 const osmOnly = args.includes("--osm-only");
 const nycOnly = args.includes("--nyc-only");
+const noOsmExtended = args.includes("--no-osm-extended");
 const regionArg = args.find((a) => a.startsWith("--region="));
 const regionKey = regionArg?.split("=")[1];
 const region = resolveRegion(regionKey);
@@ -178,107 +179,148 @@ function inBbox(lat: number, lng: number): boolean {
   return lat >= bbox.south && lat <= bbox.north && lng >= bbox.west && lng <= bbox.east;
 }
 
-async function fetchOverpass(): Promise<DiscoveredRow[]> {
-  const query = `
+const OSM_AMENITY_REGEX =
+  "restaurant|cafe|fast_food|bar|pub|biergarten|food_court|ice_cream";
+
+type OverpassElement = {
+  type: string;
+  id: number;
+  lat?: number;
+  lon?: number;
+  center?: { lat: number; lon: number };
+  tags?: Record<string, string>;
+};
+
+const OVERPASS_ENDPOINTS = [
+  "https://overpass-api.de/api/interpreter",
+  "https://overpass.kumi.systems/api/interpreter",
+];
+
+function buildAmenityOverpassQuery(b: Bbox): string {
+  return `
 [out:json][timeout:120];
 (
-  node["amenity"~"restaurant|cafe|fast_food|bar|pub|biergarten|food_court|ice_cream"](${bbox.south},${bbox.west},${bbox.north},${bbox.east});
-  way["amenity"~"restaurant|cafe|fast_food|bar|pub|biergarten|food_court|ice_cream"](${bbox.south},${bbox.west},${bbox.north},${bbox.east});
+  node["amenity"~"${OSM_AMENITY_REGEX}"](${b.south},${b.west},${b.north},${b.east});
+  way["amenity"~"${OSM_AMENITY_REGEX}"](${b.south},${b.west},${b.north},${b.east});
 );
 out center tags;
 `;
+}
 
-  const endpoints = [
-    "https://overpass-api.de/api/interpreter",
-    "https://overpass.kumi.systems/api/interpreter",
-  ];
+/** M5: venues tagged restaurant=yes or hotel restaurants not caught by amenity=* */
+function buildExtendedOverpassQuery(b: Bbox): string {
+  return `
+[out:json][timeout:120];
+(
+  node["restaurant"="yes"](${b.south},${b.west},${b.north},${b.east});
+  way["restaurant"="yes"](${b.south},${b.west},${b.north},${b.east});
+  node["tourism"="hotel"]["restaurant"](${b.south},${b.west},${b.north},${b.east});
+  way["tourism"="hotel"]["restaurant"](${b.south},${b.west},${b.north},${b.east});
+);
+out center tags;
+`;
+}
 
-  let res: Response | null = null;
-  for (const endpoint of endpoints) {
-    const attempt = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Accept: "application/json",
-        "User-Agent": "FoodNearMe/1.0 (discovered-layer import)",
-      },
-      body: `data=${encodeURIComponent(query)}`,
-    });
-    if (attempt.ok) {
-      res = attempt;
-      break;
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function parseOsmElement(el: OverpassElement): DiscoveredRow | null {
+  const tags = el.tags ?? {};
+  const name = tags.name?.trim();
+  if (!name) return null;
+
+  const lat = el.lat ?? el.center?.lat;
+  const lng = el.lon ?? el.center?.lon;
+  if (lat == null || lng == null || !inBbox(lat, lng)) return null;
+
+  const housenumber = tags["addr:housenumber"];
+  const street = tags["addr:street"];
+  const city = tags["addr:city"];
+  const postcode = tags["addr:postcode"];
+  const state = tags["addr:state"] || (hasNycOpenData ? "NY" : null);
+  const postcodePart =
+    postcode && state ? `${state} ${postcode}` : postcode || state || null;
+  const addressParts = [housenumber, street, city, postcodePart].filter(Boolean);
+
+  return {
+    name,
+    slug: slugify(name, `osm-${el.id}`),
+    lat,
+    lng,
+    address: addressParts.length ? addressParts.join(", ") : null,
+    cuisine_type: parseOsmCuisine(tags),
+    source: "osm",
+    source_record_id: `${el.type}/${el.id}`,
+    import_confidence: tags["addr:street"] ? 0.75 : 0.6,
+    website_url: tags.website || tags["contact:website"] || null,
+    phone: tags.phone || tags["contact:phone"] || null,
+    health_inspection_grade: null,
+  };
+}
+
+async function executeOverpassQuery(query: string): Promise<OverpassElement[]> {
+  const retryDelaysMs = [0, 5000, 15000, 45000];
+
+  for (let attempt = 0; attempt < retryDelaysMs.length; attempt++) {
+    if (retryDelaysMs[attempt] > 0) {
+      console.log(`   Overpass retry in ${retryDelaysMs[attempt] / 1000}s…`);
+      await sleep(retryDelaysMs[attempt]);
     }
-    if (attempt.status !== 406 && attempt.status !== 429) {
-      res = attempt;
-      break;
+
+    for (const endpoint of OVERPASS_ENDPOINTS) {
+      try {
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Accept: "application/json",
+            "User-Agent": "FoodNearMe/1.0 (discovered-layer import)",
+          },
+          body: `data=${encodeURIComponent(query)}`,
+        });
+
+        if (res.ok) {
+          const json = (await res.json()) as { elements: OverpassElement[] };
+          return json.elements ?? [];
+        }
+
+        if (![429, 502, 504].includes(res.status)) {
+          throw new Error(`Overpass API failed: ${res.status} ${res.statusText}`);
+        }
+      } catch (err) {
+        if (attempt === retryDelaysMs.length - 1) {
+          const msg = err instanceof Error ? err.message : String(err);
+          throw new Error(`Overpass API failed after retries: ${msg}`);
+        }
+      }
     }
   }
 
-  if (!res?.ok) {
-    const fallback = await fetch(
-      `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`,
-      {
-        headers: {
-          Accept: "application/json",
-          "User-Agent": "FoodNearMe/1.0 (discovered-layer import)",
-        },
-      },
-    );
-    res = fallback;
-  }
+  throw new Error("Overpass API failed after retries");
+}
 
-  if (!res.ok) {
-    throw new Error(`Overpass API failed: ${res.status} ${res.statusText}`);
-  }
+async function fetchOverpass(): Promise<DiscoveredRow[]> {
+  const bySourceId = new Map<string, DiscoveredRow>();
 
-  const json = (await res.json()) as {
-    elements: Array<{
-      type: string;
-      id: number;
-      lat?: number;
-      lon?: number;
-      center?: { lat: number; lon: number };
-      tags?: Record<string, string>;
-    }>;
+  const ingest = (elements: OverpassElement[]) => {
+    for (const el of elements) {
+      const row = parseOsmElement(el);
+      if (row) bySourceId.set(row.source_record_id, row);
+    }
   };
 
-  const rows: DiscoveredRow[] = [];
+  console.log("   Pass 1/2: amenity tags…");
+  ingest(await executeOverpassQuery(buildAmenityOverpassQuery(bbox)));
+  const afterAmenity = bySourceId.size;
 
-  for (const el of json.elements) {
-    const tags = el.tags ?? {};
-    const name = tags.name?.trim();
-    if (!name) continue;
-
-    const lat = el.lat ?? el.center?.lat;
-    const lng = el.lon ?? el.center?.lon;
-    if (lat == null || lng == null || !inBbox(lat, lng)) continue;
-
-    const housenumber = tags["addr:housenumber"];
-    const street = tags["addr:street"];
-    const city = tags["addr:city"];
-    const postcode = tags["addr:postcode"];
-    const addressParts = [housenumber, street, city, postcode ? `NY ${postcode}` : "NY"].filter(
-      Boolean,
-    );
-
-    const sourceRecordId = `${el.type}/${el.id}`;
-    rows.push({
-      name,
-      slug: slugify(name, `osm-${el.id}`),
-      lat,
-      lng,
-      address: addressParts.length ? addressParts.join(", ") : null,
-      cuisine_type: parseOsmCuisine(tags),
-      source: "osm",
-      source_record_id: sourceRecordId,
-      import_confidence: tags["addr:street"] ? 0.75 : 0.6,
-      website_url: tags.website || tags["contact:website"] || null,
-      phone: tags.phone || tags["contact:phone"] || null,
-      health_inspection_grade: null,
-    });
+  if (!noOsmExtended) {
+    console.log("   Pass 2/2: restaurant=yes + hotel restaurants (M5)…");
+    ingest(await executeOverpassQuery(buildExtendedOverpassQuery(bbox)));
+    console.log(`   M5 extended: +${bySourceId.size - afterAmenity} new OSM ids`);
   }
 
-  return rows;
+  return [...bySourceId.values()];
 }
 
 async function fetchNycOpenData(): Promise<DiscoveredRow[]> {
