@@ -33,6 +33,8 @@ npm run db:import:discovered:nyc-boroughs
 npm run db:import:discovered:batch -- --regions=bronx,staten_island --update-status
 npm run db:import:discovered:batch -- --preset=nyc-boroughs --dry-run
 npm run db:import:discovered:batch -- --preset=tier1-osm --pending-only
+npm run db:import:discovered:batch -- --preset=tier2-osm --pending-only --dry-run
+npm run db:import:discovered:tier2
 
 # Default: Williamsburg
 npm run db:import:discovered

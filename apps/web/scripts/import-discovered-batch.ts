@@ -39,17 +39,26 @@ const PRESETS: Record<string, string[]> = {
   ],
 };
 
-/** Tier-1 metros with OSM only (excludes NYC boroughs / nyc_open_data regions). */
-function getTier1OsmRegionKeys(): string[] {
+function getTierOsmRegionKeys(tier: number): string[] {
   const file = loadRegionsFile();
   return getRegionKeys().filter((key) => {
     const r = file.regions[key];
     return (
-      r.tier === 1 &&
+      r.tier === tier &&
       regionHasSource(r, "osm") &&
       !regionHasSource(r, "nyc_open_data")
     );
   });
+}
+
+/** Tier-1 metros with OSM only (excludes NYC boroughs / nyc_open_data regions). */
+function getTier1OsmRegionKeys(): string[] {
+  return getTierOsmRegionKeys(1);
+}
+
+/** Tier-2 metros (OSM only). */
+function getTier2OsmRegionKeys(): string[] {
+  return getTierOsmRegionKeys(2);
 }
 
 const args = process.argv.slice(2);
@@ -59,7 +68,7 @@ if (args.includes("--help")) {
 Batch discovered import
 
 Options:
-  --preset=<name>       ${Object.keys(PRESETS).join(" | ")} | tier1-osm (from import-regions.json)
+  --preset=<name>       ${Object.keys(PRESETS).join(" | ")} | tier1-osm | tier2-osm (from import-regions.json)
   --regions=a,b,c       Comma-separated region keys
   --pending-only        Skip regions with status "imported"
   --dry-run             Pass --dry-run to each import
@@ -69,7 +78,8 @@ Options:
 
 Examples:
   npm run db:import:discovered:batch -- --preset=nyc-boroughs
-  npm run db:import:discovered:batch -- --regions=bronx,staten_island --update-status
+  npm run db:import:discovered:batch -- --preset=tier2-osm --pending-only --dry-run
+  npm run db:import:discovered:batch -- --regions=detroit,cleveland --update-status
 `);
   process.exit(0);
 }
@@ -88,10 +98,13 @@ function resolveRegionList(): string[] {
     if (name === "tier1-osm") {
       return getTier1OsmRegionKeys();
     }
+    if (name === "tier2-osm") {
+      return getTier2OsmRegionKeys();
+    }
     const preset = PRESETS[name];
     if (!preset) {
       throw new Error(
-        `Unknown preset "${name}". Available: ${Object.keys(PRESETS).join(", ")}, tier1-osm`,
+        `Unknown preset "${name}". Available: ${Object.keys(PRESETS).join(", ")}, tier1-osm, tier2-osm`,
       );
     }
     return preset;

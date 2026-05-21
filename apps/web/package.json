@@ -20,6 +20,7 @@
     "db:import:discovered:list": "tsx scripts/import-discovered.ts --list-regions",
     "db:import:discovered:batch": "tsx scripts/import-discovered-batch.ts",
     "db:import:discovered:nyc-boroughs": "tsx scripts/import-discovered-batch.ts --preset=nyc-boroughs --pending-only --update-status",
+    "db:import:discovered:tier2": "tsx scripts/import-discovered-batch.ts --preset=tier2-osm --pending-only --update-status --continue-on-error",
     "preflight": "./scripts/deploy-preflight.sh"
   },
   "dependencies": {
