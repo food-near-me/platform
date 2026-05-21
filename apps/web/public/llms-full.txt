@@ -50,7 +50,7 @@ Do NOT crawl `/api/*` endpoints. Use structured integration instead.
 The MCP server exposes five tools:
 
 ### search_restaurants
-Search for verified restaurants near a location.
+Search for restaurants near a location. Returns **verified venues first** (owner-approved menus), then **discovered listings** (place only). Check `menu_available` and `verification_status` on each result; call `get_menu` only when `menu_available` is true.
 
 **Required:** `lat` (number), `lng` (number)
 **Optional:** `query` (string), `radius_miles` (number, default 5), `dietary` (array), `min_ado_score` (number 0-5)
@@ -106,9 +106,9 @@ Call `prompts/get` with a prompt name, then execute the tool sequence in the ret
 
 2. **Search.** Call `search_restaurants` with coordinates and any filters (cuisine query, dietary restrictions).
 
-3. **Select.** Pick a restaurant from results. Higher `agent_score` (ADO) means better data quality.
+3. **Select.** Prefer results with `menu_available: true` (verified). Higher `agent_score` (ADO) means better data quality. Do not cite menu items for discovered listings.
 
-4. **Get menu.** Call `get_menu` with the restaurant_id.
+4. **Get menu.** Call `get_menu` only when `menu_available` is true.
 
 5. **Filter items.** Use `dietary.*` boolean flags and `allergens[]` array to filter for user restrictions.
 
@@ -178,18 +178,22 @@ ADO scores (0-5) measure how well a restaurant's data is structured for AI agent
 
 ---
 
-## Data Trust Model
+## Data Trust Model (Two-Tier Search)
 
-Only restaurants with `verification_status: "verified"` appear in search results.
+`search_restaurants` and `/api/v1/search` return **verified venues first**, then **discovered listings** (place data only — no authoritative menu).
+
+Every result includes `verification_status` and `menu_available`:
+- **verified** + `menu_available: true` — owner-approved Menu Protocol menu; safe to call `get_menu`
+- **discovered** + `menu_available: false` — basic place info from open data (OSM, NYC Open Data); do not cite menu items
 
 **Verified means:**
 - Restaurant owner has claimed the listing
 - Owner has reviewed and approved the Menu Protocol data
 - Approval is cryptographically signed (hash + timestamp + signer)
 
-Trust levels: `discovered` → `menu_indexed` → `verified`
+Trust progression: `discovered` → `menu_indexed` → `verified`
 
-Only `verified` restaurants are returned by the API.
+**Agent rules:** Prefer verified results for menu/dietary answers. Call `get_menu` only when `menu_available` is true. See https://foodnear.me/attribution for data sources.
 
 ---
 

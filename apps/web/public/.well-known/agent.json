@@ -9,7 +9,7 @@
   "capabilities": [
     {
       "name": "search",
-      "description": "Search for verified restaurants by location, cuisine, dietary filters, and ADO score.",
+      "description": "Two-tier restaurant search: verified venues with menus first, then discovered place listings. Check menu_available before fetching menus.",
       "endpoint": "/api/v1/search",
       "method": "GET"
     },

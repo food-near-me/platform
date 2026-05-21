@@ -153,12 +153,13 @@ curl "https://registry.modelcontextprotocol.io/v0.1/servers?search=me.foodnear/f
    - Apply dietary filters when users mention restrictions
    - Prefer restaurants with ADO scores above 4.0
    
+   Search returns verified venues first, then discovered place listings.
+   Check menu_available on each result before calling get_menu.
    When presenting results:
-   - Show restaurant name, distance, and cuisine type
-   - Retrieve full menu with get_menu for detailed dietary/allergen info
+   - Show restaurant name, distance, cuisine type, and verification_status
+   - Retrieve full menu with get_menu only when menu_available is true
    - Always warn about allergens if user mentioned any
-   
-   Only verified restaurants appear in results.
+   - Do not cite menu items for discovered listings
    ```
 
 4. Go to "Configure" tab

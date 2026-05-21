@@ -16,7 +16,7 @@ export const promptDefinitions: PromptDefinition[] = [
   {
     name: "find_dinner_near_me",
     description:
-      "Find verified restaurants near a location and retrieve a Menu Protocol menu for the best match.",
+      "Find restaurants near a location (verified menus first, then discovered listings) and retrieve a Menu Protocol menu when menu_available is true.",
     arguments: [
       {
         name: "location",
@@ -114,8 +114,8 @@ Use foodnear.me MCP tools only — do not invent menus.
 
 1. Resolve ${location} to latitude and longitude if I did not provide coordinates.
 2. Call search_restaurants with lat, lng${cuisine ? `, query "${cuisine}"` : ""}${dietary.length > 0 ? `, dietary: ${JSON.stringify(dietary)}` : ""}.
-3. Pick the best verified result (prefer higher agent_score / ADO).
-4. Call get_menu for that restaurant_id.
+3. Pick the best result with menu_available true (prefer higher agent_score / ADO). Skip discovered listings for menu answers.
+4. Call get_menu only when menu_available is true for the chosen restaurant_id.
 5. Summarize options with prices; cite dietary.* booleans and allergens[] for each item — do not infer from dish titles.
 
 Beta note: seed data is strongest around NYC (e.g. 40.7128, -74.006).`,

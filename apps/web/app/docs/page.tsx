@@ -62,7 +62,8 @@ export default function DocsPage() {
           <h2 className="text-xl font-medium mb-3">Tools</h2>
           <ul className="space-y-2 text-sm text-zinc-400">
             <li>
-              <code className="text-amber-200/90">search_restaurants</code> — lat/lng search, cuisine, dietary, ADO
+              <code className="text-amber-200/90">search_restaurants</code> — two-tier lat/lng search (verified first, then discovered); check{" "}
+              <code className="text-zinc-300">menu_available</code> before <code className="text-zinc-300">get_menu</code>
             </li>
             <li>
               <code className="text-amber-200/90">get_restaurant</code> — profile + Schema.org JSON-LD
@@ -113,6 +114,33 @@ export default function DocsPage() {
           </p>
           <p className="text-xs font-mono text-zinc-500">
             VALIDATION_ERROR · NOT_FOUND · UPSTREAM
+          </p>
+        </section>
+
+        <section className="mb-10 rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+          <h2 className="text-xl font-medium mb-3">Data trust (two-tier search)</h2>
+          <p className="text-sm text-zinc-400 mb-3">
+            <code className="text-zinc-300">search_restaurants</code> returns{" "}
+            <strong className="text-zinc-200">verified venues first</strong>, then{" "}
+            <strong className="text-zinc-200">discovered listings</strong> (place only — no authoritative menu).
+          </p>
+          <ul className="list-disc list-inside space-y-2 text-sm text-zinc-400">
+            <li>
+              <code className="text-zinc-300">menu_available: true</code> — owner-approved Menu Protocol menu; safe to call{" "}
+              <code className="text-zinc-300">get_menu</code>
+            </li>
+            <li>
+              <code className="text-zinc-300">menu_available: false</code> — discovered place data; do not cite menu items
+            </li>
+            <li>
+              Trust progression: <code className="text-zinc-300">discovered</code> →{" "}
+              <code className="text-zinc-300">menu_indexed</code> → <code className="text-zinc-300">verified</code>
+            </li>
+          </ul>
+          <p className="mt-4 text-xs text-zinc-500">
+            <a href="/attribution" className="text-amber-400/90 hover:underline">
+              Open-data attribution
+            </a>
           </p>
         </section>
 

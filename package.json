@@ -15,6 +15,7 @@
     "test:mcp-flows": "npm run test:mcp-flows -w web",
     "test:mcp-flows:http": "npm run test:mcp-flows:http -w web",
     "smoke:mcp": "npm run smoke:mcp -w web",
+    "check:discovery-copy": "npm run check:discovery-copy -w web",
     "preflight": "npm run preflight -w web",
     "db:migrate:audit-leads": "node scripts/apply-audit-leads.mjs",
     "db:migrate:discovered-layer": "node scripts/apply-discovered-layer.mjs",

@@ -10,7 +10,7 @@ Our MCP (Model Context Protocol) endpoint enables Claude, ChatGPT, and other LLM
 
 ## Services / Features
 
-- **Restaurant Search**: Find verified restaurants by location, cuisine type, dietary filters (vegan, vegetarian, gluten-free, halal, kosher), and ADO score
+- **Restaurant Search**: Two-tier geo search — verified venues with menus first, then discovered place listings; filter by cuisine, dietary tags, and ADO score
 - **Menu Protocol Menus**: Retrieve full menus in MP v1.0 format with explicit boolean dietary flags, allergen arrays, customization options, and owner signatures
 - **ADO Scoring**: Agent Discovery Optimization scores (0-5) indicate data quality, verification status, and machine-readability
 - **Restaurant Profiles**: Schema.org/Restaurant JSON-LD with Menu Protocol extensions
@@ -39,7 +39,7 @@ Connect with Claude Desktop, Cursor, or any MCP client:
 
 ## MCP Tools Available (5)
 
-1. `search_restaurants` - Search by lat/lng, cuisine, dietary filters, ADO score
+1. `search_restaurants` - Search by lat/lng; verified first, then discovered; check `menu_available` before `get_menu`
 2. `get_restaurant` - Get detailed restaurant profile with Schema.org markup
 3. `get_menu` - Get full Menu Protocol v1.0 formatted menu
 4. `get_ado_score_breakdown` - Get scoring breakdown with improvement recommendations
@@ -82,12 +82,17 @@ Get menu for a restaurant:
 GET /api/v1/restaurant/{id}/menu.mp
 ```
 
-## Data Trust Model
+## Data Trust Model (Two-Tier Search)
 
-Only restaurants with `verification_status: "verified"` appear in search results. Verified means:
-- Restaurant owner has claimed the listing
-- Owner has approved the Menu Protocol data
-- Approval is cryptographically signed
+`search_restaurants` and `/api/v1/search` return **verified venues first**, then **discovered listings** (place data only — no authoritative menu).
+
+Every result includes `verification_status` and `menu_available`:
+- **verified** + `menu_available: true` — owner-approved Menu Protocol menu; safe to call `get_menu`
+- **discovered** + `menu_available: false` — basic place info from open data (OSM, NYC Open Data); do not cite menu items
+
+Trust progression: `discovered` → `menu_indexed` → `verified`
+
+**Agent rules:** Prefer verified results for menu/dietary answers. Call `get_menu` only when `menu_available` is true. See https://foodnear.me/attribution for data sources.
 
 ## Rate Limits
 

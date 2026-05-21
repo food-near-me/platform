@@ -24,7 +24,7 @@
   "tools": [
     {
       "name": "search_restaurants",
-      "description": "Search for verified restaurants near a location with cuisine, dietary, and ADO filters",
+      "description": "Search for restaurants near a location. Returns verified venues first (owner-approved menus), then discovered listings (place only). Check menu_available and verification_status on each result.",
       "required_params": ["lat", "lng"]
     },
     {

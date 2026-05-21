@@ -25,7 +25,7 @@
       "get": {
         "operationId": "searchRestaurants",
         "summary": "Search for restaurants",
-        "description": "Find verified restaurants by location, cuisine, dietary filters, and ADO (Agent Discovery Optimization) score. Only returns restaurants with verified Menu Protocol data.",
+        "description": "Two-tier restaurant search: verified venues with owner-approved Menu Protocol menus first, then discovered place listings. Every result includes verification_status and menu_available — call menu endpoints only when menu_available is true.",
         "tags": ["Search"],
         "parameters": [
           {
@@ -297,6 +297,19 @@
           "slug": { "type": "string" },
           "distance_meters": { "type": "number" },
           "agent_score": { "type": "number", "minimum": 0, "maximum": 5 },
+          "verification_status": {
+            "type": "string",
+            "enum": ["discovered", "menu_indexed", "verified"],
+            "description": "Trust tier. Prefer verified for menu/dietary answers."
+          },
+          "menu_available": {
+            "type": "boolean",
+            "description": "True only for verified listings with a published Menu Protocol menu."
+          },
+          "data_source": {
+            "type": "string",
+            "description": "Open-data or verified source label (e.g. osm, nyc_open_data, owner_verified)."
+          },
           "cuisine_type": {
             "type": "array",
             "items": { "type": "string" }
@@ -332,6 +345,10 @@
           "verification_status": {
             "type": "string",
             "enum": ["discovered", "menu_indexed", "verified"]
+          },
+          "menu_available": {
+            "type": "boolean",
+            "description": "True only for verified listings with a published Menu Protocol menu."
           },
           "delivery_radius_miles": { "type": "number" },
           "payment_methods": {

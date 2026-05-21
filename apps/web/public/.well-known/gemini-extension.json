@@ -12,11 +12,11 @@
     "url": "https://foodnear.me/openapi.json",
     "format": "OPENAPI_3_1"
   },
-  "instructions": "Use this extension to help users find restaurants near them. Always require latitude and longitude for searches. When a user asks about food options, dietary restrictions, or restaurant recommendations, search using the search_restaurants endpoint with appropriate filters. After finding restaurants, retrieve full menu details using the menu.mp endpoint to provide accurate dietary information and allergen warnings. ADO scores indicate data quality - prefer restaurants with scores above 4.0. Only verified restaurants appear in results, ensuring data accuracy.",
+  "instructions": "Use this extension to help users find restaurants near them. Always require latitude and longitude for searches. Search returns verified venues first, then discovered place listings. Check menu_available on each result — call menu.mp only when menu_available is true. When a user asks about food options, dietary restrictions, or restaurant recommendations, search using the search_restaurants endpoint with appropriate filters. After finding a verified result (menu_available: true), retrieve full menu details using the menu.mp endpoint to provide accurate dietary information and allergen warnings. ADO scores indicate data quality - prefer restaurants with scores above 4.0. Do not cite menu items for discovered listings.",
   "capabilities": [
     {
       "name": "search_restaurants",
-      "description": "Search for verified restaurants by location, cuisine, and dietary filters"
+      "description": "Two-tier restaurant search: verified venues with menus first, then discovered place listings. Check menu_available before menu retrieval."
     },
     {
       "name": "get_restaurant",

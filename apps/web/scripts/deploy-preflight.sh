@@ -69,10 +69,20 @@ else
 fi
 
 echo ""
-if [[ "$fail" -eq 0 ]]; then
+echo "Discovery copy parity"
+echo "---------------------"
+
+parity_fail=0
+if ! npx tsx "${BASH_SOURCE%/*}/discovery-copy-parity.ts" --url "${BASE}"; then
+  parity_fail=1
+fi
+
+echo ""
+if [[ "$fail" -eq 0 && "$parity_fail" -eq 0 ]]; then
   echo "All critical checks passed. Safe to add DNS TXT records and submit registries."
   exit 0
 else
-  echo "${fail} critical check(s) failed. Do NOT add DNS TXT or submit registries yet."
+  total_fail=$((fail + parity_fail))
+  echo "${total_fail} critical check(s) failed. Do NOT add DNS TXT or submit registries yet."
   exit 1
 fi

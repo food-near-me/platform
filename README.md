@@ -1,6 +1,6 @@
 # Food Near Me — MCP Server
 
-> **Model Context Protocol server for AI-native restaurant discovery** — search verified restaurants, retrieve Menu Protocol menus, and validate structured menu data. Plug into Claude Desktop, Cursor, ChatGPT, or any MCP host in about 30 seconds.
+> **Model Context Protocol server for AI-native restaurant discovery** — two-tier search (verified menus first, then discovered place listings), Menu Protocol menus, and structured menu validation. Plug into Claude Desktop, Cursor, ChatGPT, or any MCP host in about 30 seconds.
 
 [![MCP Registry](https://img.shields.io/badge/MCP-me.foodnear%2Ffoodnear--me-blue)](https://registry.modelcontextprotocol.io/v0.1/servers?search=me.foodnear/foodnear-me)
 
@@ -43,7 +43,7 @@ Your agent should call `search_restaurants` → `get_menu` (or `get_restaurant` 
 
 | Tool | Description |
 |------|-------------|
-| `search_restaurants` | Search verified restaurants by `lat`/`lng`, cuisine query, dietary filters, ADO score |
+| `search_restaurants` | Two-tier geo search by `lat`/`lng` — verified venues first, then discovered listings; check `menu_available` before `get_menu` |
 | `get_restaurant` | Restaurant profile with Schema.org JSON-LD + Menu Protocol extensions |
 | `get_menu` | Full Menu Protocol v1.0 menu (dietary flags, allergens, signatures) |
 | `get_ado_score_breakdown` | ADO score factors and improvement recommendations |
@@ -130,7 +130,10 @@ npm run test:mcp-flows:http
 # Discovery GETs + MCP tools/list count
 npm run smoke:mcp
 
-# Full deploy gate (13 checks)
+# Two-tier trust model copy parity (local files)
+npm run check:discovery-copy
+
+# Full deploy gate (13 checks + discovery copy on production URL)
 npm run preflight -w web
 # or: ./apps/web/scripts/deploy-preflight.sh https://foodnear.me
 ```
@@ -155,11 +158,13 @@ Scripted flows: [`apps/web/docs/example-agent-flows.md`](apps/web/docs/example-a
 
 ---
 
-## Data trust model
+## Data trust model (two-tier search)
 
-- Only **`verification_status: verified`** restaurants appear in `search_restaurants`.
-- Menus include owner-approved Menu Protocol data with explicit dietary booleans and allergen arrays — agents must not guess from item names alone.
-- Read `dietary.*` flags and `allergens[]`; do not infer from dish titles.
+- `search_restaurants` returns **verified venues first**, then **discovered listings** (place only — no authoritative menu).
+- Every result includes `verification_status` and `menu_available`. Call `get_menu` only when `menu_available` is true.
+- **Verified** listings have owner-approved Menu Protocol data with explicit dietary booleans and allergen arrays — agents must not guess from item names alone.
+- Read `dietary.*` flags and `allergens[]`; do not infer from dish titles. Do not cite menu items for discovered listings.
+- Trust progression: `discovered` → `menu_indexed` → `verified`. See https://foodnear.me/attribution for data sources.
 
 ---
 
@@ -172,7 +177,7 @@ No for beta MCP access. Future paid tiers may use API keys or x402 (USDC on Base
 Confirm the config URL ends with `/mcp`. Restart the host completely. Run `npm run smoke:mcp` against your target base URL.
 
 **Empty search results?**  
-Beta data is seeded for specific metros (e.g. Williamsburg, NYC). Use coordinates near `40.7128, -74.006` for demos, or run `npm run db:seed -w web` locally.
+Beta verified menus are seeded for specific metros (e.g. Williamsburg, NYC). Discovered place listings cover many US metros — use coordinates in an imported region. Demo coords: `40.7128, -74.006`. Run `npm run db:seed -w web` locally for verified test data.
 
 **Cursor vs Claude config path?**  
 See Quick start above — each host uses a different JSON file; only the `mcpServers` block matters.
