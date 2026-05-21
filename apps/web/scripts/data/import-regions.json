@@ -111,7 +111,7 @@
     "la": {
       "label": "Los Angeles",
       "tier": 1,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 33.703,
         "west": -118.668,
@@ -125,7 +125,7 @@
     "sf_bay": {
       "label": "San Francisco Bay Area",
       "tier": 1,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 37.124,
         "west": -122.515,
@@ -139,7 +139,7 @@
     "chicago": {
       "label": "Chicago",
       "tier": 1,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 41.644,
         "west": -87.94,
@@ -153,7 +153,7 @@
     "houston": {
       "label": "Houston",
       "tier": 1,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 29.523,
         "west": -95.91,
@@ -167,7 +167,7 @@
     "dallas": {
       "label": "Dallas–Fort Worth",
       "tier": 1,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 32.617,
         "west": -97.038,
@@ -181,7 +181,7 @@
     "austin": {
       "label": "Austin",
       "tier": 1,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 30.098,
         "west": -97.938,
@@ -195,7 +195,7 @@
     "miami": {
       "label": "Miami",
       "tier": 1,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 25.709,
         "west": -80.319,
@@ -209,7 +209,7 @@
     "dc": {
       "label": "Washington DC",
       "tier": 1,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 38.791,
         "west": -77.119,
@@ -223,7 +223,7 @@
     "boston": {
       "label": "Boston",
       "tier": 1,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 42.227,
         "west": -71.191,
@@ -237,7 +237,7 @@
     "philly": {
       "label": "Philadelphia",
       "tier": 1,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 39.867,
         "west": -75.28,
@@ -251,7 +251,7 @@
     "seattle": {
       "label": "Seattle",
       "tier": 1,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 47.491,
         "west": -122.459,
@@ -265,7 +265,7 @@
     "denver": {
       "label": "Denver",
       "tier": 1,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 39.614,
         "west": -105.11,
@@ -279,7 +279,7 @@
     "atlanta": {
       "label": "Atlanta",
       "tier": 1,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 33.647,
         "west": -84.551,
@@ -293,7 +293,7 @@
     "phoenix": {
       "label": "Phoenix",
       "tier": 1,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 33.29,
         "west": -112.324,
@@ -307,7 +307,7 @@
     "lv": {
       "label": "Las Vegas",
       "tier": 1,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 36,
         "west": -115.315,
@@ -321,7 +321,7 @@
     "portland": {
       "label": "Portland",
       "tier": 1,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 45.421,
         "west": -122.836,
@@ -335,7 +335,7 @@
     "nashville": {
       "label": "Nashville",
       "tier": 1,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 36.03,
         "west": -86.92,
@@ -349,7 +349,7 @@
     "san_diego": {
       "label": "San Diego",
       "tier": 1,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 32.534,
         "west": -117.283,
@@ -363,7 +363,7 @@
     "minneapolis": {
       "label": "Minneapolis–St Paul",
       "tier": 1,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 44.89,
         "west": -93.329,

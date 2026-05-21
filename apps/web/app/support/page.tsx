@@ -105,8 +105,9 @@ export default function SupportPage() {
 
       <h2>Legal</h2>
       <p>
-        See our <Link href="/terms">Terms of Service</Link> and{" "}
-        <Link href="/privacy">Privacy Policy</Link>.
+        See our <Link href="/terms">Terms of Service</Link>,{" "}
+        <Link href="/privacy">Privacy Policy</Link>, and{" "}
+        <Link href="/attribution">Data Attribution</Link>.
       </p>
     </LegalDocument>
   );

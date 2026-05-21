@@ -52,6 +52,8 @@ export function SiteShell({
             {" · "}
             <Link href="/privacy">privacy</Link>
             {" · "}
+            <Link href="/attribution">attribution</Link>
+            {" · "}
             <Link href="/support">support</Link>
             {" · "}
             <a href="https://foodnear.me/openapi.json">openapi</a>

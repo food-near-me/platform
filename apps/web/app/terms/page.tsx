@@ -65,6 +65,14 @@ export default function TermsPage() {
         Restaurants remain responsible for the accuracy of menu information they
         approve for publication through Menu Protocol.
       </p>
+      <p>
+        Many listings are <strong>discovered</strong> from public open data (for
+        example OpenStreetMap © contributors under ODbL, and NYC Open Data in New
+        York). Discovered listings are basic place records — not owner-verified
+        menus. See our{" "}
+        <a href="/attribution">Data Attribution</a> page for sources, licenses,
+        and limitations.
+      </p>
 
       <h2>5. Lead forms and communications</h2>
       <p>
