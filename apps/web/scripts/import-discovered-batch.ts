@@ -146,6 +146,7 @@ function markRegionImported(regionKey: string): void {
   const region = file.regions[regionKey];
   if (!region) return;
   region.status = "imported";
+  region.importedAt = new Date().toISOString();
   writeFileSync(REGIONS_PATH, `${JSON.stringify(file, null, 2)}\n`, "utf8");
   console.log(`   ✓ Marked ${regionKey} as imported in import-regions.json`);
 }

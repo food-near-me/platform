@@ -2,7 +2,7 @@
 
 Populate `verification_status = discovered` restaurants from public data.
 
-**Regions config:** `scripts/data/import-regions.json` (42 metros + NYC boroughs; tiers 1–3)
+**Regions config:** `scripts/data/import-regions.json` (55 regions: tiers 1–3 + NYC boroughs; `status` + optional `importedAt` when `--update-status` succeeds)
 
 ## Prerequisites
 

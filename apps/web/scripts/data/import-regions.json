@@ -587,7 +587,7 @@
     "sacramento": {
       "label": "Sacramento",
       "tier": 3,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 38.44,
         "west": -121.56,
@@ -596,12 +596,13 @@
       },
       "dataSources": [
         "osm"
-      ]
+      ],
+      "importedAt": "2026-05-21T00:00:00.000Z"
     },
     "jacksonville": {
       "label": "Jacksonville",
       "tier": 3,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 30.2,
         "west": -81.85,
@@ -610,12 +611,13 @@
       },
       "dataSources": [
         "osm"
-      ]
+      ],
+      "importedAt": "2026-05-21T00:00:00.000Z"
     },
     "memphis": {
       "label": "Memphis",
       "tier": 3,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 35,
         "west": -90.15,
@@ -624,12 +626,13 @@
       },
       "dataSources": [
         "osm"
-      ]
+      ],
+      "importedAt": "2026-05-21T00:00:00.000Z"
     },
     "louisville": {
       "label": "Louisville",
       "tier": 3,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 38.15,
         "west": -85.9,
@@ -638,12 +641,13 @@
       },
       "dataSources": [
         "osm"
-      ]
+      ],
+      "importedAt": "2026-05-21T00:00:00.000Z"
     },
     "buffalo": {
       "label": "Buffalo",
       "tier": 3,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 42.85,
         "west": -78.95,
@@ -652,12 +656,13 @@
       },
       "dataSources": [
         "osm"
-      ]
+      ],
+      "importedAt": "2026-05-21T00:00:00.000Z"
     },
     "cincinnati": {
       "label": "Cincinnati",
       "tier": 3,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 39.05,
         "west": -84.6,
@@ -666,12 +671,13 @@
       },
       "dataSources": [
         "osm"
-      ]
+      ],
+      "importedAt": "2026-05-21T00:00:00.000Z"
     },
     "okc": {
       "label": "Oklahoma City",
       "tier": 3,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 35.4,
         "west": -97.65,
@@ -680,12 +686,13 @@
       },
       "dataSources": [
         "osm"
-      ]
+      ],
+      "importedAt": "2026-05-21T00:00:00.000Z"
     },
     "albuquerque": {
       "label": "Albuquerque",
       "tier": 3,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 35.05,
         "west": -106.75,
@@ -694,12 +701,13 @@
       },
       "dataSources": [
         "osm"
-      ]
+      ],
+      "importedAt": "2026-05-21T00:00:00.000Z"
     },
     "tucson": {
       "label": "Tucson",
       "tier": 3,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 32.15,
         "west": -111.05,
@@ -708,12 +716,13 @@
       },
       "dataSources": [
         "osm"
-      ]
+      ],
+      "importedAt": "2026-05-21T00:00:00.000Z"
     },
     "honolulu": {
       "label": "Honolulu",
       "tier": 3,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 21.28,
         "west": -157.88,
@@ -722,12 +731,13 @@
       },
       "dataSources": [
         "osm"
-      ]
+      ],
+      "importedAt": "2026-05-21T00:00:00.000Z"
     },
     "providence": {
       "label": "Providence",
       "tier": 3,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 41.78,
         "west": -71.5,
@@ -736,12 +746,13 @@
       },
       "dataSources": [
         "osm"
-      ]
+      ],
+      "importedAt": "2026-05-21T00:00:00.000Z"
     },
     "richmond": {
       "label": "Richmond",
       "tier": 3,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 37.5,
         "west": -77.55,
@@ -750,12 +761,13 @@
       },
       "dataSources": [
         "osm"
-      ]
+      ],
+      "importedAt": "2026-05-21T00:00:00.000Z"
     },
     "birmingham": {
       "label": "Birmingham",
       "tier": 3,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 33.45,
         "west": -86.95,
@@ -764,12 +776,13 @@
       },
       "dataSources": [
         "osm"
-      ]
+      ],
+      "importedAt": "2026-05-21T00:00:00.000Z"
     },
     "tulsa": {
       "label": "Tulsa",
       "tier": 3,
-      "status": "pending",
+      "status": "imported",
       "bbox": {
         "south": 36.05,
         "west": -96.05,
@@ -778,7 +791,8 @@
       },
       "dataSources": [
         "osm"
-      ]
+      ],
+      "importedAt": "2026-05-21T00:00:00.000Z"
     }
   }
 }

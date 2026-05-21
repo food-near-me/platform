@@ -15,6 +15,8 @@ export type RegionConfig = {
   label: string;
   tier: number;
   status?: string;
+  /** ISO-8601 UTC — set by batch import when --update-status succeeds */
+  importedAt?: string;
   bbox: Bbox;
   dataSources: DataSource[];
   notes?: string;
@@ -61,16 +63,17 @@ export function printRegionList(): void {
   const file = loadRegionsFile();
   console.log("\nImport regions (apps/web/scripts/data/import-regions.json)\n");
   console.log(
-    `${"key".padEnd(16)} ${"tier".padEnd(5)} ${"status".padEnd(10)} ${"sources".padEnd(32)} label`,
+    `${"key".padEnd(16)} ${"tier".padEnd(5)} ${"status".padEnd(10)} ${"imported".padEnd(12)} ${"sources".padEnd(32)} label`,
   );
-  console.log("-".repeat(72));
+  console.log("-".repeat(84));
 
   for (const key of getRegionKeys()) {
     const r = file.regions[key];
     const sources = r.dataSources.join("+");
     const status = r.status ?? "—";
+    const imported = r.importedAt ? r.importedAt.slice(0, 10) : "—";
     console.log(
-      `${key.padEnd(16)} ${String(r.tier).padEnd(5)} ${status.padEnd(10)} ${sources.padEnd(32)} ${r.label}`,
+      `${key.padEnd(16)} ${String(r.tier).padEnd(5)} ${status.padEnd(10)} ${imported.padEnd(12)} ${sources.padEnd(32)} ${r.label}`,
     );
   }
 
