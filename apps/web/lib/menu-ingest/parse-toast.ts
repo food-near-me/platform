@@ -1,83 +1,61 @@
 import type { MenuCategorySeed, MenuItemSeed, ParsedMenuResult } from "./types";
 
-type JsonObject = Record<string, unknown>;
-
-function parseNextData(html: string): JsonObject | null {
-  const match = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
-  if (!match) return null;
+function decodeJsonString(raw: string): string {
   try {
-    return JSON.parse(match[1]) as JsonObject;
+    return JSON.parse(`"${raw.replace(/"/g, '\\"')}"`) as string;
   } catch {
-    return null;
+    return raw.replace(/\\"/g, '"').replace(/\\n/g, " ").trim();
   }
 }
 
-function walkForMenuNodes(value: unknown, bucket: JsonObject[]): void {
-  if (Array.isArray(value)) {
-    value.forEach((entry) => walkForMenuNodes(entry, bucket));
-    return;
+/** Toast Tab online ordering embeds Apollo cache with MenuGroup / MenuItem nodes. */
+export function parseToastApolloHtml(html: string): ParsedMenuResult | null {
+  if (!/"__typename":"MenuItem"/.test(html)) return null;
+
+  const groupNames = new Map<string, string>();
+  for (const match of html.matchAll(
+    /"__typename":"MenuGroup","name":"((?:\\.|[^"\\])*)","description":"(?:\\.|[^"\\])*","guid":"([^"]+)"/g,
+  )) {
+    groupNames.set(match[2], decodeJsonString(match[1]));
   }
-  if (!value || typeof value !== "object") return;
-  const obj = value as JsonObject;
-  const keys = Object.keys(obj).join(" ").toLowerCase();
-  if (
-    keys.includes("menuitem") ||
-    keys.includes("menuitems") ||
-    keys.includes("menugroups") ||
-    (typeof obj.name === "string" && (obj.price !== undefined || obj.basePrice !== undefined))
-  ) {
-    bucket.push(obj);
+
+  const byGroup = new Map<string, MenuItemSeed[]>();
+  const seen = new Set<string>();
+
+  for (const chunk of html.split('"__typename":"MenuItem"').slice(1)) {
+    const nameRaw = chunk.match(/"name":"((?:\\.|[^"\\])*)"/)?.[1];
+    const priceRaw = chunk.match(/"prices":\[(\d+(?:\.\d+)?)/)?.[1];
+    const groupGuid = chunk.match(/"itemGroupGuid":"([^"]+)"/)?.[1] ?? "menu";
+    if (!nameRaw || !priceRaw) continue;
+
+    const name = decodeJsonString(nameRaw);
+    const price = Number.parseFloat(priceRaw);
+    if (name.length < 2 || !Number.isFinite(price) || price <= 0) continue;
+
+    const key = `${name.toLowerCase()}|${price}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const list = byGroup.get(groupGuid) ?? [];
+    list.push({ name, price });
+    byGroup.set(groupGuid, list);
   }
-  for (const child of Object.values(obj)) {
-    walkForMenuNodes(child, bucket);
+
+  const categories: MenuCategorySeed[] = [];
+  for (const [guid, items] of byGroup) {
+    if (items.length === 0) continue;
+    categories.push({
+      name: groupNames.get(guid) ?? "Menu",
+      items: items.slice(0, 150),
+    });
   }
+
+  const total = categories.reduce((n, c) => n + c.items.length, 0);
+  if (total < 3) return null;
+
+  return { categories, source: "toast_apollo" };
 }
 
-function collectToastItems(node: JsonObject, items: MenuItemSeed[]): void {
-  if (Array.isArray(node.menuItems)) {
-    for (const raw of node.menuItems) {
-      if (!raw || typeof raw !== "object") continue;
-      const item = raw as JsonObject;
-      const name = typeof item.name === "string" ? item.name.trim() : "";
-      const priceRaw = item.price ?? item.basePrice ?? item.unitPrice;
-      const price =
-        typeof priceRaw === "number"
-          ? priceRaw
-          : typeof priceRaw === "string"
-            ? Number.parseFloat(priceRaw)
-            : NaN;
-      if (name && Number.isFinite(price) && price > 0) {
-        items.push({
-          name,
-          description:
-            typeof item.description === "string" ? item.description.trim() : undefined,
-          price: price > 1000 ? price / 100 : price,
-        });
-      }
-    }
-  }
-
-  if (Array.isArray(node.menuGroups)) {
-    for (const group of node.menuGroups) {
-      if (group && typeof group === "object") collectToastItems(group as JsonObject, items);
-    }
-  }
-}
-
-/** Best-effort Toast Tab parser when HTML/JSON is reachable (often 403 for bots). */
 export function parseToastMenuHtml(html: string): ParsedMenuResult | null {
-  if (!/toasttab\.com/i.test(html)) return null;
-
-  const items: MenuItemSeed[] = [];
-  const nextData = parseNextData(html);
-  if (nextData) {
-    const candidates: JsonObject[] = [];
-    walkForMenuNodes(nextData, candidates);
-    for (const node of candidates) collectToastItems(node, items);
-  }
-
-  if (items.length < 3) return null;
-
-  const categories: MenuCategorySeed[] = [{ name: "Menu", items: items.slice(0, 120) }];
-  return { categories, source: "toast_json" };
+  return parseToastApolloHtml(html);
 }

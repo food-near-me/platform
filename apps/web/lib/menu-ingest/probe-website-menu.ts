@@ -17,8 +17,9 @@ import {
   discoverDeliveryPlatformUrlsFromHtml,
   summarizeDeliveryUrls,
 } from "./delivery-platform-urls";
-import { buildMenuProbeUrls, normalizeWebsiteUrl } from "./website-candidates";
+import { buildMenuProbeUrls, normalizeWebsiteUrl, isPlatformOrderingHost } from "./website-candidates";
 import { isBlockedMenuUrl, filterMenuProbeUrls } from "./blocked-menu-urls";
+import { isDeadOrPlaceholderSite } from "./site-health";
 import type { ParsedMenuResult } from "./types";
 
 export type MenuProbeOutcome = {
@@ -72,6 +73,7 @@ async function fetchAndParseUrl(
   options: ProbeWebsiteOptions,
 ): Promise<{
   html: string | null;
+  visibleText: string | null;
   parsed: ParsedMenuResult | null;
   parser: string | null;
   fetchVia: "static" | "headless" | "api" | null;
@@ -80,7 +82,7 @@ async function fetchAndParseUrl(
 
   if (isBlockedMenuUrl(url)) {
     if (options.verbose) log(`  … blocked URL ${url}`);
-    return { html: null, parsed: null, parser: null, fetchVia: null };
+    return { html: null, visibleText: null, parsed: null, parser: null, fetchVia: null };
   }
 
   const apiMenu = await tryPlatformApiMenu(url);
@@ -88,6 +90,7 @@ async function fetchAndParseUrl(
     if (options.verbose) log(`  … chownow API menu from ${url}`);
     return {
       html: null,
+      visibleText: null,
       parsed: apiMenu.parsed,
       parser: apiMenu.parser,
       fetchVia: "api",
@@ -105,6 +108,7 @@ async function fetchAndParseUrl(
     if (attempt.result && attempt.parser) {
       return {
         html: staticHtml,
+        visibleText: null,
         parsed: attempt.result,
         parser: attempt.parser,
         fetchVia: "static",
@@ -124,10 +128,12 @@ async function fetchAndParseUrl(
     const rendered = await fetchWebsiteWithPlaywright(url);
     if (rendered) {
       lastHtml = rendered.html;
+      let lastVisible = rendered.visibleText;
       const attempt = parseMenuForUrl(rendered.html, url);
       if (attempt.result && attempt.parser) {
         return {
           html: rendered.html,
+          visibleText: rendered.visibleText,
           parsed: attempt.result,
           parser: attempt.parser,
           fetchVia: "headless",
@@ -137,16 +143,25 @@ async function fetchAndParseUrl(
       if (textAttempt.result && textAttempt.parser) {
         return {
           html: rendered.html,
+          visibleText: rendered.visibleText,
           parsed: textAttempt.result,
           parser: textAttempt.parser,
           fetchVia: "headless",
         };
       }
+      return {
+        html: lastHtml,
+        visibleText: lastVisible,
+        parsed: null,
+        parser: null,
+        fetchVia: "headless",
+      };
     }
   }
 
   return {
     html: lastHtml,
+    visibleText: null,
     parsed: null,
     parser: null,
     fetchVia: lastHtml
@@ -203,7 +218,42 @@ export async function probeWebsiteForMenu(
   const triedUrls: string[] = [];
   let queue: string[] = [];
 
+  const isPlatformEntry = normalized ? isPlatformOrderingHost(normalized) : false;
+
+  if (isPlatformEntry && normalized) {
+    triedUrls.push(normalized);
+    const direct = await fetchAndParseUrl(normalized, options);
+    if (direct.parsed && direct.parser) {
+      return finalizeProbe({
+        parsed: direct.parsed,
+        matchedUrl: normalized,
+        parser: direct.parser,
+        fetchVia: direct.fetchVia,
+        triedUrls,
+        discoveredUrls,
+        deliveryUrls,
+      });
+    }
+  }
+
   const seedUrl = origin ? `${origin}/` : null;
+
+  if (normalized && normalized !== seedUrl && /\/menu\b/i.test(normalized)) {
+    triedUrls.push(normalized);
+    const menuFirst = await fetchAndParseUrl(normalized, options);
+    if (menuFirst.parsed && menuFirst.parser) {
+      return finalizeProbe({
+        parsed: menuFirst.parsed,
+        matchedUrl: normalized,
+        parser: menuFirst.parser,
+        fetchVia: menuFirst.fetchVia,
+        triedUrls,
+        discoveredUrls,
+        deliveryUrls,
+      });
+    }
+  }
+
   if (seedUrl) {
     triedUrls.push(seedUrl);
     const seed = await fetchAndParseUrl(seedUrl, options);
@@ -215,6 +265,24 @@ export async function probeWebsiteForMenu(
           preserveQuery: options.preserveQueryOnDiscover,
         }),
       );
+    }
+
+    const homepageText =
+      seed.visibleText ?? seed.html?.replace(/<[^>]+>/g, " ").slice(0, 800) ?? "";
+    const jsHeavyHomepage =
+      seed.fetchVia === "headless" && (seed.visibleText?.length ?? 0) > 200;
+
+    if (!seed.parsed && seed.html && !jsHeavyHomepage && isDeadOrPlaceholderSite(seed.html, homepageText)) {
+      if (options.verbose) log(`  … homepage looks dead/placeholder — skipping deep probe`);
+      return finalizeProbe({
+        parsed: null,
+        matchedUrl: null,
+        parser: null,
+        fetchVia: seed.fetchVia,
+        triedUrls,
+        discoveredUrls,
+        deliveryUrls,
+      });
     }
 
     if (options.verbose && discoveredUrls.length > 0) {

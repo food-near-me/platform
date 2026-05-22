@@ -27,25 +27,46 @@ function parsePrice(line: string): { name: string; price: number } | null {
 
 /**
  * Parse menu lines from visible page text (Playwright innerText).
- * Last resort for Wix / JS menus with no structured HTML.
+ * Handles Toast-style "name on one line, price on the next".
  */
 export function parseVisibleTextMenu(text: string): ParsedMenuResult | null {
   const lines = text
     .split(/\n+/)
     .map((l) => l.replace(/\s+/g, " ").trim())
-    .filter((l) => l.length > 2 && l.length < 120);
+    .filter((l) => l.length > 1 && l.length < 120);
 
   const categories: MenuCategorySeed[] = [];
   let current: MenuCategorySeed = { name: "Menu", items: [] };
 
-  for (const line of lines) {
+  const pushItem = (name: string, price: number) => {
+    if (name.length < 2 || name.length > 80 || price <= 0 || price >= 500) return;
+    if (/^(total|subtotal|tax|tip|gratuity|buy gift)/i.test(name)) return;
+    current.items.push({ name, price });
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     if (SKIP_LINE.test(line)) continue;
     if (/^(mon|tue|wed|thu|fri|sat|sun)/i.test(line)) continue;
     if (/\d{3,}.*(am|pm|street|ave|blvd|brooklyn|ny)\b/i.test(line)) continue;
 
-    const item = parsePrice(line);
-    if (item) {
-      current.items.push({ name: item.name, price: item.price });
+    const sameLine = parsePrice(line);
+    if (sameLine) {
+      pushItem(sameLine.name, sameLine.price);
+      continue;
+    }
+
+    const next = lines[i + 1];
+    const nextPrice = next?.match(/^\$?\s*(\d+(?:\.\d{2})?)\s*$/);
+    if (
+      nextPrice &&
+      line.length >= 3 &&
+      line.length <= 80 &&
+      !/^\d+$/.test(line) &&
+      !SKIP_LINE.test(line)
+    ) {
+      pushItem(line, Number.parseFloat(nextPrice[1]));
+      i++;
       continue;
     }
 

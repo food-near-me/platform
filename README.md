@@ -178,7 +178,7 @@ No for beta MCP access. Future paid tiers may use API keys or x402 (USDC on Base
 Confirm the config URL ends with `/mcp`. Restart the host completely. Run `npm run smoke:mcp` against your target base URL.
 
 **Empty search results?**  
-Beta verified menus are seeded for specific metros (e.g. Williamsburg, NYC). Discovered place listings cover many US metros — use coordinates in an imported region. Demo coords: `40.7128, -74.006`. Run `npm run db:seed -w web` locally for verified test data.
+Beta verified menus are seeded for specific metros (e.g. Williamsburg, NYC). **7 `menu_indexed`** restaurants in Williamsburg have automated menus from website ingest. Discovered place listings cover many US metros — use coordinates in an imported region. Demo coords: `40.7128, -74.006`. Run `npm run db:seed -w web` locally for verified test data.
 
 **Cursor vs Claude config path?**  
 See Quick start above — each host uses a different JSON file; only the `mcpServers` block matters.
@@ -211,6 +211,19 @@ cd apps/web && cp .env.example .env.local   # Supabase keys
 npm run dev                                 # http://localhost:3000
 npm run test:mcp-flows                      # POST localhost:3000/mcp
 ```
+
+### Operator: `menu_indexed` website ingest
+
+Promote **discovered** → **menu_indexed** via free website/ordering-platform parsers (ChowNow API, order.online, Sauce, Squarespace, BentoBox, Toast, Playwright). **Always dry-run first** — headless is slow.
+
+```bash
+cd apps/web
+npm run db:probe:menu-batch -- --headless --limit=10
+npm run db:import:menu-indexed:website:headless:dry-run -- --limit=10
+npm run db:import:menu-indexed:website:headless -- --limit=10   # live
+```
+
+No Uber Eats / DoorDash / Grubhub / RapidAPI scrapers. See [`apps/web/docs/example-agent-flows.md`](apps/web/docs/example-agent-flows.md).
 
 ---
 

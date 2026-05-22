@@ -12,7 +12,7 @@ import { parseOrderOnlineMenuHtml } from "./parse-order-online";
 import { parseSauceMenuHtml } from "./parse-sauce";
 import { parseSpotAppsMenuHtml } from "./parse-spotapps";
 import { parseSquareOnlineMenuHtml } from "./parse-square-online";
-import { parseToastMenuHtml } from "./parse-toast";
+import { parseToastApolloHtml, parseToastMenuHtml } from "./parse-toast";
 import type { ParsedMenuResult } from "./types";
 
 export type MenuParseAttempt = {
@@ -24,6 +24,7 @@ const GENERIC_PARSERS: Array<{
   id: string;
   parse: (html: string) => ParsedMenuResult | null;
 }> = [
+  { id: "toast_apollo", parse: parseToastApolloHtml },
   { id: "json_ld", parse: parseMenuFromJsonLdHtml },
   { id: "bentobox_jsonld", parse: parseBentoBoxMenuHtml },
   { id: "squarespace_rich", parse: parseSquarespaceRichHtml },
@@ -60,9 +61,14 @@ export function parseMenuForUrl(html: string, url: string): MenuParseAttempt {
     if (result) return { result, parser: "sauce_next_data" };
   }
 
-  if (host.includes("toasttab.com")) {
+  if (host.includes("toasttab.com") || /order\.toasttab\.com/i.test(host)) {
     const result = parseToastMenuHtml(html);
-    if (result) return { result, parser: "toast_json" };
+    if (result) return { result, parser: "toast_apollo" };
+  }
+
+  if (/"__typename":"MenuItem"/.test(html)) {
+    const result = parseToastApolloHtml(html);
+    if (result) return { result, parser: "toast_apollo" };
   }
 
   if (host.includes("spotapps.co")) {
