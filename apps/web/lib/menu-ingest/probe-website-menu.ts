@@ -79,15 +79,18 @@ async function fetchAndParseUrl(
   fetchVia: "static" | "headless" | "api" | null;
 }> {
   const log = options.onAttempt ?? (() => {});
+  const showProgress = Boolean(options.onAttempt);
 
   if (isBlockedMenuUrl(url)) {
-    if (options.verbose) log(`  … blocked URL ${url}`);
+    if (options.verbose || showProgress) log(`  … blocked URL ${url}`);
     return { html: null, visibleText: null, parsed: null, parser: null, fetchVia: null };
   }
 
+  if (showProgress) log(`  … trying ${url}`);
+
   const apiMenu = await tryPlatformApiMenu(url);
   if (apiMenu) {
-    if (options.verbose) log(`  … chownow API menu from ${url}`);
+    if (options.verbose || showProgress) log(`  … chownow API menu from ${url}`);
     return {
       html: null,
       visibleText: null,
@@ -117,11 +120,11 @@ async function fetchAndParseUrl(
   }
 
   if (options.headless) {
-    if (options.verbose) {
+    if (options.verbose || showProgress) {
       log(
         staticHtml
           ? `  … static HTML had no menu, trying headless ${url}`
-          : `  … static fetch failed, trying headless ${url}`,
+          : `  … headless ${url} (Chromium may take 30–60s on first load)`,
       );
     }
     const { fetchWebsiteWithPlaywright } = await import("./fetch-website-playwright");

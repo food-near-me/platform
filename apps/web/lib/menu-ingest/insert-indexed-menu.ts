@@ -76,6 +76,47 @@ async function deleteMenusByStatus(
   }
 }
 
+export async function refreshPublishedIndexedMenu(
+  supabase: SupabaseClient,
+  restaurantId: string,
+  categories: MenuCategorySeed[],
+  menuSource: string,
+): Promise<{ itemCount: number; menuId: string }> {
+  await deleteMenusByStatus(supabase, restaurantId, "published");
+
+  const { data: menu, error: menuError } = await supabase
+    .from("menus")
+    .insert({
+      restaurant_id: restaurantId,
+      protocol_version: "1.0",
+      status: "published",
+    })
+    .select("id")
+    .single();
+
+  if (menuError || !menu) {
+    throw new Error(`Menu insert failed: ${menuError?.message}`);
+  }
+
+  const itemCount = await insertCategoriesAndItems(supabase, menu.id, categories);
+
+  const { error: statusError } = await supabase
+    .from("restaurants")
+    .update({
+      verification_status: "menu_indexed",
+      source: menuSource,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", restaurantId)
+    .neq("verification_status", "verified");
+
+  if (statusError) {
+    throw new Error(`Status update failed: ${statusError.message}`);
+  }
+
+  return { itemCount, menuId: menu.id };
+}
+
 export async function insertPublishedIndexedMenu(
   supabase: SupabaseClient,
   restaurantId: string,

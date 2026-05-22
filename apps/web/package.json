@@ -29,6 +29,10 @@
     "db:import:menu-indexed:website:dry-run": "tsx scripts/import-menu-indexed-from-website.ts --dry-run",
     "db:import:menu-indexed:website:headless": "tsx scripts/import-menu-indexed-from-website.ts --headless",
     "db:import:menu-indexed:website:headless:dry-run": "tsx scripts/import-menu-indexed-from-website.ts --headless --dry-run",
+    "db:refresh:menu-indexed:website:headless": "tsx scripts/refresh-menu-indexed-from-website.ts --headless",
+    "db:refresh:menu-indexed:website:headless:dry-run": "tsx scripts/refresh-menu-indexed-from-website.ts --headless --dry-run",
+    "db:dedupe:menu-indexed": "tsx scripts/dedupe-menu-indexed.ts",
+    "db:dedupe:menu-indexed:dry-run": "tsx scripts/dedupe-menu-indexed.ts --dry-run",
     "db:probe:menu-batch": "tsx scripts/probe-menu-batch.ts",
     "db:probe:delivery": "tsx scripts/probe-delivery-discovery.ts",
     "preflight": "./scripts/deploy-preflight.sh"

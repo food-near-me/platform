@@ -31,6 +31,7 @@ import {
   gridCellRadiusMeters,
   gridSamplePoints,
   rankWebsiteCandidates,
+  websiteHostKey,
 } from "../lib/menu-ingest/website-candidates";
 import {
   getRegionKeys,
@@ -128,6 +129,27 @@ async function loadRegionalDiscoveredIds(
   return [...ids];
 }
 
+async function loadIndexedWebsiteHosts(): Promise<Map<string, { id: string; name: string }>> {
+  const { data, error } = await supabase
+    .from("restaurants")
+    .select("id, name, website_url")
+    .eq("verification_status", "menu_indexed")
+    .not("website_url", "is", null);
+
+  if (error) {
+    throw new Error(`Failed to load indexed hosts: ${error.message}`);
+  }
+
+  const hosts = new Map<string, { id: string; name: string }>();
+  for (const row of data ?? []) {
+    const host = websiteHostKey(row.website_url!);
+    if (host && !hosts.has(host)) {
+      hosts.set(host, { id: row.id, name: row.name });
+    }
+  }
+  return hosts;
+}
+
 async function main() {
   const options = parseArgs(process.argv.slice(2));
 
@@ -181,12 +203,29 @@ async function main() {
       return;
     }
 
+    const indexedHosts = await loadIndexedWebsiteHosts();
+    if (indexedHosts.size > 0) {
+      console.log(`${indexedHosts.size} website host(s) already menu_indexed — duplicates will be skipped\n`);
+    }
+
     let attempted = 0;
     let promoted = 0;
     let items = 0;
     let skipped = 0;
+    let duplicateSkipped = 0;
 
     for (const candidate of candidates) {
+      const host = websiteHostKey(candidate.website_url);
+      const existingIndexed = host ? indexedHosts.get(host) : undefined;
+      if (existingIndexed && existingIndexed.id !== candidate.id) {
+        console.log(`→ ${candidate.name} (${candidate.id})`);
+        console.log(
+          `  ⊘ duplicate website (${host}) — already menu_indexed as ${existingIndexed.name} (${existingIndexed.id})`,
+        );
+        duplicateSkipped++;
+        continue;
+      }
+
       if (attempted >= options.limit) break;
 
       attempted++;
@@ -242,7 +281,7 @@ async function main() {
     }
 
     console.log(
-      `\nDone: ${promoted} promoted, ${items} items, ${skipped} skipped, ${attempted} attempted (${candidates.length} in pool)`,
+      `\nDone: ${promoted} promoted, ${items} items, ${skipped} skipped, ${attempted} attempted, ${duplicateSkipped} duplicate-host skipped (${candidates.length} in pool)`,
     );
   } finally {
     if (options.headless) {

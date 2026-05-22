@@ -106,12 +106,16 @@ export function normalizeWebsiteUrl(url: string): string | null {
   return `https://${trimmed}`;
 }
 
-function hostnameOf(url: string): string | null {
+export function websiteHostKey(url: string): string | null {
   try {
     return new URL(url).hostname.toLowerCase().replace(/^www\./, "");
   } catch {
     return null;
   }
+}
+
+function hostnameOf(url: string): string | null {
+  return websiteHostKey(url);
 }
 
 export function isChainHost(url: string): boolean {
