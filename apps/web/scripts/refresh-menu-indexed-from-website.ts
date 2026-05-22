@@ -22,7 +22,6 @@ import {
   gridSamplePoints,
 } from "../lib/menu-ingest/website-candidates";
 import {
-  getRegionKeys,
   printRegionList,
   resolveRegion,
 } from "./lib/load-import-regions";
@@ -179,7 +178,7 @@ async function main() {
   }
 
   try {
-    let candidateRows: Array<{
+    const candidateRows: Array<{
       id: string;
       name: string;
       website_url: string;

@@ -1,4 +1,4 @@
-import type { MenuCategorySeed, MenuItemSeed, ParsedMenuResult } from "./types";
+import type { MenuItemSeed, ParsedMenuResult } from "./types";
 
 type JsonObject = Record<string, unknown>;
 

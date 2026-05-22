@@ -131,7 +131,7 @@ async function fetchAndParseUrl(
     const rendered = await fetchWebsiteWithPlaywright(url);
     if (rendered) {
       lastHtml = rendered.html;
-      let lastVisible = rendered.visibleText;
+      const lastVisible = rendered.visibleText;
       const attempt = parseMenuForUrl(rendered.html, url);
       if (attempt.result && attempt.parser) {
         return {

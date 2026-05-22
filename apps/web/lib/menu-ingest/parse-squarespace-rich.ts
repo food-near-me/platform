@@ -1,4 +1,4 @@
-import type { MenuCategorySeed, MenuItemSeed, ParsedMenuResult } from "./types";
+import type { MenuCategorySeed, ParsedMenuResult } from "./types";
 
 function stripTags(html: string): string {
   return html

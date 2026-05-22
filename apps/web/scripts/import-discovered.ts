@@ -757,7 +757,7 @@ async function main() {
   if (!nycOnly && hasOsm) sources.push("osm");
   if (!osmOnly && hasNycOpenData) sources.push("nyc_open_data");
 
-  let stats: ImportStats = { inserted: 0, skipped: 0, enriched: 0, protected: 0 };
+  const stats: ImportStats = { inserted: 0, skipped: 0, enriched: 0, protected: 0 };
   let runError: string | null = null;
 
   try {

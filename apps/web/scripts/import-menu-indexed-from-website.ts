@@ -34,7 +34,6 @@ import {
   websiteHostKey,
 } from "../lib/menu-ingest/website-candidates";
 import {
-  getRegionKeys,
   printRegionList,
   resolveRegion,
 } from "./lib/load-import-regions";

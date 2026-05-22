@@ -656,7 +656,6 @@ async function getAdoScoreBreakdown(args: Record<string, unknown>) {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function validateMenuProtocol(args: Record<string, unknown>) {
   const payload = args.payload;
   const strict = args.strict === true;

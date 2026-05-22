@@ -1,4 +1,4 @@
-import type { MenuCategorySeed, MenuItemSeed, ParsedMenuResult } from "./types";
+import type { MenuCategorySeed, ParsedMenuResult } from "./types";
 
 const SKIP_LINE =
   /^(skip to|home|contact|hours|about|menu|order|reserve|location|phone|email|top$|copyright)/i;

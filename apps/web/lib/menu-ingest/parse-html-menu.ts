@@ -26,7 +26,7 @@ export function parseSquarespaceMenuHtml(html: string): ParsedMenuResult | null 
   if (!html.includes("menu-item-title")) return null;
 
   const categories: MenuCategorySeed[] = [];
-  let currentCategory = "Menu";
+  const currentCategory = "Menu";
 
   const sectionPattern =
     /<div class="menu-section-title"[^>]*>([\s\S]*?)<\/div>/gi;
