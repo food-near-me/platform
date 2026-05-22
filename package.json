@@ -11,7 +11,7 @@
     "build": "npm run build -w @foodnearme/menu-protocol && npm run build -w web",
     "start": "npm run start -w web",
     "lint": "npm run lint -w web",
-    "typecheck": "npm run typecheck -w web",
+    "typecheck": "npm run build -w @foodnearme/menu-protocol && npm run typecheck -w web",
     "test:mcp-flows": "npm run test:mcp-flows -w web",
     "test:mcp-flows:http": "npm run test:mcp-flows:http -w web",
     "smoke:mcp": "npm run smoke:mcp -w web",
