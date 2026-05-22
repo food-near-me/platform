@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { checkX402Access } from "@/lib/x402";
+import { buildMenuTrustNotice } from "@/lib/discovery/verification-status";
 
 const PRICE_RANGE_MAP: Record<number, string> = {
   1: "$",
@@ -26,7 +27,7 @@ export async function GET(
       .from("restaurants")
       .select("*")
       .eq("id", id)
-      .eq("verification_status", "verified")
+      .in("verification_status", ["verified", "menu_indexed"])
       .single();
 
     if (restaurantError || !restaurant) {
@@ -69,6 +70,11 @@ export async function GET(
     const menuProtocol = {
       version: "1.0" as const,
       domain: "foodnear.me" as const,
+      verification_status: restaurant.verification_status,
+      trust_notice: buildMenuTrustNotice(
+        restaurant.verification_status,
+        Boolean(menu.signature_hash),
+      ),
       restaurant: {
         "@context": "https://schema.org" as const,
         "@type": "Restaurant" as const,

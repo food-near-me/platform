@@ -62,7 +62,7 @@ export default function DocsPage() {
           <h2 className="text-xl font-medium mb-3">Tools</h2>
           <ul className="space-y-2 text-sm text-zinc-400">
             <li>
-              <code className="text-amber-200/90">search_restaurants</code> — two-tier lat/lng search (verified first, then discovered); check{" "}
+              <code className="text-amber-200/90">search_restaurants</code> — three-tier lat/lng search (verified → menu_indexed → discovered); check{" "}
               <code className="text-zinc-300">menu_available</code> before <code className="text-zinc-300">get_menu</code>
             </li>
             <li>
@@ -118,19 +118,22 @@ export default function DocsPage() {
         </section>
 
         <section className="mb-10 rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
-          <h2 className="text-xl font-medium mb-3">Data trust (two-tier search)</h2>
+          <h2 className="text-xl font-medium mb-3">Data trust (three-tier search)</h2>
           <p className="text-sm text-zinc-400 mb-3">
             <code className="text-zinc-300">search_restaurants</code> returns{" "}
-            <strong className="text-zinc-200">verified venues first</strong>, then{" "}
-            <strong className="text-zinc-200">discovered listings</strong> (place only — no authoritative menu).
+            <strong className="text-zinc-200">verified</strong> →{" "}
+            <strong className="text-zinc-200">menu_indexed</strong> →{" "}
+            <strong className="text-zinc-200">discovered</strong> (place only when no menu).
           </p>
           <ul className="list-disc list-inside space-y-2 text-sm text-zinc-400">
             <li>
-              <code className="text-zinc-300">menu_available: true</code> — owner-approved Menu Protocol menu; safe to call{" "}
-              <code className="text-zinc-300">get_menu</code>
+              <code className="text-zinc-300">verified</code> + <code className="text-zinc-300">menu_available: true</code> — owner-approved MP; authoritative for dietary/allergen claims
             </li>
             <li>
-              <code className="text-zinc-300">menu_available: false</code> — discovered place data; do not cite menu items
+              <code className="text-zinc-300">menu_indexed</code> + <code className="text-zinc-300">menu_available: true</code> — automated/public menu; cite with caveat
+            </li>
+            <li>
+              <code className="text-zinc-300">discovered</code> + <code className="text-zinc-300">menu_available: false</code> — place data only; do not cite menu items
             </li>
             <li>
               Trust progression: <code className="text-zinc-300">discovered</code> →{" "}

@@ -178,12 +178,13 @@ ADO scores (0-5) measure how well a restaurant's data is structured for AI agent
 
 ---
 
-## Data Trust Model (Two-Tier Search)
+## Data Trust Model (Three-Tier Search)
 
-`search_restaurants` and `/api/v1/search` return **verified venues first**, then **discovered listings** (place data only — no authoritative menu).
+`search_restaurants` and `/api/v1/search` return results in trust order: **verified** → **menu_indexed** → **discovered**.
 
 Every result includes `verification_status` and `menu_available`:
-- **verified** + `menu_available: true` — owner-approved Menu Protocol menu; safe to call `get_menu`
+- **verified** + `menu_available: true` — owner-approved Menu Protocol menu; authoritative for dietary/allergen claims
+- **menu_indexed** + `menu_available: true` — automated/public MP-shaped menu; **cite with caveat** — not owner-verified
 - **discovered** + `menu_available: false` — basic place info from open data (OSM, NYC Open Data); do not cite menu items
 
 **Verified means:**
@@ -191,9 +192,13 @@ Every result includes `verification_status` and `menu_available`:
 - Owner has reviewed and approved the Menu Protocol data
 - Approval is cryptographically signed (hash + timestamp + signer)
 
+**menu_indexed means:**
+- Menu shaped as Menu Protocol from automated/public sources
+- No owner signature — not authoritative for allergens/dietary
+
 Trust progression: `discovered` → `menu_indexed` → `verified`
 
-**Agent rules:** Prefer verified results for menu/dietary answers. Call `get_menu` only when `menu_available` is true. See https://foodnear.me/attribution for data sources.
+**Agent rules:** Prefer **verified** for dietary/allergen answers. **menu_indexed** is usable with explicit caveat. **discovered** is location only. Call `get_menu` only when `menu_available` is true. See https://foodnear.me/attribution for data sources.
 
 ---
 

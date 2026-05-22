@@ -10,7 +10,7 @@ Our MCP (Model Context Protocol) endpoint enables Claude, ChatGPT, and other LLM
 
 ## Services / Features
 
-- **Restaurant Search**: Two-tier geo search — verified venues with menus first, then discovered place listings; filter by cuisine, dietary tags, and ADO score
+- **Restaurant Search**: Three-tier geo search — verified → menu_indexed → discovered; filter by cuisine, dietary tags, and ADO score
 - **Menu Protocol Menus**: Retrieve full menus in MP v1.0 format with explicit boolean dietary flags, allergen arrays, customization options, and owner signatures
 - **ADO Scoring**: Agent Discovery Optimization scores (0-5) indicate data quality, verification status, and machine-readability
 - **Restaurant Profiles**: Schema.org/Restaurant JSON-LD with Menu Protocol extensions
@@ -82,17 +82,18 @@ Get menu for a restaurant:
 GET /api/v1/restaurant/{id}/menu.mp
 ```
 
-## Data Trust Model (Two-Tier Search)
+## Data Trust Model (Three-Tier Search)
 
-`search_restaurants` and `/api/v1/search` return **verified venues first**, then **discovered listings** (place data only — no authoritative menu).
+`search_restaurants` and `/api/v1/search` return results in trust order: **verified** → **menu_indexed** → **discovered**.
 
 Every result includes `verification_status` and `menu_available`:
-- **verified** + `menu_available: true` — owner-approved Menu Protocol menu; safe to call `get_menu`
-- **discovered** + `menu_available: false` — basic place info from open data (OSM, NYC Open Data); do not cite menu items
+- **verified** + `menu_available: true` — owner-approved Menu Protocol menu; authoritative for dietary/allergen claims
+- **menu_indexed** + `menu_available: true` — automated/public MP-shaped menu; **cite with caveat** — not owner-verified
+- **discovered** + `menu_available: false` — place only (OSM, NYC Open Data); do not cite menu items
 
 Trust progression: `discovered` → `menu_indexed` → `verified`
 
-**Agent rules:** Prefer verified results for menu/dietary answers. Call `get_menu` only when `menu_available` is true. See https://foodnear.me/attribution for data sources.
+**Agent rules:** Prefer **verified** for dietary/allergen answers. **menu_indexed** is usable with explicit caveat. **discovered** is location only. Call `get_menu` only when `menu_available` is true. See https://foodnear.me/attribution for data sources.
 
 ## Rate Limits
 

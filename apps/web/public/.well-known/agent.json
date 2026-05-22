@@ -9,7 +9,7 @@
   "capabilities": [
     {
       "name": "search",
-      "description": "Two-tier restaurant search: verified venues with menus first, then discovered place listings. Check menu_available before fetching menus.",
+      "description": "Three-tier restaurant search: verified → menu_indexed → discovered. Check menu_available before fetching menus.",
       "endpoint": "/api/v1/search",
       "method": "GET"
     },

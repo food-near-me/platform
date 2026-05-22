@@ -23,6 +23,8 @@
     "db:import:discovered:nyc-boroughs": "tsx scripts/import-discovered-batch.ts --preset=nyc-boroughs --pending-only --update-status",
     "db:import:discovered:tier2": "tsx scripts/import-discovered-batch.ts --preset=tier2-osm --pending-only --update-status --continue-on-error",
     "db:import:discovered:tier3": "tsx scripts/import-discovered-batch.ts --preset=tier3-osm --pending-only --update-status --continue-on-error",
+    "db:import:menu-indexed": "tsx scripts/import-menu-indexed.ts",
+    "db:import:menu-indexed:dry-run": "tsx scripts/import-menu-indexed.ts --dry-run",
     "preflight": "./scripts/deploy-preflight.sh"
   },
   "dependencies": {

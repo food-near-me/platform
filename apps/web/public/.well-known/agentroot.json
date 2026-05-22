@@ -2,7 +2,7 @@
   "version": "1.0",
   "domain": "foodnear.me",
   "name": "Food Near Me",
-  "description": "AI-native restaurant discovery API. Two-tier search — verified menus first, then discovered place listings — in Menu Protocol format with dietary flags, allergens, and owner-verified data where available.",
+  "description": "AI-native restaurant discovery API. Three-tier search — verified, menu_indexed, and discovered listings — in Menu Protocol format with dietary flags, allergens, and trust labels.",
   "discovery": {
     "mcp": {
       "url": "/mcp",

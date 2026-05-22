@@ -8,19 +8,19 @@
  */
 
 import { readFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   DISCOVERY_COPY_FILES,
   STALE_DISCOVERY_PATTERNS,
-  TWO_TIER_REQUIRED_MARKERS,
-  TWO_TIER_TRUST_FILES,
+  THREE_TIER_REQUIRED_MARKERS,
+  THREE_TIER_TRUST_FILES,
 } from "../lib/discovery/trust-model-copy";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const webRoot = resolve(scriptDir, "..");
 
-type CheckTarget = { label: string; content: string; requireTwoTier: boolean };
+type CheckTarget = { label: string; content: string; requireThreeTier: boolean };
 
 function parseArgs(argv: string[]) {
   let url: string | undefined;
@@ -38,7 +38,7 @@ function loadLocalTargets(): CheckTarget[] {
     return {
       label: relPath,
       content: readFileSync(absPath, "utf8"),
-      requireTwoTier: (TWO_TIER_TRUST_FILES as readonly string[]).includes(relPath),
+      requireThreeTier: (THREE_TIER_TRUST_FILES as readonly string[]).includes(relPath),
     };
   });
 }
@@ -53,11 +53,11 @@ async function fetchText(base: string, path: string): Promise<string> {
 
 async function loadRemoteTargets(base: string): Promise<CheckTarget[]> {
   const remotePaths = [
-    { path: "/llms.txt", requireTwoTier: true },
-    { path: "/llms-full.txt", requireTwoTier: true },
-    { path: "/SKILL.md", requireTwoTier: true },
-    { path: "/.well-known/mcp-server.json", requireTwoTier: false },
-    { path: "/openapi.json", requireTwoTier: false },
+    { path: "/llms.txt", requireThreeTier: true },
+    { path: "/llms-full.txt", requireThreeTier: true },
+    { path: "/SKILL.md", requireThreeTier: true },
+    { path: "/.well-known/mcp-server.json", requireThreeTier: false },
+    { path: "/openapi.json", requireThreeTier: false },
   ] as const;
 
   const targets: CheckTarget[] = [];
@@ -65,7 +65,7 @@ async function loadRemoteTargets(base: string): Promise<CheckTarget[]> {
     targets.push({
       label: item.path,
       content: await fetchText(base, item.path),
-      requireTwoTier: item.requireTwoTier,
+      requireThreeTier: item.requireThreeTier,
     });
   }
   return targets;
@@ -76,14 +76,14 @@ function checkTarget(target: CheckTarget): string[] {
 
   for (const pattern of STALE_DISCOVERY_PATTERNS) {
     if (pattern.test(target.content)) {
-      errors.push(`${target.label}: stale verified-only copy (${pattern})`);
+      errors.push(`${target.label}: stale copy (${pattern})`);
     }
   }
 
-  if (target.requireTwoTier) {
-    for (const marker of TWO_TIER_REQUIRED_MARKERS) {
+  if (target.requireThreeTier) {
+    for (const marker of THREE_TIER_REQUIRED_MARKERS) {
       if (!target.content.includes(marker)) {
-        errors.push(`${target.label}: missing two-tier marker "${marker}"`);
+        errors.push(`${target.label}: missing three-tier marker "${marker}"`);
       }
     }
   }
@@ -108,7 +108,7 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`OK  ${targets.length} discovery surface(s) — two-tier copy parity`);
+  console.log(`OK  ${targets.length} discovery surface(s) — three-tier copy parity`);
   process.exit(0);
 }
 

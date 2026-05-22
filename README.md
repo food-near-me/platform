@@ -1,6 +1,6 @@
 # Food Near Me — MCP Server
 
-> **Model Context Protocol server for AI-native restaurant discovery** — two-tier search (verified menus first, then discovered place listings), Menu Protocol menus, and structured menu validation. Plug into Claude Desktop, Cursor, ChatGPT, or any MCP host in about 30 seconds.
+> **Model Context Protocol server for AI-native restaurant discovery** — three-tier search (verified → menu_indexed → discovered), Menu Protocol menus, and structured menu validation. Plug into Claude Desktop, Cursor, ChatGPT, or any MCP host in about 30 seconds.
 
 [![MCP Registry](https://img.shields.io/badge/MCP-me.foodnear%2Ffoodnear--me-blue)](https://registry.modelcontextprotocol.io/v0.1/servers?search=me.foodnear/foodnear-me)
 
@@ -43,7 +43,7 @@ Your agent should call `search_restaurants` → `get_menu` (or `get_restaurant` 
 
 | Tool | Description |
 |------|-------------|
-| `search_restaurants` | Two-tier geo search by `lat`/`lng` — verified venues first, then discovered listings; check `menu_available` before `get_menu` |
+| `search_restaurants` | Three-tier geo search by `lat`/`lng` — verified → menu_indexed → discovered; check `menu_available` before `get_menu` |
 | `get_restaurant` | Restaurant profile with Schema.org JSON-LD + Menu Protocol extensions |
 | `get_menu` | Full Menu Protocol v1.0 menu (dietary flags, allergens, signatures) |
 | `get_ado_score_breakdown` | ADO score factors and improvement recommendations |
@@ -130,7 +130,7 @@ npm run test:mcp-flows:http
 # Discovery GETs + MCP tools/list count
 npm run smoke:mcp
 
-# Two-tier trust model copy parity (local files)
+# Three-tier trust model copy parity (local files)
 npm run check:discovery-copy
 
 # Full deploy gate (13 checks + discovery copy on production URL)
@@ -158,12 +158,13 @@ Scripted flows: [`apps/web/docs/example-agent-flows.md`](apps/web/docs/example-a
 
 ---
 
-## Data trust model (two-tier search)
+## Data trust model (three-tier search)
 
-- `search_restaurants` returns **verified venues first**, then **discovered listings** (place only — no authoritative menu).
+- `search_restaurants` returns **verified** → **menu_indexed** → **discovered**.
 - Every result includes `verification_status` and `menu_available`. Call `get_menu` only when `menu_available` is true.
-- **Verified** listings have owner-approved Menu Protocol data with explicit dietary booleans and allergen arrays — agents must not guess from item names alone.
-- Read `dietary.*` flags and `allergens[]`; do not infer from dish titles. Do not cite menu items for discovered listings.
+- **Verified** — owner-approved MP; authoritative for dietary/allergen claims.
+- **menu_indexed** — automated/public MP menu; cite with caveat — not owner-verified.
+- **discovered** — place only; do not cite menu items.
 - Trust progression: `discovered` → `menu_indexed` → `verified`. See https://foodnear.me/attribution for data sources.
 
 ---

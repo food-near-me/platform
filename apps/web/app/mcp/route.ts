@@ -2,6 +2,14 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { toolErrorResult } from "@/lib/mcp/tool-errors";
 import { promptDefinitions, handleGetPrompt } from "@/lib/mcp/prompts";
+import { SEARCH_RESTAURANTS_DESCRIPTION } from "@/lib/discovery/trust-model-copy";
+import {
+  buildMenuTrustNotice,
+  buildProfileTrustNotice,
+  buildSearchLinks,
+  buildSearchTrustNotice,
+  hasMenuAccess,
+} from "@/lib/discovery/verification-status";
 
 /**
  * MCP (Model Context Protocol) Server for foodnear.me
@@ -52,7 +60,7 @@ const VALID_DIETARY_FILTERS = [
 const TOOLS = [
   {
     name: "search_restaurants",
-    description: "Search for restaurants near a location. Returns verified venues first (owner-approved Menu Protocol menus), then discovered venues (basic listing only — no authoritative menu). Use menu_available and verification_status on each result. Call get_menu only when menu_available is true.",
+    description: SEARCH_RESTAURANTS_DESCRIPTION,
     inputSchema: {
       type: "object" as const,
       properties: {
@@ -317,7 +325,6 @@ async function searchRestaurants(args: Record<string, unknown>) {
     menu_available: boolean;
     data_source: string | null;
   }) => {
-    const verified = r.verification_status === "verified";
     const menuAvailable = Boolean(r.menu_available);
     return {
       id: r.id,
@@ -330,17 +337,8 @@ async function searchRestaurants(args: Record<string, unknown>) {
       verification_status: r.verification_status,
       menu_available: menuAvailable,
       data_source: r.data_source,
-      trust_notice: verified
-        ? menuAvailable
-          ? "Owner-verified Menu Protocol menu available."
-          : "Verified listing; menu not yet published."
-        : "Discovered listing only. Do not cite menu items — use get_menu only when menu_available is true.",
-      links: {
-        profile: `https://foodnear.me/api/v1/restaurant/${r.id}`,
-        ...(menuAvailable
-          ? { menu: `https://foodnear.me/api/v1/restaurant/${r.id}/menu.mp` }
-          : { claim: `https://foodnear.me/claim/${r.id}` }),
-      },
+      trust_notice: buildSearchTrustNotice(r.verification_status, menuAvailable),
+      links: buildSearchLinks(r.id, menuAvailable),
     };
   });
 
@@ -383,9 +381,9 @@ async function getRestaurant(args: Record<string, unknown>) {
   }
 
   const priceRangeMap: Record<number, string> = { 1: "$", 2: "$$", 3: "$$$", 4: "$$$$" };
-  const verified = data.verification_status === "verified";
+  const menuTier = hasMenuAccess(data.verification_status);
 
-  const { data: publishedMenu } = verified
+  const { data: publishedMenu } = menuTier
     ? await supabase
         .from("menus")
         .select("id")
@@ -394,7 +392,7 @@ async function getRestaurant(args: Record<string, unknown>) {
         .maybeSingle()
     : { data: null };
 
-  const menuAvailable = verified && Boolean(publishedMenu);
+  const menuAvailable = menuTier && Boolean(publishedMenu);
 
   return {
     "@context": "https://schema.org",
@@ -409,9 +407,7 @@ async function getRestaurant(args: Record<string, unknown>) {
     verification_status: data.verification_status,
     menu_available: menuAvailable,
     data_source: data.source ?? null,
-    trust_notice: menuAvailable
-      ? "Owner-verified Menu Protocol data."
-      : "Basic listing only. Menu not owner-verified — do not infer dishes or prices.",
+    trust_notice: buildProfileTrustNotice(data.verification_status, menuAvailable),
     delivery_radius_miles: data.delivery_radius_miles,
     payment_methods: data.payment_methods || [],
     dietary_certifications: data.dietary_certifications || [],
@@ -445,13 +441,13 @@ async function getMenu(args: Record<string, unknown>) {
     .from("restaurants")
     .select("*")
     .eq("id", restaurantId)
-    .eq("verification_status", "verified")
+    .in("verification_status", ["verified", "menu_indexed"])
     .single();
 
   if (rErr?.code === "PGRST116" || !restaurant) {
     throw new ResourceNotFoundError(
-      `Restaurant ${restaurantId} not found or not verified`,
-      "Call search_restaurants first, then use an id from results."
+      `Restaurant ${restaurantId} not found or has no accessible menu tier`,
+      "Use search_restaurants and call get_menu only when menu_available is true."
     );
   }
 
@@ -486,6 +482,11 @@ async function getMenu(args: Record<string, unknown>) {
   return {
     version: "1.0",
     domain: "foodnear.me",
+    verification_status: restaurant.verification_status,
+    trust_notice: buildMenuTrustNotice(
+      restaurant.verification_status,
+      Boolean(menu.signature_hash),
+    ),
     restaurant: {
       id: restaurant.id,
       name: restaurant.name,
@@ -549,7 +550,9 @@ async function getMenu(args: Record<string, unknown>) {
       hash: menu.signature_hash,
       note: "This signature cryptographically proves the restaurant owner approved this menu data"
     } : {
-      note: "Menu pending owner signature"
+      note: restaurant.verification_status === "menu_indexed"
+        ? "Indexed menu — no owner signature. Not authoritative for allergens/dietary."
+        : "Menu pending owner signature"
     }
   };
 }
@@ -581,6 +584,7 @@ async function getAdoScoreBreakdown(args: Record<string, unknown>) {
   // In production, calculate these from actual data
   // For now, provide reasonable estimates based on available data
   const hasVerification = restaurant.verification_status === "verified";
+  const hasIndexedMenu = restaurant.verification_status === "menu_indexed";
   const hasCuisine = (restaurant.cuisine_type || []).length > 0;
   const hasDietary = (restaurant.dietary_certifications || []).length > 0;
 
@@ -602,13 +606,21 @@ async function getAdoScoreBreakdown(args: Record<string, unknown>) {
     },
     protocol_compliance: { 
       weight: 0.15, 
-      score: hasVerification ? 5.0 : 2.0, 
-      note: hasVerification ? "Full Menu Protocol v1.0 compliance" : "Pending verification"
+      score: hasVerification ? 5.0 : hasIndexedMenu ? 3.5 : 2.0, 
+      note: hasVerification
+        ? "Full Menu Protocol v1.0 compliance"
+        : hasIndexedMenu
+          ? "Indexed MP menu — not owner-verified"
+          : "Pending verification"
     },
     verification_status: { 
       weight: 0.10, 
-      score: hasVerification ? 5.0 : 0.0, 
-      note: hasVerification ? "Owner-verified" : "Not verified"
+      score: hasVerification ? 5.0 : hasIndexedMenu ? 2.5 : 0.0, 
+      note: hasVerification
+        ? "Owner-verified"
+        : hasIndexedMenu
+          ? "Menu indexed from public sources"
+          : "Discovered place only"
     },
     media_context: { 
       weight: 0.10, 
@@ -618,7 +630,13 @@ async function getAdoScoreBreakdown(args: Record<string, unknown>) {
   };
 
   const recommendations: string[] = [];
-  if (!hasVerification) recommendations.push("Complete owner verification to unlock full features");
+  if (!hasVerification) {
+    recommendations.push(
+      hasIndexedMenu
+        ? "Complete owner verification to upgrade from indexed to authoritative menu"
+        : "Complete owner verification to unlock full features",
+    );
+  }
   if (!hasCuisine) recommendations.push("Add cuisine type tags for better search matching");
   if (!hasDietary) recommendations.push("Add dietary certifications (vegan_options, gluten_free_options, etc.)");
   recommendations.push("Keep menu data updated weekly for optimal freshness score");

@@ -6,7 +6,7 @@ Find restaurants near a location and retrieve structured, AI-optimized menus in 
 
 ## Capabilities
 
-- **search**: Two-tier geo search — verified venues with menus first, then discovered place listings; filter by cuisine, location, radius, dietary tags, and ADO score.
+- **search**: Three-tier geo search — verified → menu_indexed → discovered; filter by cuisine, location, radius, dietary tags, and ADO score.
 - **restaurant**: Fetch detailed restaurant profiles with Schema.org JSON-LD markup.
 - **menu**: Retrieve full menus in Menu Protocol v1.0 format with dietary flags, allergens, customization options, and cryptographic owner approval signatures.
 
@@ -70,17 +70,18 @@ Menu Protocol responses include:
 
 1. **Geocoding:** If the user does not provide coordinates (e.g., they say "near me" or "in Brooklyn"), you MUST ask the user for their address, neighborhood, or ZIP code, and convert it to latitude/longitude before searching.
 2. Call `/api/v1/search` with location and optional filters.
-3. Prefer results with `menu_available: true` (verified). Select based on `agent_score` and relevance.
+3. Prefer **verified** results for dietary/allergen answers; use **menu_indexed** with caveat when needed.
 4. Call `/api/v1/restaurant/{id}/menu.mp` only when `menu_available` is true.
 5. Filter menu items by `dietary.*` flags and check `allergens[]` for safety.
 6. Present options to the user or route them to the restaurant's contact/website.
 
-## Data Trust (Two-Tier Search)
+## Data Trust (Three-Tier Search)
 
-Search returns **verified venues first**, then **discovered listings** (place data only — no authoritative menu).
+Search returns **verified** → **menu_indexed** → **discovered** (place only).
 
 Every result includes `verification_status` and `menu_available`:
-- **verified** + `menu_available: true` — owner-approved Menu Protocol data with cryptographic signature; safe to fetch menus
+- **verified** + `menu_available: true` — owner-approved Menu Protocol data with cryptographic signature; authoritative for dietary/allergen claims
+- **menu_indexed** + `menu_available: true` — automated/public MP-shaped menu; cite with caveat — not owner-verified
 - **discovered** + `menu_available: false` — basic place info from open data; do not cite menu items
 
 Trust progression: `discovered` → `menu_indexed` → `verified`. See https://foodnear.me/attribution for data sources.

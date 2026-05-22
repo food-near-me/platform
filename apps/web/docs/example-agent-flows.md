@@ -73,7 +73,7 @@ Each flow includes:
 
 | Tool | Purpose |
 |---|---|
-| `search_restaurants` | Two-tier geo search + cuisine/dietary filters; verified first, then discovered — check `menu_available` |
+| `search_restaurants` | Three-tier geo search: verified → menu_indexed → discovered — check `menu_available` and `verification_status` |
 | `get_restaurant` | Schema.org/Restaurant profile + ADO score |
 | `get_menu` | Full Menu Protocol v1.0 menu with signatures |
 | `get_ado_score_breakdown` | Weighted ADO factors + improvement tips |

@@ -169,7 +169,7 @@ BEGIN
             SELECT 1 FROM menus m
             WHERE m.restaurant_id = r.id
               AND m.status = 'published'
-              AND r.verification_status = 'verified'
+              AND r.verification_status IN ('verified', 'menu_indexed')
         ) AS menu_available,
         r.source AS data_source
     FROM restaurants r
@@ -177,7 +177,7 @@ BEGIN
         ST_DWithin(r.location, search_point, radius_meters)
         AND (search_query = '' OR r.fts @@ plainto_tsquery('english', search_query))
         AND (
-            r.verification_status = 'discovered'
+            r.verification_status IN ('discovered', 'menu_indexed')
             OR (
                 r.verification_status = 'verified'
                 AND r.agent_score >= min_agent_score
@@ -188,7 +188,11 @@ BEGIN
             )
         )
     ORDER BY
-        CASE r.verification_status WHEN 'verified' THEN 0 ELSE 1 END,
+        CASE r.verification_status
+            WHEN 'verified' THEN 0
+            WHEN 'menu_indexed' THEN 1
+            ELSE 2
+        END,
         (r.agent_score * 10)
         + (CASE WHEN search_query = '' THEN 0 ELSE ts_rank(r.fts, plainto_tsquery('english', search_query)) * 20 END)
         - (ST_Distance(r.location, search_point) / 1000) DESC

@@ -11,7 +11,7 @@
         "@type": "Service",
         "@id": "https://foodnear.me/api/v1/search",
         "name": "Restaurant Search API",
-        "description": "Two-tier restaurant search: verified venues with menus first, then discovered place listings. Returns verification_status and menu_available on each result.",
+        "description": "Three-tier restaurant search: verified → menu_indexed → discovered. Returns verification_status and menu_available on each result.",
         "provider": {
           "@type": "Organization",
           "name": "foodnear.me"

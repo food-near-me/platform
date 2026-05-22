@@ -16,7 +16,7 @@
   "capabilities": [
     {
       "name": "search_restaurants",
-      "description": "Two-tier restaurant search: verified venues with menus first, then discovered place listings. Check menu_available before menu retrieval."
+      "description": "Three-tier restaurant search: verified → menu_indexed → discovered. Check menu_available before menu retrieval."
     },
     {
       "name": "get_restaurant",

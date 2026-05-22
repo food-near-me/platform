@@ -1,0 +1,104 @@
+{
+  "seeds": [
+    {
+      "match": {
+        "name_ilike": "%pizza%",
+        "lat": 40.7143,
+        "lng": -73.9625,
+        "radius_m": 800
+      },
+      "menu_source": "menu_indexed_seed_v1",
+      "categories": [
+        {
+          "name": "Pizzas",
+          "items": [
+            {
+              "name": "Margherita",
+              "description": "Tomato, mozzarella, basil",
+              "price": 18.0,
+              "dietary_vegetarian": true,
+              "allergens": ["wheat", "dairy"]
+            },
+            {
+              "name": "Pepperoni",
+              "description": "Cup pepperoni, mozzarella, tomato sauce",
+              "price": 22.0,
+              "allergens": ["wheat", "dairy"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "match": {
+        "name_ilike": "%cafe%",
+        "lat": 40.7178,
+        "lng": -73.9571,
+        "radius_m": 600
+      },
+      "menu_source": "menu_indexed_seed_v1",
+      "categories": [
+        {
+          "name": "Coffee",
+          "items": [
+            {
+              "name": "Espresso",
+              "description": "Double shot",
+              "price": 3.5,
+              "dietary_vegan": true,
+              "allergens": []
+            },
+            {
+              "name": "Oat Latte",
+              "description": "Espresso with oat milk",
+              "price": 5.5,
+              "dietary_vegan": true,
+              "allergens": []
+            }
+          ]
+        },
+        {
+          "name": "Pastries",
+          "items": [
+            {
+              "name": "Croissant",
+              "description": "Butter croissant",
+              "price": 4.0,
+              "dietary_vegetarian": true,
+              "allergens": ["wheat", "dairy", "egg"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "match": {
+        "name_ilike": "%sushi%",
+        "lat": 40.7102,
+        "lng": -73.9578,
+        "radius_m": 1000
+      },
+      "menu_source": "menu_indexed_seed_v1",
+      "categories": [
+        {
+          "name": "Rolls",
+          "items": [
+            {
+              "name": "California Roll",
+              "description": "Crab, avocado, cucumber",
+              "price": 12.0,
+              "allergens": ["fish", "sesame"]
+            },
+            {
+              "name": "Avocado Roll",
+              "description": "Avocado and cucumber",
+              "price": 10.0,
+              "dietary_vegan": true,
+              "allergens": ["sesame"]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

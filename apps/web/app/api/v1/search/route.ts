@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { checkX402Access } from "@/lib/x402";
+import {
+  buildRestSearchLinks,
+  buildSearchTrustNotice,
+} from "@/lib/discovery/verification-status";
 
 export async function GET(request: Request) {
   const paymentRequired = checkX402Access(request, "search");
@@ -8,13 +12,12 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   
-  // Extract agent search parameters
   const query = searchParams.get("query") || "";
   const lat = parseFloat(searchParams.get("lat") || "0");
   const lng = parseFloat(searchParams.get("lng") || "0");
   const radiusMiles = parseFloat(searchParams.get("radius") || "5");
   const minAdo = parseFloat(searchParams.get("ado_min") || "0");
-  const dietary = searchParams.getAll("dietary"); // e.g., ?dietary=vegan&dietary=gluten_free
+  const dietary = searchParams.getAll("dietary");
 
   if (!lat || !lng) {
     return NextResponse.json(
@@ -23,13 +26,11 @@ export async function GET(request: Request) {
     );
   }
 
-  // Convert miles to meters for PostGIS
   const radiusMeters = radiusMiles * 1609.34;
 
   try {
     const supabase = createClient();
     
-    // Call the Supabase RPC function for combined FTS + PostGIS search
     const { data, error } = await supabase.rpc('search_restaurants_for_agents', {
       search_query: query,
       lat: lat,
@@ -44,7 +45,6 @@ export async function GET(request: Request) {
       throw error;
     }
 
-    // Transform results to include links
     const results = (data || []).map((restaurant: {
       id: string;
       name: string;
@@ -59,12 +59,11 @@ export async function GET(request: Request) {
       const menuAvailable = Boolean(restaurant.menu_available);
       return {
         ...restaurant,
-        links: {
-          profile: `/api/v1/restaurant/${restaurant.id}`,
-          ...(menuAvailable
-            ? { menu: `/api/v1/restaurant/${restaurant.id}/menu.mp` }
-            : { claim: `/claim/${restaurant.id}` }),
-        },
+        trust_notice: buildSearchTrustNotice(
+          restaurant.verification_status,
+          menuAvailable,
+        ),
+        links: buildRestSearchLinks(restaurant.id, menuAvailable),
       };
     });
 

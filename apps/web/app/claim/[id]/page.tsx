@@ -25,6 +25,7 @@ export default async function ClaimListingPage({ params }: PageProps) {
   }
 
   const isVerified = restaurant.verification_status === "verified";
+  const isIndexed = restaurant.verification_status === "menu_indexed";
   const sourceLabel =
     restaurant.source === "osm"
       ? "OpenStreetMap"
@@ -43,7 +44,9 @@ export default async function ClaimListingPage({ params }: PageProps) {
           <p className="lede">
             {isVerified
               ? "This restaurant already has a verified Menu Protocol listing on foodnear.me."
-              : "Publish an owner-approved, AI-readable menu so agents can recommend your restaurant with accurate dishes, prices, and dietary information."}
+              : isIndexed
+                ? "This listing has an indexed menu from public/automated sources. Claim it to publish an owner-verified Menu Protocol menu agents can cite authoritatively."
+                : "Publish an owner-approved, AI-readable menu so agents can recommend your restaurant with accurate dishes, prices, and dietary information."}
           </p>
         </div>
 
@@ -61,8 +64,9 @@ export default async function ClaimListingPage({ params }: PageProps) {
             ) : null}
             {!isVerified ? (
               <p className="form-note">
-                Basic info sourced from {sourceLabel}. Menu data is not verified
-                until you approve it.
+                {isIndexed
+                  ? "Menu data is indexed from automated/public sources — not owner-verified until you approve it."
+                  : `Basic info sourced from ${sourceLabel}. Menu data is not verified until you approve it.`}
               </p>
             ) : null}
             {restaurant.health_inspection_grade ? (

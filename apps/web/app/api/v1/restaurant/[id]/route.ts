@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { checkX402Access } from "@/lib/x402";
+import {
+  buildProfileTrustNotice,
+  hasMenuAccess,
+} from "@/lib/discovery/verification-status";
 
 const PRICE_RANGE_MAP: Record<number, string> = {
   1: "$",
@@ -25,7 +29,7 @@ export async function GET(
       .from("restaurants")
       .select("*")
       .eq("id", id)
-      .eq("verification_status", "verified")
+      .in("verification_status", ["discovered", "menu_indexed", "verified"])
       .single();
 
     if (error || !restaurant) {
@@ -35,7 +39,18 @@ export async function GET(
       );
     }
 
-    // Transform to Schema.org compatible format
+    const menuTier = hasMenuAccess(restaurant.verification_status);
+    const { data: publishedMenu } = menuTier
+      ? await supabase
+          .from("menus")
+          .select("id")
+          .eq("restaurant_id", id)
+          .eq("status", "published")
+          .maybeSingle()
+      : { data: null };
+
+    const menuAvailable = menuTier && Boolean(publishedMenu);
+
     const restaurantProfile = {
       "@context": "https://schema.org",
       "@type": "Restaurant",
@@ -48,17 +63,22 @@ export async function GET(
       } : undefined,
       servesCuisine: restaurant.cuisine_type,
       priceRange: restaurant.price_range ? PRICE_RANGE_MAP[restaurant.price_range] : undefined,
-      
-      // Menu Protocol Extensions
       agent_score: restaurant.agent_score,
       verification_status: restaurant.verification_status,
+      menu_available: menuAvailable,
+      data_source: restaurant.source ?? null,
+      trust_notice: buildProfileTrustNotice(
+        restaurant.verification_status,
+        menuAvailable,
+      ),
       delivery_radius_miles: restaurant.delivery_radius_miles,
       payment_methods: restaurant.payment_methods,
       dietary_certifications: restaurant.dietary_certifications,
-      
-      links: {
-        menu: `/api/v1/restaurant/${id}/menu.mp`
-      }
+      website_url: restaurant.website_url ?? null,
+      phone: restaurant.phone ?? null,
+      links: menuAvailable
+        ? { menu: `/api/v1/restaurant/${id}/menu.mp` }
+        : { claim: `/claim/${id}` },
     };
 
     return NextResponse.json(restaurantProfile);
