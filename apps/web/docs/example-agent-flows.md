@@ -252,6 +252,18 @@ Pre-deploy artifact check:
 | `flow-a` | Vegan Thai search |
 | `flow-a-chain` | Search → get_menu |
 | `flow-indexed-tier` | menu_indexed search + trust_notice + get_menu (Williamsburg fixture) |
+
+### `menu_indexed` website ingest (operator)
+
+Automated promotion from **discovered** → **menu_indexed** via public website / ordering-platform parsers (no paid scrapers).
+
+| Step | Command |
+|------|---------|
+| Measure hit rate | `npm run db:probe:menu-batch -- --headless --limit=25` |
+| Dry-run import | `npm run db:import:menu-indexed:website:headless:dry-run -- --limit=25` |
+| Live import | `npm run db:import:menu-indexed:website:headless -- --limit=25` |
+
+**Agent rules:** Prefer **verified** for dietary/allergen answers. **menu_indexed** is usable with explicit caveat (automated scrape, not owner-signed). **discovered** is location-only — do not invent menus.
 | `flow-c` | ADO score breakdown |
 
 DB-dependent flows skip when Supabase env is missing or seed data is empty.

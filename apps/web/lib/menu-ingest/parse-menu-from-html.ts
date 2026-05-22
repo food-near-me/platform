@@ -65,6 +65,11 @@ export function parseMenuForUrl(html: string, url: string): MenuParseAttempt {
     if (result) return { result, parser: "toast_json" };
   }
 
+  if (host.includes("spotapps.co")) {
+    const result = parseSpotAppsMenuHtml(html);
+    if (result) return { result, parser: "spotapps_html" };
+  }
+
   if (host.includes("square.site") || host.includes("squareup.com")) {
     const result = parseSquareOnlineMenuHtml(html);
     if (result) return { result, parser: "square_online_json" };

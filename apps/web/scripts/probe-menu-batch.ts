@@ -61,8 +61,32 @@ async function main() {
   let hit = 0;
   let miss = 0;
 
+  const PROBE_TIMEOUT_MS = 90_000;
+
   for (const c of candidates) {
-    const probe = await probeWebsiteForMenu(c.website_url, { maxUrls: 14, headless });
+    const probePromise = probeWebsiteForMenu(c.website_url, {
+      maxUrls: 18,
+      headless,
+      preserveQueryOnDiscover: true,
+    });
+    const probe = await Promise.race([
+      probePromise,
+      new Promise<Awaited<typeof probePromise>>((resolve) =>
+        setTimeout(
+          () =>
+            resolve({
+              parsed: null,
+              matchedUrl: null,
+              parser: null,
+              fetchVia: null,
+              triedUrls: [],
+              discoveredUrls: [],
+              deliveryUrls: [],
+            }),
+          PROBE_TIMEOUT_MS,
+        ),
+      ),
+    ]);
     if (probe.parsed) {
       hit++;
       const n = probe.parsed.categories.reduce((a, x) => a + x.items.length, 0);

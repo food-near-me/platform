@@ -18,6 +18,7 @@ import {
   summarizeDeliveryUrls,
 } from "./delivery-platform-urls";
 import { buildMenuProbeUrls, normalizeWebsiteUrl } from "./website-candidates";
+import { isBlockedMenuUrl, filterMenuProbeUrls } from "./blocked-menu-urls";
 import type { ParsedMenuResult } from "./types";
 
 export type MenuProbeOutcome = {
@@ -33,6 +34,8 @@ export type MenuProbeOutcome = {
 
 export type ProbeWebsiteOptions = {
   maxUrls?: number;
+  /** Keep query strings on discovered menu URLs (some sites use ?page=menu). */
+  preserveQueryOnDiscover?: boolean;
   verbose?: boolean;
   headless?: boolean;
   onAttempt?: (message: string) => void;
@@ -74,6 +77,11 @@ async function fetchAndParseUrl(
   fetchVia: "static" | "headless" | "api" | null;
 }> {
   const log = options.onAttempt ?? (() => {});
+
+  if (isBlockedMenuUrl(url)) {
+    if (options.verbose) log(`  … blocked URL ${url}`);
+    return { html: null, parsed: null, parser: null, fetchVia: null };
+  }
 
   const apiMenu = await tryPlatformApiMenu(url);
   if (apiMenu) {
@@ -203,7 +211,9 @@ export async function probeWebsiteForMenu(
       collectDeliveryFromHtml(deliveryUrls, seed.html, seedUrl);
       discoveredUrls.push(
         ...discoverPlatformUrlsFromHtml(seed.html, seedUrl),
-        ...discoverMenuUrlsFromHtml(seed.html, seedUrl),
+        ...discoverMenuUrlsFromHtml(seed.html, seedUrl, {
+          preserveQuery: options.preserveQueryOnDiscover,
+        }),
       );
     }
 
@@ -226,21 +236,27 @@ export async function probeWebsiteForMenu(
       });
     }
 
-    queue = [
-      ...normalizePlatformProbeUrls(discoveredUrls),
-      ...mergeProbeUrls(buildMenuProbeUrls(normalized), []),
-    ]
-      .filter((url) => url !== seedUrl)
-      .sort((a, b) => scoreDiscoveredMenuUrl(b) - scoreDiscoveredMenuUrl(a));
+    queue = filterMenuProbeUrls(
+      [
+        ...normalizePlatformProbeUrls(discoveredUrls),
+        ...mergeProbeUrls(buildMenuProbeUrls(normalized), []),
+      ]
+        .filter((url) => url !== seedUrl)
+        .sort((a, b) => scoreDiscoveredMenuUrl(b) - scoreDiscoveredMenuUrl(a)),
+    );
+    if (normalized !== seedUrl && !queue.includes(normalized)) {
+      queue.unshift(normalized);
+    }
   } else {
-    queue = mergeProbeUrls(buildMenuProbeUrls(normalized), []);
+    queue = filterMenuProbeUrls(mergeProbeUrls(buildMenuProbeUrls(normalized), []));
+    if (normalized) queue.unshift(normalized);
   }
 
   const queued = new Set<string>();
 
   while (queue.length > 0 && triedUrls.length < maxUrls) {
     const url = queue.shift();
-    if (!url || triedUrls.includes(url) || queued.has(url)) continue;
+    if (!url || triedUrls.includes(url) || queued.has(url) || isBlockedMenuUrl(url)) continue;
     queued.add(url);
     triedUrls.push(url);
 
@@ -253,15 +269,18 @@ export async function probeWebsiteForMenu(
     if (result.html) {
       collectDeliveryFromHtml(deliveryUrls, result.html, url);
       const platformLinks = discoverPlatformUrlsFromHtml(result.html, url);
-      const menuLinks = discoverMenuUrlsFromHtml(result.html, url);
+      const menuLinks = discoverMenuUrlsFromHtml(result.html, url, {
+        preserveQuery: options.preserveQueryOnDiscover,
+      });
       discoveredUrls.push(...platformLinks, ...menuLinks);
 
       if (options.verbose && !result.parsed) log(`  … no menu on ${url}`);
 
-      const rankedNext = normalizePlatformProbeUrls([...platformLinks, ...menuLinks]).sort(
-        (a, b) => scoreDiscoveredMenuUrl(b) - scoreDiscoveredMenuUrl(a),
-      );
-      for (const next of rankedNext) {
+      for (const next of filterMenuProbeUrls(
+        normalizePlatformProbeUrls([...platformLinks, ...menuLinks]).sort(
+          (a, b) => scoreDiscoveredMenuUrl(b) - scoreDiscoveredMenuUrl(a),
+        ),
+      )) {
         if (!queued.has(next) && !triedUrls.includes(next)) queue.unshift(next);
       }
     } else if (options.verbose && !result.parsed) {

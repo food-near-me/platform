@@ -16,9 +16,11 @@ export function discoverPlatformUrlsFromHtml(html: string, pageUrl: string): str
   for (const match of html.matchAll(/https?:\/\/[^\s"'<>]+/gi)) {
     const raw = match[0].replace(/\\u0026/g, "&").replace(/&amp;/g, "&");
     if (!PLATFORM_HOST.test(raw)) continue;
+    if (/stripe\.(com|network)|js\.stripe/i.test(raw)) continue;
     try {
       const url = new URL(raw);
       if (/\.(png|jpg|jpeg|gif|webp|css|js|svg|woff2?)$/i.test(url.pathname)) continue;
+      if (/stripe\.(com|network)|js\.stripe/i.test(url.hostname)) continue;
       found.push(url.toString());
     } catch {
       // ignore
@@ -33,6 +35,7 @@ export function discoverPlatformUrlsFromHtml(html: string, pageUrl: string): str
       const resolved = new URL(href, pageUrl);
       if (/\.(png|jpg|jpeg|gif|webp|css|js|svg|woff2?|ico)$/i.test(resolved.pathname)) continue;
       if (/\/wp-content\//i.test(resolved.pathname)) continue;
+      if (/stripe\.(com|network)|js\.stripe/i.test(resolved.hostname)) continue;
       resolved.hash = "";
       if (PLATFORM_HOST.test(resolved.hostname)) {
         found.push(resolved.toString());
@@ -45,21 +48,45 @@ export function discoverPlatformUrlsFromHtml(html: string, pageUrl: string): str
     }
   }
 
-  const spotId = html.match(/spot_id[=:"'\s]+(\d{4,})/i)?.[1];
+  const spotId =
+    html.match(/spot_id[=:"'\s]+(\d{4,})/i)?.[1] ??
+    html.match(/ordering-menu\/\?spot_id=(\d{4,})/i)?.[1];
   if (spotId) {
     found.push(`https://tmt.spotapps.co/ordering-menu/?spot_id=${spotId}`);
   }
 
-  for (const match of html.matchAll(/toasttab\.com\/([a-z0-9-]+)/gi)) {
+  for (const match of html.matchAll(/toasttab\.com\/([a-z0-9-]+)(?:\/[a-z0-9-]+)?/gi)) {
     const slug = match[1];
-    if (slug && !["giftcards", "local", "order"].includes(slug.toLowerCase())) {
-      found.push(`https://www.toasttab.com/${slug}`);
+    if (slug && !["giftcards", "local", "order", "v2", "www"].includes(slug.toLowerCase())) {
+      found.push(`https://www.toasttab.com/${slug}/v2/online-order`);
     }
   }
 
   found.push(...discoverDeliveryPlatformUrlsFromHtml(html, pageUrl));
 
   return [...new Set(found)];
+}
+
+/** Toast gift-card / marketing paths → online-order menu URL. */
+export function buildToastMenuUrl(platformUrl: string): string | null {
+  try {
+    const url = new URL(platformUrl);
+    if (!url.hostname.includes("toasttab.com")) return null;
+    const parts = url.pathname.split("/").filter(Boolean);
+    if (parts.length === 0) return null;
+    const slug = parts[0];
+    if (["giftcards", "local", "order", "v2"].includes(slug.toLowerCase())) return null;
+    if (parts.includes("v2") && parts.includes("online-order")) return platformUrl;
+    if (/giftcard|gift-card/i.test(url.pathname)) {
+      return `https://www.toasttab.com/${slug}/v2/online-order`;
+    }
+    if (parts.length === 1) {
+      return `https://www.toasttab.com/${slug}/v2/online-order`;
+    }
+    return `https://www.toasttab.com/${slug}/v2/online-order`;
+  } catch {
+    return null;
+  }
 }
 
 export function buildSauceMenuUrl(platformUrl: string): string | null {
@@ -89,6 +116,11 @@ export function normalizePlatformProbeUrls(urls: string[]): string[] {
     const delivery = normalizeDeliveryPlatformUrl(normalized);
     if (delivery) {
       out.push(delivery);
+      continue;
+    }
+    const toast = buildToastMenuUrl(normalized);
+    if (toast) {
+      out.push(toast);
       continue;
     }
     const sauce = buildSauceMenuUrl(normalized);

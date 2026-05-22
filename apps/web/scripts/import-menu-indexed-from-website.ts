@@ -200,6 +200,8 @@ async function main() {
         const probe = await probeWebsiteForMenu(candidate.website_url, {
           verbose: options.verbose,
           headless: options.headless,
+          maxUrls: 18,
+          preserveQueryOnDiscover: true,
           onAttempt: options.verbose ? (msg) => console.log(msg) : undefined,
         });
 

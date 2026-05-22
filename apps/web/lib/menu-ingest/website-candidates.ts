@@ -167,6 +167,9 @@ export function getSkipReason(url: string, includeChains: boolean): string | nul
   return null;
 }
 
+const PLATFORM_ORDERING_HOST =
+  /(?:toasttab|spotapps|order\.online|getsauce|chownow|toasttab|square\.site|squareup)\./i;
+
 export function buildMenuProbeUrls(websiteUrl: string): string[] {
   const normalized = normalizeWebsiteUrl(websiteUrl);
   if (!normalized) return [];
@@ -175,6 +178,10 @@ export function buildMenuProbeUrls(websiteUrl: string): string[] {
   try {
     parsed = new URL(normalized);
   } catch {
+    return [normalized];
+  }
+
+  if (PLATFORM_ORDERING_HOST.test(parsed.hostname)) {
     return [normalized];
   }
 
