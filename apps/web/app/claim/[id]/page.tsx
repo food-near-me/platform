@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ClaimSelfServeForm } from "@/components/claim-self-serve-form";
 import { LeadForm } from "@/components/lead-form";
 import { SiteShell } from "@/components/site-shell";
 import { createClient } from "@/lib/supabase/server";
@@ -90,15 +91,26 @@ export default async function ClaimListingPage({ params }: PageProps) {
                 </Link>
               </p>
             ) : (
-              <LeadForm
-                source={`claim:${restaurant.id.slice(0, 36)}`}
-                submitLabel="Request to claim this listing"
-                note="We will verify ownership and help you publish a Menu Protocol menu."
-                successMessage="Claim request received. We will email you within 48 hours."
-                defaultRestaurantName={restaurant.name}
-                defaultCity="Brooklyn, NY"
-                lockRestaurantName
-              />
+              <>
+                <ClaimSelfServeForm
+                  restaurantId={restaurant.id}
+                  restaurantName={restaurant.name}
+                  defaultMenuUrl={restaurant.website_url}
+                  isIndexed={isIndexed}
+                />
+                <details className="claim-concierge">
+                  <summary>Prefer concierge setup?</summary>
+                  <LeadForm
+                    source={`claim:concierge:${restaurant.id.slice(0, 36)}`}
+                    submitLabel="Request concierge help"
+                    note="We will verify ownership and help you publish a Menu Protocol menu."
+                    successMessage="Request received. We will email you within 48 hours."
+                    defaultRestaurantName={restaurant.name}
+                    defaultCity="Brooklyn, NY"
+                    lockRestaurantName
+                  />
+                </details>
+              </>
             )}
           </div>
         </div>

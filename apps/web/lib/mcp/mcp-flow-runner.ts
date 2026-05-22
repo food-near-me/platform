@@ -32,6 +32,12 @@ export const DEFAULT_TEST_LOCATION = {
   lng: -74.006,
 } as const;
 
+/** Williamsburg — production menu_indexed fixture (Black Star Bakery & Cafe). */
+export const MENU_INDEXED_TEST_LOCATION = {
+  lat: 40.7178,
+  lng: -73.9571,
+} as const;
+
 export type FlowStatus = "pass" | "fail" | "skip";
 
 export type FlowResult = {
@@ -251,6 +257,7 @@ export async function runMcpFlows(
   if (!db) {
     results.push(await skipFlow("flow-a", "Dietary-safe search", "Database not configured"));
     results.push(await skipFlow("flow-a-chain", "Search → get_menu chain", "Database not configured"));
+    results.push(await skipFlow("flow-indexed-tier", "menu_indexed tier + trust_notice", "Database not configured"));
     results.push(await skipFlow("flow-c", "ADO score breakdown", "Database not configured"));
     return results;
   }
@@ -319,6 +326,54 @@ export async function runMcpFlows(
       assert(Array.isArray(menuBlock.categories), "Expected categories array");
       assert(typeof menuBlock.items_count === "number", "Missing items_count");
     })
+  );
+
+  results.push(
+    await runFlow("flow-indexed-tier", "menu_indexed tier + trust_notice + get_menu", async () => {
+      const search = requireData(
+        await client.callTool("search_restaurants", {
+          ...MENU_INDEXED_TEST_LOCATION,
+          query: "cafe",
+          radius_miles: 0.5,
+        }),
+      ) as Record<string, unknown>;
+
+      const resultsList = search.results as Array<Record<string, unknown>>;
+      assert(Array.isArray(resultsList), "Expected results array");
+
+      const indexed = resultsList.find(
+        (r) => r.verification_status === "menu_indexed" && r.menu_available === true,
+      );
+      if (!indexed) {
+        throw new Error(
+          "Expected at least one menu_indexed result with menu_available near Williamsburg fixture",
+        );
+      }
+
+      const indexedId = indexed.id as string;
+
+      const trustNotice = String(indexed.trust_notice ?? "");
+      assert(
+        trustNotice.toLowerCase().includes("indexed") &&
+          trustNotice.toLowerCase().includes("not owner-verified"),
+        "Expected indexed trust_notice caveat on search result",
+      );
+
+      const menu = requireData(
+        await client.callTool("get_menu", { restaurant_id: indexedId }),
+      ) as Record<string, unknown>;
+
+      assert(menu.verification_status === "menu_indexed", "Expected menu_indexed on get_menu");
+      const menuTrust = String(menu.trust_notice ?? "");
+      assert(
+        menuTrust.toLowerCase().includes("not owner-verified"),
+        "Expected indexed trust_notice on get_menu",
+      );
+
+      const menuBlock = menu.menu as Record<string, unknown>;
+      assert(typeof menuBlock.items_count === "number", "Missing items_count");
+      assert((menuBlock.items_count as number) > 0, "Expected at least one menu item");
+    }),
   );
 
   results.push(

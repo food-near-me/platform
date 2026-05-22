@@ -121,7 +121,7 @@ Human-readable text is still in `content[0].text` for hosts that ignore `_meta`.
 From repo root (with `apps/web` dev server running for localhost):
 
 ```bash
-# Automated agent flows (13 flows when Supabase + seed configured; 10 without DB)
+# Automated agent flows (14 flows when Supabase + seed configured; 11 without DB)
 npm run test:mcp-flows
 
 # Against production

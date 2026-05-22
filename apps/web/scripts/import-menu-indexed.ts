@@ -15,6 +15,8 @@ import { createClient } from "@supabase/supabase-js";
 import * as dotenv from "dotenv";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { insertPublishedIndexedMenu } from "../lib/menu-ingest/insert-indexed-menu";
+import type { MenuCategorySeed } from "../lib/menu-ingest/types";
 
 dotenv.config({ path: resolve(process.cwd(), ".env.local") });
 
@@ -29,22 +31,6 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-type MenuItemSeed = {
-  name: string;
-  description?: string;
-  price: number;
-  dietary_vegetarian?: boolean;
-  dietary_vegan?: boolean;
-  dietary_gluten_free?: boolean;
-  allergens?: string[];
-  prep_time?: number;
-};
-
-type CategorySeed = {
-  name: string;
-  items: MenuItemSeed[];
-};
-
 type SeedEntry = {
   restaurant_id?: string;
   match?: {
@@ -54,7 +40,7 @@ type SeedEntry = {
     radius_m?: number;
   };
   menu_source: string;
-  categories: CategorySeed[];
+  categories: MenuCategorySeed[];
 };
 
 type SeedFile = {
@@ -117,107 +103,6 @@ async function findRestaurant(seed: SeedEntry): Promise<{ id: string; name: stri
   return pick ?? null;
 }
 
-async function upsertMenu(
-  restaurantId: string,
-  seed: SeedEntry,
-  dryRun: boolean,
-): Promise<number> {
-  if (dryRun) {
-    const count = seed.categories.reduce((n, c) => n + c.items.length, 0);
-    console.log(`  [dry-run] would insert ${count} items`);
-    return count;
-  }
-
-  const { data: existingMenu } = await supabase
-    .from("menus")
-    .select("id")
-    .eq("restaurant_id", restaurantId)
-    .eq("status", "published")
-    .maybeSingle();
-
-  let menuId = existingMenu?.id;
-
-  if (!menuId) {
-    const { data: menu, error: menuError } = await supabase
-      .from("menus")
-      .insert({
-        restaurant_id: restaurantId,
-        protocol_version: "1.0",
-        status: "published",
-      })
-      .select("id")
-      .single();
-
-    if (menuError || !menu) {
-      throw new Error(`Menu insert failed: ${menuError?.message}`);
-    }
-    menuId = menu.id;
-  }
-
-  let itemCount = 0;
-
-  for (let catIdx = 0; catIdx < seed.categories.length; catIdx++) {
-    const cat = seed.categories[catIdx];
-
-    const { data: category, error: catError } = await supabase
-      .from("menu_categories")
-      .insert({
-        menu_id: menuId,
-        name: cat.name,
-        sort_order: catIdx,
-      })
-      .select("id")
-      .single();
-
-    if (catError || !category) {
-      throw new Error(`Category insert failed: ${catError?.message}`);
-    }
-
-    for (const item of cat.items) {
-      const { error: itemError } = await supabase.from("menu_items").insert({
-        category_id: category.id,
-        name: item.name,
-        description: item.description ?? "",
-        price: item.price,
-        currency: "USD",
-        available: true,
-        preparation_time_minutes: item.prep_time ?? 15,
-        dietary_vegetarian: item.dietary_vegetarian ?? false,
-        dietary_vegan: item.dietary_vegan ?? false,
-        dietary_gluten_free: item.dietary_gluten_free ?? false,
-        dietary_halal: false,
-        dietary_kosher: false,
-        dietary_nut_free: !(
-          item.allergens?.includes("tree_nuts") || item.allergens?.includes("peanuts")
-        ),
-        allergens: item.allergens ?? [],
-        popularity_score: 3.0,
-      });
-
-      if (itemError) {
-        throw new Error(`Item insert failed (${item.name}): ${itemError.message}`);
-      }
-      itemCount++;
-    }
-  }
-
-  const { error: statusError } = await supabase
-    .from("restaurants")
-    .update({
-      verification_status: "menu_indexed",
-      source: seed.menu_source,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", restaurantId)
-    .neq("verification_status", "verified");
-
-  if (statusError) {
-    throw new Error(`Status update failed: ${statusError.message}`);
-  }
-
-  return itemCount;
-}
-
 async function main() {
   const { dryRun, file } = parseArgs(process.argv.slice(2));
   const payload = JSON.parse(readFileSync(file, "utf8")) as SeedFile;
@@ -259,10 +144,21 @@ async function main() {
     console.log(`→ ${restaurant.name} (${restaurant.id}) [${restaurant.verification_status}]`);
 
     try {
-      const count = await upsertMenu(restaurant.id, seed, dryRun);
-      items += count;
+      if (dryRun) {
+        const count = seed.categories.reduce((n, c) => n + c.items.length, 0);
+        console.log(`  [dry-run] would promote to menu_indexed (${count} items)`);
+        items += count;
+      } else {
+        const result = await insertPublishedIndexedMenu(
+          supabase,
+          restaurant.id,
+          seed.categories,
+          seed.menu_source,
+        );
+        items += result.itemCount;
+        console.log(`  ✓ promoted to menu_indexed (${result.itemCount} items)`);
+      }
       promoted++;
-      console.log(`  ✓ ${dryRun ? "would promote" : "promoted"} to menu_indexed (${count} items)`);
     } catch (error) {
       console.error(`  ✗ ${error instanceof Error ? error.message : error}`);
       skipped++;

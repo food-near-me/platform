@@ -251,6 +251,7 @@ Pre-deploy artifact check:
 | `flow-static-uuid` | Invalid UUID rejected |
 | `flow-a` | Vegan Thai search |
 | `flow-a-chain` | Search → get_menu |
+| `flow-indexed-tier` | menu_indexed search + trust_notice + get_menu (Williamsburg fixture) |
 | `flow-c` | ADO score breakdown |
 
 DB-dependent flows skip when Supabase env is missing or seed data is empty.
