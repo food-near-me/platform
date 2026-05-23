@@ -65,10 +65,15 @@ CREATE TABLE menus (
     status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'pending_approval', 'published')),
     
     -- Cryptographic Liability Fields
+    -- signature_hash: base64url Ed25519 signature (column name is legacy).
+    -- payload_hash: SHA-256 hex of canonical menu content (fnm-v1 only).
+    -- signing_format: 'fnm-v0' (legacy tuple-only) or 'fnm-v1' (content-bound).
     signature_hash TEXT,
     signature_signer TEXT,
     signature_timestamp TIMESTAMPTZ,
-    
+    payload_hash TEXT,
+    signing_format TEXT,
+
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );

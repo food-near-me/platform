@@ -203,7 +203,8 @@ Every result includes `verification_status` and `menu_available`:
 **Verified means:**
 - Restaurant owner has claimed the listing
 - Owner has reviewed and approved the Menu Protocol data
-- Approval is cryptographically signed (hash + timestamp + signer)
+- Approval is cryptographically signed. New verifications use **fnm-v1** which binds the Ed25519 signature to a canonical fingerprint of the menu items (so any post-approval edit invalidates it). Legacy approvals carry **fnm-v0** which proves owner approval at a point in time but not against current contents — the `signature.signing_format` field distinguishes the two, and `signature.payload_hash` is populated only for fnm-v1.
+- Full verification steps and machine-readable format specs live at `/.well-known/menu-signing-keys.json` and `SKILL.md#verifying-signatures`.
 
 **menu_indexed means:**
 - Menu shaped as Menu Protocol from automated/public sources

@@ -53,6 +53,31 @@ export async function GET() {
   const rotated = parseRotatedKeys();
   const generatedAt = new Date().toISOString();
 
+  const formats = {
+    "fnm-v1": {
+      content_bound: true,
+      signing_input: "fnm-v1:${restaurant_id}:${menu_id}:${signer}:${timestamp}:${payload_hash}",
+      signed_message: "sha256(signing_input)",
+      payload_hash: "sha256(stableStringify(canonical_content))",
+      canonical_content_spec:
+        "buildCanonicalMenuContent() in @foodnearme/menu-protocol/src/crypto.ts — sorts items by category_name then name then price, sorts allergen arrays alphabetically, includes only content fields (excludes IDs, timestamps, popularity_score, customization_options).",
+      verifier_steps: [
+        "Fetch /api/v1/restaurant/{id}/menu.mp.",
+        "Rebuild canonical content via buildCanonicalMenuContent on the response's items.",
+        "Compute payload_hash = computeMenuPayloadHash(canonical_content); assert it equals signature.payload_hash.",
+        "Compute signing_input string; compute sha256(signing_input).",
+        "Ed25519 verify signature.signature against the sha256, using active_key.public_key_pem.",
+      ],
+    },
+    "fnm-v0": {
+      content_bound: false,
+      signing_input: "${restaurant_id}:${menu_id}:${signer}:${timestamp}",
+      signed_message: "sha256(signing_input)",
+      note:
+        "Legacy format. Proves owner approval at signing_timestamp but does NOT bind to current menu contents. Treat content changes since signature_timestamp with caution.",
+    },
+  };
+
   if (!signing) {
     return NextResponse.json(
       {
@@ -60,6 +85,7 @@ export async function GET() {
         rotated_keys: rotated,
         configured: false,
         generated_at: generatedAt,
+        signing_formats: formats,
         verification_instructions:
           "Ed25519 verify against the menu payload hash from get_menu. See https://foodnear.me/SKILL.md#verifying-signatures.",
         note: "No active signing key is configured in this environment. Signatures on get_menu responses for the `verified` tier should not be trusted until this endpoint reports an active_key.",
@@ -80,10 +106,12 @@ export async function GET() {
         fingerprint: signing.publicKeyFingerprint,
         public_key_pem: signing.publicKeyPem,
         usage: "menu-protocol-v1-signature",
+        supported_formats: ["fnm-v0", "fnm-v1"],
       },
       rotated_keys: rotated,
       configured: true,
       generated_at: generatedAt,
+      signing_formats: formats,
       verification_instructions:
         "Ed25519 verify against the menu payload hash from get_menu. See https://foodnear.me/SKILL.md#verifying-signatures.",
     },

@@ -10,30 +10,39 @@ import { approveMenuVerification } from "./insert-indexed-menu";
  * sequence of calls `approveMenuVerification` makes. This lets us assert
  * the retry behavior and signature wiring without standing up a database.
  *
- * The sequence the function executes per attempt:
- *   1. .from("restaurants").select("id, verification_status").eq("id", ...).single()
- *   2. .from("menus").select("id").eq("restaurant_id", ...).eq("status", "pending_approval").maybeSingle()
- *   3. .from("menus").select("id").eq("restaurant_id", ...).eq("status", "published").maybeSingle()
- *      (only if pending was missing)
- *   4. .rpc("approve_menu_verification_atomic", { ... })
+ * Per attempt the function executes:
+ *   1. .from("restaurants").select(...).eq().single()                        [restaurants:single]
+ *   2. .from("menus").select("id").eq().eq("pending_approval").maybeSingle() [menus:maybeSingle]
+ *   3. .from("menus").select("id").eq().eq("published").maybeSingle()        [menus:maybeSingle]   (only if pending missing)
+ *   4. .from("menus").select("id, protocol_version").eq().single()           [menus:single]        (fnm-v1: read protocol_version)
+ *   5. .from("menu_categories").select("id, name").eq()  [awaited]           [menu_categories:list]
+ *   6. .from("menu_items").select(...).in()              [awaited]           [menu_items:list]     (only if any category)
+ *   7. .rpc("approve_menu_verification_atomic", { ... })
  */
 
-type SingleResult = { data: unknown; error: unknown };
+type StepResult = { data: unknown; error: unknown };
 type RpcResult = { data: unknown; error: unknown };
 
 type SelectScript =
-  | { kind: "single"; result: SingleResult }
-  | { kind: "maybeSingle"; result: SingleResult };
+  | { kind: "single"; result: StepResult }
+  | { kind: "maybeSingle"; result: StepResult }
+  | { kind: "list"; result: StepResult };
 
 function makeQueryBuilder(takeNext: () => SelectScript) {
+  let resolvedResult: StepResult | null = null;
+  let terminated = false;
+
   const builder: Record<string, unknown> = {};
-  builder.select = () => builder;
-  builder.eq = () => builder;
+  for (const chainMethod of ["select", "eq", "in", "order", "filter", "limit"]) {
+    builder[chainMethod] = () => builder;
+  }
   builder.single = () => {
     const step = takeNext();
     if (step.kind !== "single") {
       throw new Error(`expected .single() but script step was ${step.kind}`);
     }
+    terminated = true;
+    resolvedResult = step.result;
     return Promise.resolve(step.result);
   };
   builder.maybeSingle = () => {
@@ -41,7 +50,25 @@ function makeQueryBuilder(takeNext: () => SelectScript) {
     if (step.kind !== "maybeSingle") {
       throw new Error(`expected .maybeSingle() but script step was ${step.kind}`);
     }
+    terminated = true;
+    resolvedResult = step.result;
     return Promise.resolve(step.result);
+  };
+  // Thenable: supports awaiting the builder directly (the "list" pattern,
+  // e.g. .from("x").select("col").eq("y", z) without .single/.maybeSingle).
+  builder.then = (
+    onFulfilled: (value: StepResult) => unknown,
+    onRejected?: (reason: unknown) => unknown,
+  ) => {
+    if (!terminated) {
+      const step = takeNext();
+      if (step.kind !== "list") {
+        throw new Error(`expected list-style await but script step was ${step.kind}`);
+      }
+      resolvedResult = step.result;
+      terminated = true;
+    }
+    return Promise.resolve(resolvedResult!).then(onFulfilled, onRejected);
   };
   return builder;
 }
@@ -109,6 +136,52 @@ process.env.FNM_VERIFIED_SIGNING_PUBLIC_KEY =
 MCowBQYDK2VwAyEAGb9ECWmEzf6FQbrBZ9w7lshQhqowtrbLDFw4rXAxZuE=
 -----END PUBLIC KEY-----`;
 
+// Convenience: one full "attempt" worth of menu/category/item scripted reads.
+//   - pending: returns the given menu id (so we don't fall through to published)
+//   - menu protocol_version read returns "1.0"
+//   - empty categories + items lists (canonical content is just `{ items: [] }`)
+function attemptForPendingMenu(menuId: string): {
+  menus: SelectScript[];
+  menu_categories: SelectScript[];
+  menu_items: SelectScript[];
+} {
+  return {
+    menus: [
+      { kind: "maybeSingle", result: { data: { id: menuId }, error: null } },
+      { kind: "single", result: { data: { id: menuId, protocol_version: "1.0" }, error: null } },
+    ],
+    menu_categories: [{ kind: "list", result: { data: [], error: null } }],
+    menu_items: [],
+  };
+}
+
+function attemptForPublishedOnly(menuId: string): {
+  menus: SelectScript[];
+  menu_categories: SelectScript[];
+  menu_items: SelectScript[];
+} {
+  return {
+    menus: [
+      // No pending menu
+      { kind: "maybeSingle", result: { data: null, error: null } },
+      // Published menu
+      { kind: "maybeSingle", result: { data: { id: menuId }, error: null } },
+      // Protocol version lookup
+      { kind: "single", result: { data: { id: menuId, protocol_version: "1.0" }, error: null } },
+    ],
+    menu_categories: [{ kind: "list", result: { data: [], error: null } }],
+    menu_items: [],
+  };
+}
+
+function mergeAttempts(attempts: Array<ReturnType<typeof attemptForPendingMenu>>) {
+  return {
+    menus: attempts.flatMap((a) => a.menus),
+    menu_categories: attempts.flatMap((a) => a.menu_categories),
+    menu_items: attempts.flatMap((a) => a.menu_items),
+  };
+}
+
 test("approveMenuVerification short-circuits when restaurant is already verified", async () => {
   const supabase = makeFakeSupabase({
     selectScripts: {
@@ -132,6 +205,11 @@ test("approveMenuVerification short-circuits when restaurant is already verified
 });
 
 test("approveMenuVerification retries when RPC reports menu_state_changed and succeeds on the second attempt", async () => {
+  const attempts = mergeAttempts([
+    attemptForPendingMenu(candidateMenuId),
+    attemptForPublishedOnly(otherMenuId),
+  ]);
+
   const supabase = makeFakeSupabase({
     selectScripts: {
       restaurants: [
@@ -140,14 +218,7 @@ test("approveMenuVerification retries when RPC reports menu_state_changed and su
           result: { data: { id: restaurantId, verification_status: "menu_indexed" }, error: null },
         },
       ],
-      menus: [
-        // Attempt 1: pending menu -> candidate = candidateMenuId
-        { kind: "maybeSingle", result: { data: { id: candidateMenuId }, error: null } },
-        // Attempt 2: pending menu has been promoted by another caller, no pending,
-        // but a published menu exists with otherMenuId
-        { kind: "maybeSingle", result: { data: null, error: null } },
-        { kind: "maybeSingle", result: { data: { id: otherMenuId }, error: null } },
-      ],
+      ...attempts,
     },
     rpcResults: [
       // Attempt 1: state changed
@@ -169,9 +240,19 @@ test("approveMenuVerification retries when RPC reports menu_state_changed and su
   assert.equal(supabase.__rpcCalls.length, 2);
   assert.equal(supabase.__rpcCalls[0]!.args.p_expected_menu_id, candidateMenuId);
   assert.equal(supabase.__rpcCalls[1]!.args.p_expected_menu_id, otherMenuId);
+  // fnm-v1 binds: payload_hash + signing_format must be present and well-formed.
+  for (const call of supabase.__rpcCalls) {
+    assert.equal(call.args.p_signing_format, "fnm-v1");
+    assert.match(String(call.args.p_payload_hash ?? ""), /^[a-f0-9]{64}$/);
+  }
 });
 
 test("approveMenuVerification throws after exhausting retries when RPC keeps reporting menu_state_changed", async () => {
+  const attempts = mergeAttempts([
+    attemptForPendingMenu(candidateMenuId),
+    attemptForPendingMenu(candidateMenuId),
+    attemptForPendingMenu(candidateMenuId),
+  ]);
   const supabase = makeFakeSupabase({
     selectScripts: {
       restaurants: [
@@ -180,11 +261,7 @@ test("approveMenuVerification throws after exhausting retries when RPC keeps rep
           result: { data: { id: restaurantId, verification_status: "menu_indexed" }, error: null },
         },
       ],
-      menus: [
-        { kind: "maybeSingle", result: { data: { id: candidateMenuId }, error: null } },
-        { kind: "maybeSingle", result: { data: { id: candidateMenuId }, error: null } },
-        { kind: "maybeSingle", result: { data: { id: candidateMenuId }, error: null } },
-      ],
+      ...attempts,
     },
     rpcResults: [
       { data: [{ menu_id: null, already_verified: false, menu_state_changed: true }], error: null },
@@ -201,6 +278,7 @@ test("approveMenuVerification throws after exhausting retries when RPC keeps rep
 });
 
 test("approveMenuVerification maps no_menu_available RPC error to friendly message", async () => {
+  const attempts = mergeAttempts([attemptForPendingMenu(candidateMenuId)]);
   const supabase = makeFakeSupabase({
     selectScripts: {
       restaurants: [
@@ -209,9 +287,7 @@ test("approveMenuVerification maps no_menu_available RPC error to friendly messa
           result: { data: { id: restaurantId, verification_status: "menu_indexed" }, error: null },
         },
       ],
-      menus: [
-        { kind: "maybeSingle", result: { data: { id: candidateMenuId }, error: null } },
-      ],
+      ...attempts,
     },
     rpcResults: [
       {
@@ -230,6 +306,7 @@ test("approveMenuVerification maps no_menu_available RPC error to friendly messa
 test("approveMenuVerification surfaces alreadyVerified when RPC reports it (concurrent winner)", async () => {
   // The fast path missed the verified status (e.g. it was flipped between
   // the initial read and our RPC) — the RPC should still return cleanly.
+  const attempts = mergeAttempts([attemptForPendingMenu(candidateMenuId)]);
   const supabase = makeFakeSupabase({
     selectScripts: {
       restaurants: [
@@ -238,9 +315,7 @@ test("approveMenuVerification surfaces alreadyVerified when RPC reports it (conc
           result: { data: { id: restaurantId, verification_status: "menu_indexed" }, error: null },
         },
       ],
-      menus: [
-        { kind: "maybeSingle", result: { data: { id: candidateMenuId }, error: null } },
-      ],
+      ...attempts,
     },
     rpcResults: [
       {

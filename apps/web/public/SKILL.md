@@ -86,6 +86,22 @@ Every result includes `verification_status` and `menu_available`:
 
 Trust progression: `discovered` → `menu_indexed` → `verified`. See https://foodnear.me/attribution for data sources.
 
+## Verifying Signatures
+
+Verified menus carry an Ed25519 signature in `signature`. Two formats are in circulation:
+
+- **fnm-v1** (current): content-bound. The signature binds to a canonical fingerprint of the menu items, so any post-approval edit (price, allergen, dietary flag) invalidates it. Verifier loop:
+  1. Read `signature.signature`, `signature.payload_hash`, `signature.signer`, `signature.timestamp`.
+  2. Rebuild canonical content from the response items (sort by category/name/price, sort allergen arrays). The `@foodnearme/menu-protocol` package exposes `buildCanonicalMenuContent` + `computeMenuPayloadHash`.
+  3. Assert your computed `payload_hash` equals `signature.payload_hash`. If they differ, the menu was edited after signing.
+  4. Compute `signing_input = "fnm-v1:" + restaurant_id + ":" + menu_id + ":" + signer + ":" + timestamp + ":" + payload_hash`.
+  5. Compute `signed_message = sha256(signing_input)`.
+  6. Ed25519 verify `signature.signature` against `signed_message` using the `active_key.public_key_pem` from `/.well-known/menu-signing-keys.json`.
+
+- **fnm-v0** (legacy): proves owner approval at a point in time but does not bind to current contents. Treat content changes since `signature.timestamp` with caution.
+
+The `signing_formats` block in `/.well-known/menu-signing-keys.json` ships machine-readable specs for both formats.
+
 ## Rate Limits
 
 - Public/unauthenticated: 100 requests/minute

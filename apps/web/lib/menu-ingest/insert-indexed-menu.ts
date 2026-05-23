@@ -1,6 +1,9 @@
-import { createHash } from "crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { loadSigningKeyFromEnv, signMenuHash } from "@foodnearme/menu-protocol";
+import {
+  buildCanonicalMenuContent,
+  loadSigningKeyFromEnv,
+  signMenuContent,
+} from "@foodnearme/menu-protocol";
 import type { MenuCategorySeed } from "./types";
 
 async function insertCategoriesAndItems(
@@ -222,6 +225,65 @@ async function pickCandidateMenuId(
   return published?.id;
 }
 
+type MenuContentSnapshot = ReturnType<typeof buildCanonicalMenuContent>;
+
+/**
+ * Build the canonical fnm-v1 content fingerprint for a menu by reading
+ * categories + items from the database. Used at signing time so the
+ * resulting signature binds to actual current content; verifiers
+ * rebuild the same fingerprint from the public menu.mp response and
+ * assert payload_hash matches.
+ */
+async function loadCanonicalMenuContent(
+  supabase: SupabaseClient,
+  menuId: string,
+  protocolVersion: string,
+): Promise<MenuContentSnapshot> {
+  const { data: categories, error: catErr } = await supabase
+    .from("menu_categories")
+    .select("id, name")
+    .eq("menu_id", menuId);
+
+  if (catErr) throw new Error(`Failed to load categories for signing: ${catErr.message}`);
+
+  const categoryIds = (categories ?? []).map((c) => c.id);
+  let items: Array<Record<string, unknown>> = [];
+  if (categoryIds.length > 0) {
+    const { data: itemRows, error: itemErr } = await supabase
+      .from("menu_items")
+      .select(
+        "category_id, name, description, price, currency, available, preparation_time_minutes, dietary_vegetarian, dietary_vegan, dietary_gluten_free, dietary_halal, dietary_kosher, dietary_nut_free, dietary_dairy_free, dietary_low_carb, dietary_keto, allergens",
+      )
+      .in("category_id", categoryIds);
+    if (itemErr) throw new Error(`Failed to load items for signing: ${itemErr.message}`);
+    items = (itemRows ?? []) as Array<Record<string, unknown>>;
+  }
+
+  return buildCanonicalMenuContent({
+    protocol_version: protocolVersion,
+    categories: (categories ?? []) as Array<{ id: string; name: string }>,
+    items: items as Array<{
+      category_id: string;
+      name: string;
+      description?: string | null;
+      price: number;
+      currency: string;
+      available: boolean;
+      preparation_time_minutes?: number | null;
+      dietary_vegetarian?: boolean;
+      dietary_vegan?: boolean;
+      dietary_gluten_free?: boolean;
+      dietary_halal?: boolean;
+      dietary_kosher?: boolean;
+      dietary_nut_free?: boolean;
+      dietary_dairy_free?: boolean;
+      dietary_low_carb?: boolean;
+      dietary_keto?: boolean;
+      allergens?: string[] | null;
+    }>,
+  });
+}
+
 /**
  * Race-safe owner approval for a restaurant's menu.
  *
@@ -295,10 +357,32 @@ export async function approveMenuVerification(
       throw new Error("No menu available to verify");
     }
 
+    // Read protocol_version for the candidate menu so the canonical content
+    // fingerprint includes it (verifiers will recompute with the same value).
+    const { data: candidateMenu, error: candidateMenuErr } = await supabase
+      .from("menus")
+      .select("id, protocol_version")
+      .eq("id", candidateMenuId)
+      .single();
+    if (candidateMenuErr || !candidateMenu) {
+      throw new Error("Candidate menu disappeared during signing");
+    }
+
+    const content = await loadCanonicalMenuContent(
+      supabase,
+      candidateMenuId,
+      candidateMenu.protocol_version ?? "1.0",
+    );
+
     const timestamp = new Date().toISOString();
-    const hashPayload = `${restaurantId}:${candidateMenuId}:${signerEmail}:${timestamp}`;
-    const payloadHash = createHash("sha256").update(hashPayload).digest("hex");
-    const signature = signMenuHash(payloadHash, signingKey.privateKeyPem);
+    const { signature, payload_hash, signing_format } = signMenuContent({
+      content,
+      restaurantId,
+      menuId: candidateMenuId,
+      signer: signerIdentity,
+      timestamp,
+      privateKeyPem: signingKey.privateKeyPem,
+    });
 
     const { data: rpcData, error: rpcError } = await supabase.rpc(
       "approve_menu_verification_atomic",
@@ -308,6 +392,8 @@ export async function approveMenuVerification(
         p_signature_hash: signature,
         p_signature_signer: signerIdentity,
         p_signature_timestamp: timestamp,
+        p_payload_hash: payload_hash,
+        p_signing_format: signing_format,
       },
     );
 

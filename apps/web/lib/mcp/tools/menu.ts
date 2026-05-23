@@ -130,9 +130,19 @@ export async function getMenu(input: GetMenuInput) {
           algorithm: "ed25519",
           signer: menu.signature_signer,
           timestamp: menu.signature_timestamp,
+          /** Base64url Ed25519 signature. Column name is legacy. */
+          signature: menu.signature_hash,
+          /** Same as `signature`; retained for backward compatibility with consumers that already read this field. */
           hash: menu.signature_hash,
+          /** fnm-v1: SHA-256 hex of canonical content fingerprint. NULL on legacy fnm-v0 menus. */
+          payload_hash: menu.payload_hash,
+          /** fnm-v0 (legacy tuple-only) | fnm-v1 (content-bound). */
+          signing_format: menu.signing_format ?? (menu.payload_hash ? "fnm-v1" : "fnm-v0"),
           verification_url: buildSigningKeysCitation(),
-          note: "Ed25519 signature over the menu payload. Fetch verification_url for the active public key; see https://foodnear.me/SKILL.md#verifying-signatures.",
+          note:
+            menu.signing_format === "fnm-v1" || menu.payload_hash
+              ? "Ed25519 signature bound to canonical menu content (fnm-v1). Rebuild canonical content from this response with @foodnearme/menu-protocol, verify payload_hash matches, then verify the signature against the active public key at verification_url. Spec: https://foodnear.me/SKILL.md#verifying-signatures."
+              : "Legacy Ed25519 signature (fnm-v0) over the tuple restaurant:menu:signer:timestamp. Proves owner approval at signing time but is not bound to current menu contents; treat content changes since signature_timestamp with caution.",
         }
       : {
           note:

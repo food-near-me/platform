@@ -76,6 +76,10 @@ type MenuRow = {
   signature_hash: string | null;
   signature_signer: string | null;
   signature_timestamp: string | null;
+  // fnm-v1 content-bound signature columns. NULL on legacy fnm-v0 signatures
+  // and on unsigned menus. See packages/menu-protocol/src/crypto.ts.
+  payload_hash: string | null;
+  signing_format: "fnm-v0" | "fnm-v1" | null;
   created_at: string;
   updated_at: string;
 };
@@ -176,6 +180,10 @@ export type Database = {
           p_signature_hash: string;
           p_signature_signer: string;
           p_signature_timestamp: string;
+          /** fnm-v1: SHA-256 of canonical menu content; NULL for legacy callers. */
+          p_payload_hash?: string | null;
+          /** fnm-v0 | fnm-v1; NULL falls back to fnm-v0 in the RPC. */
+          p_signing_format?: string | null;
         };
         Returns: {
           menu_id: string | null;

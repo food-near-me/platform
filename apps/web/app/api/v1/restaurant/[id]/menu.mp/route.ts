@@ -92,11 +92,17 @@ export async function GET(
         payment_methods: restaurant.payment_methods,
         dietary_certifications: restaurant.dietary_certifications,
         
-        // Cryptographic proof of owner approval
+        // Cryptographic proof of owner approval.
+        // fnm-v1 signatures bind to canonical menu content via payload_hash;
+        // verifiers can re-derive the signing input from this response.
         signature: menu.signature_hash ? {
+          algorithm: "ed25519" as const,
           signer: menu.signature_signer || "",
           timestamp: menu.signature_timestamp || "",
-          hash: menu.signature_hash
+          signature: menu.signature_hash,
+          hash: menu.signature_hash,
+          payload_hash: menu.payload_hash,
+          signing_format: menu.signing_format ?? (menu.payload_hash ? "fnm-v1" : "fnm-v0"),
         } : undefined
       },
       menu: {
