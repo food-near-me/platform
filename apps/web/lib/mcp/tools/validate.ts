@@ -1,17 +1,31 @@
 /**
  * `validate_menu_protocol` MCP tool.
  *
- * Synchronous, no I/O. Walks the payload and reports missing required fields,
- * Schema.org compliance gaps, and ADO-uplifting recommendations.
+ * Two layers of checking:
  *
- * TODO(Phase 2 item 2): replace the hand-rolled walker with a call to
- * `MenuProtocolSchema.safeParse(...)` from `@foodnearme/menu-protocol`.
- * Behaviour preserved verbatim for the split commit so flow tests stay
- * pass-for-pass identical.
+ *  1. The canonical Zod schema (`MenuProtocolSchema`) is run via
+ *     `validateMenuProtocolPayload` from `@foodnearme/menu-protocol`. This is
+ *     the source of truth for "does this payload conform to the spec".
+ *  2. A hand-rolled lenient walker layered on top that lets minimal-but-usable
+ *     payloads still report `valid: true` and produces aggregated, agent-
+ *     friendly warnings (e.g. "12 items missing allergens array") rather than
+ *     dumping every per-field Zod issue.
+ *
+ * In default mode, Zod issues are surfaced as warnings — they enrich the
+ * response without flipping `valid: false`, so agents debugging a draft
+ * payload see what they need to tighten before formal submission. In
+ * `strict: true` mode, Zod issues are promoted to errors and `valid`
+ * reflects strict spec compliance.
+ *
+ * No I/O. Synchronous. Pure function over `args`.
  */
 
+import { validateMenuProtocolPayload } from "@foodnearme/menu-protocol";
 import { buildValidateCitation } from "@/lib/mcp/citations";
 import { ValidationError } from "@/lib/mcp/errors";
+
+/** Maximum number of Zod issues to surface per response to keep payloads small. */
+const MAX_ZOD_ISSUES_SURFACED = 25;
 
 export function validateMenuProtocol(args: Record<string, unknown>) {
   const payload = args.payload;
@@ -130,11 +144,28 @@ export function validateMenuProtocol(args: Record<string, unknown>) {
     }
   }
 
+  // Layer 2: surface canonical Zod issues. In default mode they are warnings
+  // (don't flip valid=false); in strict mode they are errors that gate validity.
+  const schemaResult = validateMenuProtocolPayload(data);
+  const zodFindings = schemaResult.issues
+    .slice(0, MAX_ZOD_ISSUES_SURFACED)
+    .map((issue) => `${issue.path}: ${issue.message}`);
+  const zodOverflow = schemaResult.issues.length - zodFindings.length;
+  if (zodFindings.length > 0) {
+    const bucket = strict ? errors : warnings;
+    for (const finding of zodFindings) bucket.push(`schema: ${finding}`);
+    if (zodOverflow > 0) {
+      bucket.push(`schema: (+${zodOverflow} additional schema issue(s) omitted)`);
+    }
+  }
+
   const isValid = errors.length === 0;
+  const schemaValid = schemaResult.valid;
 
   return {
     citation: buildValidateCitation(),
     valid: isValid,
+    schema_strict_valid: schemaValid,
     errors: errors.length > 0 ? errors : undefined,
     warnings: warnings.length > 0 ? warnings : undefined,
     recommendations: recommendations.length > 0 ? recommendations : undefined,
@@ -144,7 +175,13 @@ export function validateMenuProtocol(args: Record<string, unknown>) {
       ? `Valid Menu Protocol payload with ${warnings.length} warning(s)`
       : `Invalid: ${errors.length} error(s) must be fixed`,
     next_steps: isValid
-      ? ["Submit to foodnear.me for verification", "Get owner signature", "Monitor ADO score"]
+      ? schemaValid
+        ? ["Submit to foodnear.me for verification", "Get owner signature", "Monitor ADO score"]
+        : [
+            "Resolve schema warnings to achieve strict spec compliance",
+            "Submit to foodnear.me for verification",
+            "Get owner signature",
+          ]
       : ["Fix listed errors", "Re-run validation", "See https://foodnear.me/SKILL.md for spec"],
   };
 }

@@ -255,7 +255,79 @@ export async function runMcpFlows(
       assert(data.valid === false, "Expected valid=false for broken payload");
       assert(Array.isArray(data.errors), "Expected errors array");
       assert((data.errors as string[]).length > 0, "Expected at least one error");
+      assert(
+        data.schema_strict_valid === false,
+        "Expected schema_strict_valid=false for broken payload",
+      );
     })
+  );
+
+  results.push(
+    await runFlow(
+      "flow-validate-strict-promotes-zod-issues",
+      "Strict mode promotes schema warnings to errors",
+      async () => {
+        // This payload satisfies the lenient checks (valid=true in default mode)
+        // but fails strict Zod parsing because the restaurant lacks `slug` and
+        // the menu lacks `last_updated`/items lack `category_id` etc.
+        const lenientArgs = {
+          payload: {
+            version: "1.0",
+            domain: "foodnear.me",
+            restaurant: { "@type": "Restaurant", id: "test-123", name: "Test" },
+            menu: {
+              id: "menu-123",
+              restaurant_id: "test-123",
+              categories: [{ id: "cat-1", name: "Mains" }],
+              items: [
+                {
+                  id: "item-1",
+                  name: "Test Dish",
+                  price: 12.99,
+                  dietary: { vegetarian: true },
+                  allergens: [],
+                },
+              ],
+            },
+          },
+        };
+
+        const lenient = await client.callTool("validate_menu_protocol", lenientArgs);
+        const lenientData = requireData(lenient) as Record<string, unknown>;
+        assert(
+          lenientData.valid === true,
+          "Default mode must keep the lenient fixture passing",
+        );
+        assert(
+          lenientData.schema_strict_valid === false,
+          "schema_strict_valid should report false even when lenient passes",
+        );
+        assert(
+          Array.isArray(lenientData.warnings) && (lenientData.warnings as string[]).length > 0,
+          "Default mode must surface schema warnings",
+        );
+        assert(
+          (lenientData.warnings as string[]).some((w) => w.startsWith("schema:")),
+          "Schema-derived warnings must be prefixed with `schema:`",
+        );
+
+        const strict = await client.callTool("validate_menu_protocol", {
+          ...lenientArgs,
+          strict: true,
+        });
+        const strictData = requireData(strict) as Record<string, unknown>;
+        assert(strictData.valid === false, "Strict mode must flip valid=false");
+        assert(strictData.strict_mode === true, "Strict mode flag should be true");
+        assert(
+          Array.isArray(strictData.errors) && (strictData.errors as string[]).length > 0,
+          "Strict mode must surface schema errors",
+        );
+        assert(
+          (strictData.errors as string[]).some((e) => e.startsWith("schema:")),
+          "Schema-derived errors must be prefixed with `schema:`",
+        );
+      },
+    ),
   );
 
   if (!db) {
