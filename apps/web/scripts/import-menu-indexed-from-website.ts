@@ -11,6 +11,8 @@
  *   npm run db:import:menu-indexed:website -- --list-regions
  *   npm run db:import:menu-indexed:website -- --include-chains --limit=5
  *   npm run db:import:menu-indexed:website:dry-run -- --headless --limit=10
+ *   npm run db:import:menu-indexed:website:headless -- --limit=25 --concurrency=4
+ *   npm run db:import:menu-indexed:website:headless -- --platform=toast --limit=20
  *
  * Headless (Playwright): run once after install —
  *   npx playwright install chromium
@@ -23,8 +25,19 @@ import * as dotenv from "dotenv";
 import { resolve } from "node:path";
 import { insertPublishedIndexedMenu } from "../lib/menu-ingest/insert-indexed-menu";
 import {
+  loadProbeFailureCache,
+  recordProbeFailure,
+  recordProbeSuccess,
+  saveProbeFailureCache,
+  shouldSkipProbeHost,
+} from "../lib/menu-ingest/probe-failure-cache";
+import { mapWithConcurrency, probeWebsiteForMenuWithTimeout } from "../lib/menu-ingest/probe-pool";
+import {
+  classifyCandidatePlatform,
+  type PlatformKind,
+} from "../lib/menu-ingest/platform-route";
+import {
   formatProbeAttempts,
-  probeWebsiteForMenu,
 } from "../lib/menu-ingest/probe-website-menu";
 import { closePlaywrightBrowser } from "../lib/menu-ingest/fetch-website-playwright";
 import {
@@ -60,7 +73,27 @@ type ScriptOptions = {
   listRegions: boolean;
   verbose: boolean;
   headless: boolean;
+  concurrency: number;
+  useFailureCache: boolean;
+  platform: PlatformKind | "any";
+  probeTimeoutMs: number;
 };
+
+function parsePlatformArg(raw: string): PlatformKind | "any" | null {
+  const value = raw.toLowerCase();
+  const allowed: PlatformKind[] = [
+    "toast",
+    "order_online",
+    "square",
+    "chownow",
+    "bentobox",
+    "spotapps",
+    "sauce",
+    "unknown",
+  ];
+  if (value === "any") return "any";
+  return allowed.includes(value as PlatformKind) ? (value as PlatformKind) : null;
+}
 
 function parseArgs(argv: string[]): ScriptOptions {
   let dryRun = false;
@@ -71,6 +104,10 @@ function parseArgs(argv: string[]): ScriptOptions {
   let listRegions = false;
   let verbose = false;
   let headless = false;
+  let concurrency = 0;
+  let useFailureCache = true;
+  let platform: PlatformKind | "any" = "any";
+  let probeTimeoutMs = 90_000;
 
   for (const arg of argv) {
     if (arg === "--dry-run") dryRun = true;
@@ -78,10 +115,22 @@ function parseArgs(argv: string[]): ScriptOptions {
     if (arg === "--list-regions") listRegions = true;
     if (arg === "--verbose") verbose = true;
     if (arg === "--headless") headless = true;
+    if (arg === "--no-failure-cache") useFailureCache = false;
     if (arg.startsWith("--limit=")) limit = Number.parseInt(arg.slice(8), 10);
     if (arg.startsWith("--region=")) regionKey = arg.slice(9);
     if (arg.startsWith("--grid=")) gridDivisions = Number.parseInt(arg.slice(7), 10);
+    if (arg.startsWith("--concurrency=")) concurrency = Number.parseInt(arg.slice(14), 10);
+    if (arg.startsWith("--platform=")) {
+      const parsed = parsePlatformArg(arg.slice(11));
+      if (parsed) platform = parsed;
+    }
+    if (arg.startsWith("--probe-timeout-ms=")) {
+      probeTimeoutMs = Number.parseInt(arg.slice(19), 10);
+    }
   }
+
+  const resolvedConcurrency =
+    concurrency > 0 ? concurrency : headless ? 4 : 2;
 
   return {
     dryRun,
@@ -92,6 +141,10 @@ function parseArgs(argv: string[]): ScriptOptions {
     listRegions,
     verbose,
     headless,
+    concurrency: Number.isFinite(resolvedConcurrency) ? Math.max(1, resolvedConcurrency) : 2,
+    useFailureCache,
+    platform,
+    probeTimeoutMs: Number.isFinite(probeTimeoutMs) ? Math.max(15_000, probeTimeoutMs) : 90_000,
   };
 }
 
@@ -163,7 +216,7 @@ async function main() {
     `JSON-LD website menu import — ${region.label} — limit ${options.limit}${options.dryRun ? " [DRY RUN]" : ""}`,
   );
   console.log(
-    `Filters: ${options.includeChains ? "chains included" : "chains excluded"}, ${options.gridDivisions}×${options.gridDivisions} geo grid${options.headless ? ", headless (Playwright)" : ""}\n`,
+    `Filters: ${options.includeChains ? "chains included" : "chains excluded"}, ${options.gridDivisions}×${options.gridDivisions} geo grid, concurrency ${options.concurrency}${options.platform !== "any" ? `, platform ${options.platform}` : ""}${options.headless ? ", headless (Playwright)" : ""}${options.useFailureCache ? ", failure cache" : ""}\n`,
   );
 
   try {
@@ -192,12 +245,32 @@ async function main() {
       includeChains: options.includeChains,
     });
 
+    let filteredCandidates = candidates;
+    if (options.platform !== "any") {
+      console.log(`Classifying ${Math.min(candidates.length, options.limit * 4)} candidates by platform (static)…`);
+      const scanPool = candidates.slice(0, Math.max(options.limit * 4, options.limit));
+      const classified = await mapWithConcurrency(scanPool, 8, async (candidate) => ({
+        candidate,
+        platform: await classifyCandidatePlatform(candidate.website_url),
+      }));
+      filteredCandidates = classified
+        .filter((row) => row.platform === options.platform)
+        .map((row) => row.candidate);
+      console.log(
+        `Platform filter (${options.platform}): ${filteredCandidates.length} of ${scanPool.length} scanned candidates match\n`,
+      );
+      if (filteredCandidates.length === 0) {
+        console.log("No candidates match --platform filter. Try another platform or drop the filter.");
+        return;
+      }
+    }
+
     const chainFiltered = (rows?.length ?? 0) - candidates.length;
     console.log(
-      `Pool: ${discoveredIds.length} discovered in region, ${rows?.length ?? 0} with website_url, ${chainFiltered} chains filtered, ${candidates.length} ranked candidates\n`,
+      `Pool: ${discoveredIds.length} discovered in region, ${rows?.length ?? 0} with website_url, ${chainFiltered} chains filtered, ${filteredCandidates.length} ranked candidates\n`,
     );
 
-    if (candidates.length === 0) {
+    if (filteredCandidates.length === 0) {
       console.log("No eligible candidates after filtering. Try --include-chains or another --region.");
       return;
     }
@@ -207,13 +280,14 @@ async function main() {
       console.log(`${indexedHosts.size} website host(s) already menu_indexed — duplicates will be skipped\n`);
     }
 
-    let attempted = 0;
-    let promoted = 0;
-    let items = 0;
-    let skipped = 0;
+    const failureCache = options.useFailureCache ? loadProbeFailureCache() : null;
+    const workQueue: typeof filteredCandidates = [];
     let duplicateSkipped = 0;
+    let cacheSkipped = 0;
 
-    for (const candidate of candidates) {
+    for (const candidate of filteredCandidates) {
+      if (workQueue.length >= options.limit) break;
+
       const host = websiteHostKey(candidate.website_url);
       const existingIndexed = host ? indexedHosts.get(host) : undefined;
       if (existingIndexed && existingIndexed.id !== candidate.id) {
@@ -225,9 +299,33 @@ async function main() {
         continue;
       }
 
-      if (attempted >= options.limit) break;
+      if (failureCache) {
+        const cached = shouldSkipProbeHost(candidate.website_url, failureCache);
+        if (cached) {
+          console.log(`→ ${candidate.name} (${candidate.id})`);
+          console.log(
+            `  ⊘ cached miss (${cached.failCount}×, last ${cached.lastFailedAt.slice(0, 10)}) — skipping probe`,
+          );
+          cacheSkipped++;
+          continue;
+        }
+      }
 
-      attempted++;
+      workQueue.push(candidate);
+    }
+
+    if (workQueue.length === 0) {
+      console.log("No candidates left after duplicate/cache filtering.");
+      return;
+    }
+
+    console.log(`Probing ${workQueue.length} candidate(s) with concurrency ${options.concurrency}…\n`);
+
+    type ProbeOutcome =
+      | { status: "promoted"; items: number }
+      | { status: "skipped" };
+
+    const outcomes = await mapWithConcurrency(workQueue, options.concurrency, async (candidate) => {
       console.log(`→ ${candidate.name} (${candidate.id})`);
       console.log(`  stored: ${candidate.website_url} (score ${candidate.score})`);
       if (candidate.skipReason) {
@@ -235,20 +333,26 @@ async function main() {
       }
 
       try {
-        const probe = await probeWebsiteForMenu(candidate.website_url, {
-          verbose: options.verbose,
-          headless: options.headless,
-          maxUrls: 18,
-          preserveQueryOnDiscover: true,
-          onAttempt: options.verbose ? (msg) => console.log(msg) : undefined,
-        });
+        const probe = await probeWebsiteForMenuWithTimeout(
+          candidate.website_url,
+          {
+            verbose: options.verbose,
+            headless: options.headless,
+            maxUrls: 18,
+            preserveQueryOnDiscover: true,
+            onAttempt: options.verbose ? (msg) => console.log(msg) : undefined,
+          },
+          options.probeTimeoutMs,
+        );
 
         if (!probe.parsed || !probe.matchedUrl) {
           console.log(
-            `  ⊘ No menu items (tried: ${formatProbeAttempts(probe.triedUrls)})`,
+            `  ⊘ No menu items${probe.triedUrls.length === 0 ? " (probe timeout)" : ""} (tried: ${formatProbeAttempts(probe.triedUrls)})`,
           );
-          skipped++;
-          continue;
+          if (failureCache) {
+            recordProbeFailure(candidate.website_url, failureCache, "no_menu");
+          }
+          return { status: "skipped" } satisfies ProbeOutcome;
         }
 
         const itemCount = probe.parsed.categories.reduce((n, c) => n + c.items.length, 0);
@@ -257,11 +361,13 @@ async function main() {
           `  ✓ ${probe.parser}${via} on ${probe.matchedUrl} (${itemCount} items, source ${probe.parsed.source})`,
         );
 
+        if (failureCache) {
+          recordProbeSuccess(candidate.website_url, failureCache);
+        }
+
         if (options.dryRun) {
           console.log(`  [dry-run] would promote to menu_indexed`);
-          promoted++;
-          items += itemCount;
-          continue;
+          return { status: "promoted", items: itemCount } satisfies ProbeOutcome;
         }
 
         const result = await insertPublishedIndexedMenu(
@@ -270,17 +376,31 @@ async function main() {
           probe.parsed.categories,
           `menu_indexed_${probe.parsed.source}`,
         );
-        promoted++;
-        items += result.itemCount;
         console.log(`  ✓ promoted to menu_indexed (${result.itemCount} items)`);
+        return { status: "promoted", items: result.itemCount } satisfies ProbeOutcome;
       } catch (err) {
         console.log(`  ✗ ${err instanceof Error ? err.message : err}`);
-        skipped++;
+        if (failureCache) {
+          recordProbeFailure(
+            candidate.website_url,
+            failureCache,
+            err instanceof Error ? err.message : "error",
+          );
+        }
+        return { status: "skipped" } satisfies ProbeOutcome;
       }
+    });
+
+    const promoted = outcomes.filter((o) => o.status === "promoted").length;
+    const items = outcomes.reduce((n, o) => n + (o.status === "promoted" ? o.items : 0), 0);
+    const skipped = outcomes.filter((o) => o.status === "skipped").length;
+
+    if (failureCache && options.useFailureCache) {
+      saveProbeFailureCache(failureCache);
     }
 
     console.log(
-      `\nDone: ${promoted} promoted, ${items} items, ${skipped} skipped, ${attempted} attempted, ${duplicateSkipped} duplicate-host skipped (${candidates.length} in pool)`,
+      `\nDone: ${promoted} promoted, ${items} items, ${skipped} skipped, ${workQueue.length} probed, ${duplicateSkipped} duplicate-host skipped, ${cacheSkipped} cache-skipped (${filteredCandidates.length} in pool)`,
     );
   } finally {
     if (options.headless) {

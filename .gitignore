@@ -19,3 +19,4 @@ mcp-registry-auth
 # Build artifacts
 *.log
 tmp/
+apps/web/scripts/data/probe-failure-cache.json

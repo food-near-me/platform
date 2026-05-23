@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isTrustedOwnerEmail, websiteDomain } from "@/lib/claim/ownership";
 import { probeWebsiteForMenu } from "@/lib/menu-ingest/probe-website-menu";
 import {
   insertPendingMenu,
@@ -86,6 +87,23 @@ export async function POST(request: Request) {
         { error: "This listing is already verified" },
         { status: 409 },
       );
+    }
+
+    const ownerEmailTrusted = isTrustedOwnerEmail(email, restaurant.website_url);
+
+    if (!ownerEmailTrusted) {
+      await supabase.from("audit_leads").insert({
+        restaurant_name: restaurant.name,
+        city: "claim-manual-review",
+        email,
+        source: `claim:manual:${restaurantId.slice(0, 36)}`,
+      });
+
+      return NextResponse.json({
+        ok: true,
+        manualReview: true,
+        websiteDomain: websiteDomain(restaurant.website_url),
+      });
     }
 
     const { data: pendingMenu } = await supabase

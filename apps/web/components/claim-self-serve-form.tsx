@@ -21,6 +21,8 @@ export function ClaimSelfServeForm({
   const [status, setStatus] = useState<FormState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [verifyUrl, setVerifyUrl] = useState<string | null>(null);
+  const [manualReview, setManualReview] = useState(false);
+  const [websiteDomain, setWebsiteDomain] = useState<string | null>(null);
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -45,11 +47,24 @@ export function ClaimSelfServeForm({
       });
 
       const data = (await response.json().catch(() => null)) as
-        | { verifyUrl?: string; error?: string; itemCount?: number }
+        | {
+            verifyUrl?: string;
+            error?: string;
+            itemCount?: number;
+            manualReview?: boolean;
+            websiteDomain?: string | null;
+          }
         | null;
 
       if (!response.ok) {
         throw new Error(data?.error ?? "Unable to prepare verification");
+      }
+
+      if (data?.manualReview) {
+        setManualReview(true);
+        setWebsiteDomain(data.websiteDomain ?? null);
+        setStatus("success");
+        return;
       }
 
       if (data?.verifyUrl) {
@@ -61,6 +76,21 @@ export function ClaimSelfServeForm({
       setErrorMessage(error instanceof Error ? error.message : "Submission failed");
     }
   };
+
+  if (status === "success" && manualReview) {
+    return (
+      <div className="claim-success">
+        <p>
+          Claim request received for <strong>{restaurantName}</strong>.
+        </p>
+        <p>
+          We could not instantly verify ownership from that email domain. Use an address at{" "}
+          <strong>{websiteDomain ?? "the restaurant website domain"}</strong> for instant review,
+          or we will follow up manually.
+        </p>
+      </div>
+    );
+  }
 
   if (status === "success" && verifyUrl) {
     return (
@@ -93,7 +123,11 @@ export function ClaimSelfServeForm({
 
       <label>
         Owner email
-        <input type="email" name="email" required placeholder="you@restaurant.com" />
+        <input type="email" name="email" required placeholder="owner@restaurant.com" />
+        <span className="form-note">
+          Instant verification requires an email on the restaurant website domain. Gmail and
+          personal inboxes go to manual review.
+        </span>
       </label>
 
       {!isIndexed ? (
@@ -128,8 +162,8 @@ export function ClaimSelfServeForm({
       ) : null}
 
       <p className="form-note">
-        No concierge wait — you review prices and dietary tags, then cryptographically sign the
-        Menu Protocol payload.
+        If your email matches the restaurant website domain, you review prices and dietary tags,
+        then sign the Menu Protocol payload. Other requests are held for manual ownership review.
       </p>
     </form>
   );

@@ -20,6 +20,7 @@ import {
 import { buildMenuProbeUrls, normalizeWebsiteUrl, isPlatformOrderingHost } from "./website-candidates";
 import { isBlockedMenuUrl, filterMenuProbeUrls } from "./blocked-menu-urls";
 import { isDeadOrPlaceholderSite } from "./site-health";
+import { priorityPlatformProbeUrls } from "./platform-route";
 import type { ParsedMenuResult } from "./types";
 
 export type MenuProbeOutcome = {
@@ -40,6 +41,8 @@ export type ProbeWebsiteOptions = {
   verbose?: boolean;
   headless?: boolean;
   onAttempt?: (message: string) => void;
+  /** Skip static HTTP fetch (caller already tried static HTML for this URL). */
+  skipStaticFetch?: boolean;
 };
 
 function siteOrigin(url: string): string | null {
@@ -101,9 +104,11 @@ async function fetchAndParseUrl(
   }
 
   const skipStatic = isOrderOnlineHost(url) && options.headless;
-  const staticHtml = skipStatic
+  const staticHtml = options.skipStaticFetch
     ? null
-    : await fetchWebsiteHtmlStaticOptional(url);
+    : skipStatic
+      ? null
+      : await fetchWebsiteHtmlStaticOptional(url);
   let lastHtml: string | null = staticHtml;
 
   if (staticHtml) {
@@ -195,6 +200,46 @@ function finalizeProbe(
   };
 }
 
+async function tryPlatformUrlsFirst(
+  urls: string[],
+  options: ProbeWebsiteOptions,
+  state: {
+    triedUrls: string[];
+    discoveredUrls: string[];
+    deliveryUrls: string[];
+  },
+): Promise<MenuProbeOutcome | null> {
+  for (const url of urls) {
+    if (state.triedUrls.includes(url) || isBlockedMenuUrl(url)) continue;
+    state.triedUrls.push(url);
+
+    const result = await fetchAndParseUrl(url, options);
+    if (result.html) {
+      collectDeliveryFromHtml(state.deliveryUrls, result.html, url);
+      state.discoveredUrls.push(
+        ...discoverPlatformUrlsFromHtml(result.html, url),
+        ...discoverMenuUrlsFromHtml(result.html, url, {
+          preserveQuery: options.preserveQueryOnDiscover,
+        }),
+      );
+    }
+
+    if (result.parsed && result.parser) {
+      return finalizeProbe({
+        parsed: result.parsed,
+        matchedUrl: url,
+        parser: result.parser,
+        fetchVia: result.fetchVia,
+        triedUrls: state.triedUrls,
+        discoveredUrls: state.discoveredUrls,
+        deliveryUrls: state.deliveryUrls,
+      });
+    }
+  }
+
+  return null;
+}
+
 export async function probeWebsiteForMenu(
   websiteUrl: string,
   options: ProbeWebsiteOptions = {},
@@ -258,9 +303,73 @@ export async function probeWebsiteForMenu(
   }
 
   if (seedUrl) {
-    triedUrls.push(seedUrl);
-    const seed = await fetchAndParseUrl(seedUrl, options);
-    if (seed.html) {
+    const state = { triedUrls, discoveredUrls, deliveryUrls };
+
+    const staticHtml = await fetchWebsiteHtmlStaticOptional(seedUrl);
+    if (staticHtml) {
+      collectDeliveryFromHtml(deliveryUrls, staticHtml, seedUrl);
+      discoveredUrls.push(
+        ...discoverPlatformUrlsFromHtml(staticHtml, seedUrl),
+        ...discoverMenuUrlsFromHtml(staticHtml, seedUrl, {
+          preserveQuery: options.preserveQueryOnDiscover,
+        }),
+      );
+
+      const platformFirst = priorityPlatformProbeUrls(normalized, staticHtml);
+      if (platformFirst.length > 0) {
+        if (options.verbose || options.onAttempt) {
+          log(`  … platform-first (${platformFirst.length} URL(s)) before generic /menu paths`);
+        }
+        const platformHit = await tryPlatformUrlsFirst(platformFirst, options, state);
+        if (platformHit) return platformHit;
+      }
+
+      const staticAttempt = parseMenuForUrl(staticHtml, seedUrl);
+      if (staticAttempt.result && staticAttempt.parser) {
+        if (!triedUrls.includes(seedUrl)) triedUrls.push(seedUrl);
+        return finalizeProbe({
+          parsed: staticAttempt.result,
+          matchedUrl: seedUrl,
+          parser: staticAttempt.parser,
+          fetchVia: "static",
+          triedUrls,
+          discoveredUrls,
+          deliveryUrls,
+        });
+      }
+
+      const homepageText = staticHtml.replace(/<[^>]+>/g, " ").slice(0, 800);
+      if (isDeadOrPlaceholderSite(staticHtml, homepageText)) {
+        if (!triedUrls.includes(seedUrl)) triedUrls.push(seedUrl);
+        if (options.verbose) log(`  … homepage looks dead/placeholder — skipping deep probe`);
+        return finalizeProbe({
+          parsed: null,
+          matchedUrl: null,
+          parser: null,
+          fetchVia: "static",
+          triedUrls,
+          discoveredUrls,
+          deliveryUrls,
+        });
+      }
+    }
+
+    if (!triedUrls.includes(seedUrl)) triedUrls.push(seedUrl);
+    const seed =
+      staticHtml && !options.headless
+        ? {
+            html: staticHtml,
+            visibleText: null,
+            parsed: null,
+            parser: null,
+            fetchVia: "static" as const,
+          }
+        : await fetchAndParseUrl(seedUrl, {
+            ...options,
+            skipStaticFetch: Boolean(staticHtml),
+          });
+
+    if (seed.html && !staticHtml) {
       collectDeliveryFromHtml(deliveryUrls, seed.html, seedUrl);
       discoveredUrls.push(
         ...discoverPlatformUrlsFromHtml(seed.html, seedUrl),
@@ -275,7 +384,13 @@ export async function probeWebsiteForMenu(
     const jsHeavyHomepage =
       seed.fetchVia === "headless" && (seed.visibleText?.length ?? 0) > 200;
 
-    if (!seed.parsed && seed.html && !jsHeavyHomepage && isDeadOrPlaceholderSite(seed.html, homepageText)) {
+    if (
+      !seed.parsed &&
+      seed.html &&
+      !staticHtml &&
+      !jsHeavyHomepage &&
+      isDeadOrPlaceholderSite(seed.html, homepageText)
+    ) {
       if (options.verbose) log(`  … homepage looks dead/placeholder — skipping deep probe`);
       return finalizeProbe({
         parsed: null,

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isTrustedOwnerEmail } from "@/lib/claim/ownership";
 import { approveMenuVerification } from "@/lib/menu-ingest/insert-indexed-menu";
 import { checkMinInterval, checkRateLimit } from "@/lib/rate-limit";
 import { getSupabaseAdminClient } from "@/lib/supabase-admin";
@@ -53,6 +54,27 @@ export async function POST(
     }
 
     const supabase = getSupabaseAdminClient();
+
+    const { data: restaurant, error: restaurantError } = await supabase
+      .from("restaurants")
+      .select("id, website_url")
+      .eq("id", restaurantId)
+      .single();
+
+    if (restaurantError || !restaurant) {
+      return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
+    }
+
+    if (!isTrustedOwnerEmail(email, restaurant.website_url)) {
+      return NextResponse.json(
+        {
+          error:
+            "Use an email address on the restaurant website domain, or request manual review.",
+        },
+        { status: 403 },
+      );
+    }
+
     const result = await approveMenuVerification(supabase, restaurantId, email);
 
     return NextResponse.json({
