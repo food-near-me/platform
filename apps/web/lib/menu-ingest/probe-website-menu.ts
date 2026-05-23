@@ -20,8 +20,21 @@ import {
 import { buildMenuProbeUrls, normalizeWebsiteUrl, isPlatformOrderingHost } from "./website-candidates";
 import { isBlockedMenuUrl, filterMenuProbeUrls } from "./blocked-menu-urls";
 import { isDeadOrPlaceholderSite } from "./site-health";
+import {
+  cacheDeadSite,
+  isSiteCachedDead,
+  SITE_HEALTH_CACHE_TTL_DAYS,
+} from "./site-health-cache";
 import { priorityPlatformProbeUrls } from "./platform-route";
 import type { ParsedMenuResult } from "./types";
+
+/**
+ * Default upper bound on how many candidate URLs run in parallel inside
+ * a probe batch. Headless probes are memory-heavy so we cap them lower.
+ * Override per-call with `options.probeBatchSize`.
+ */
+const STATIC_PROBE_BATCH_SIZE = 4;
+const HEADLESS_PROBE_BATCH_SIZE = 2;
 
 export type MenuProbeOutcome = {
   parsed: ParsedMenuResult | null;
@@ -43,6 +56,18 @@ export type ProbeWebsiteOptions = {
   onAttempt?: (message: string) => void;
   /** Skip static HTTP fetch (caller already tried static HTML for this URL). */
   skipStaticFetch?: boolean;
+  /**
+   * How many candidate URLs to probe in parallel per batch. Defaults to
+   * STATIC_PROBE_BATCH_SIZE (static) or HEADLESS_PROBE_BATCH_SIZE (headless).
+   * Set to 1 to restore the legacy sequential behaviour.
+   */
+  probeBatchSize?: number;
+  /**
+   * Bypass the persistent dead-site cache. Pass true from refresh /
+   * audit scripts that explicitly want to re-evaluate a previously
+   * dead host. Defaults false: the cache is consulted.
+   */
+  bypassSiteHealthCache?: boolean;
 };
 
 function siteOrigin(url: string): string | null {
@@ -246,6 +271,9 @@ export async function probeWebsiteForMenu(
 ): Promise<MenuProbeOutcome> {
   const maxUrls = options.maxUrls ?? 16;
   const log = options.onAttempt ?? (() => {});
+  const batchSize =
+    options.probeBatchSize ??
+    (options.headless ? HEADLESS_PROBE_BATCH_SIZE : STATIC_PROBE_BATCH_SIZE);
 
   const normalized = normalizeWebsiteUrl(websiteUrl);
   if (!normalized) {
@@ -258,6 +286,31 @@ export async function probeWebsiteForMenu(
       discoveredUrls: [],
       deliveryUrls: [],
     });
+  }
+
+  // Persistent dead-site short-circuit: if this host's homepage was
+  // judged dead/placeholder within the last SITE_HEALTH_CACHE_TTL_DAYS
+  // days we skip every fetch. The cache is fail-open (errors return
+  // null) so a dropped read can never block a real probe.
+  if (!options.bypassSiteHealthCache) {
+    const cached = await isSiteCachedDead(normalized);
+    if (cached) {
+      if (options.verbose || options.onAttempt) {
+        const ageDays = (cached.ageMs / (24 * 3600 * 1000)).toFixed(1);
+        log(
+          `  … site_health cache HIT for ${cached.host} (dead ${ageDays}d ago, TTL ${SITE_HEALTH_CACHE_TTL_DAYS}d) — skipping probe`,
+        );
+      }
+      return finalizeProbe({
+        parsed: null,
+        matchedUrl: null,
+        parser: null,
+        fetchVia: null,
+        triedUrls: [normalized],
+        discoveredUrls: [],
+        deliveryUrls: [],
+      });
+    }
   }
 
   const origin = siteOrigin(normalized);
@@ -342,6 +395,9 @@ export async function probeWebsiteForMenu(
       if (isDeadOrPlaceholderSite(staticHtml, homepageText)) {
         if (!triedUrls.includes(seedUrl)) triedUrls.push(seedUrl);
         if (options.verbose) log(`  … homepage looks dead/placeholder — skipping deep probe`);
+        // Persist verdict for SITE_HEALTH_CACHE_TTL_DAYS so the next
+        // ingest run can short-circuit before any fetch happens.
+        void cacheDeadSite(normalized);
         return finalizeProbe({
           parsed: null,
           matchedUrl: null,
@@ -392,6 +448,7 @@ export async function probeWebsiteForMenu(
       isDeadOrPlaceholderSite(seed.html, homepageText)
     ) {
       if (options.verbose) log(`  … homepage looks dead/placeholder — skipping deep probe`);
+      void cacheDeadSite(normalized);
       return finalizeProbe({
         parsed: null,
         matchedUrl: null,
@@ -440,49 +497,91 @@ export async function probeWebsiteForMenu(
 
   const queued = new Set<string>();
 
+  // Probe the candidate queue in priority-ordered parallel batches.
+  //
+  // The legacy implementation was strictly sequential: for each URL it
+  // awaited fetchAndParseUrl, accumulated discovered links, and only
+  // moved on when the URL returned no parse. That meant a single slow
+  // headless probe (~30-60s) blocked the rest of the queue.
+  //
+  // This loop now drains up to `batchSize` URLs at a time and probes
+  // them with Promise.allSettled, then walks the results in original
+  // priority order so the first parsed match still wins. Discovered
+  // links from misses are appended to the queue exactly as before.
   while (queue.length > 0 && triedUrls.length < maxUrls) {
-    const url = queue.shift();
-    if (!url || triedUrls.includes(url) || queued.has(url) || isBlockedMenuUrl(url)) continue;
-    queued.add(url);
-    triedUrls.push(url);
-
-    const result = await fetchAndParseUrl(url, options);
-    if (!result.html && !result.parsed) {
-      if (options.verbose) log(`  … fetch failed ${url}`);
-      continue;
+    const batch: string[] = [];
+    while (
+      batch.length < batchSize &&
+      queue.length > 0 &&
+      triedUrls.length < maxUrls
+    ) {
+      const url = queue.shift();
+      if (!url || triedUrls.includes(url) || queued.has(url) || isBlockedMenuUrl(url)) continue;
+      queued.add(url);
+      triedUrls.push(url);
+      batch.push(url);
     }
+    if (batch.length === 0) continue;
 
-    if (result.html) {
-      collectDeliveryFromHtml(deliveryUrls, result.html, url);
-      const platformLinks = discoverPlatformUrlsFromHtml(result.html, url);
-      const menuLinks = discoverMenuUrlsFromHtml(result.html, url, {
-        preserveQuery: options.preserveQueryOnDiscover,
-      });
-      discoveredUrls.push(...platformLinks, ...menuLinks);
+    const settled = await Promise.allSettled(
+      batch.map((url) => fetchAndParseUrl(url, options)),
+    );
 
-      if (options.verbose && !result.parsed) log(`  … no menu on ${url}`);
-
-      for (const next of filterMenuProbeUrls(
-        normalizePlatformProbeUrls([...platformLinks, ...menuLinks]).sort(
-          (a, b) => scoreDiscoveredMenuUrl(b) - scoreDiscoveredMenuUrl(a),
-        ),
-      )) {
-        if (!queued.has(next) && !triedUrls.includes(next)) queue.unshift(next);
+    // Pass 1: accumulate delivery/discovered/queue state for every URL,
+    // in priority order, before deciding on a winner. This preserves
+    // the behaviour of the legacy sequential loop where later misses
+    // contributed their discovered links to the next iteration.
+    for (let i = 0; i < settled.length; i++) {
+      const url = batch[i];
+      const settledResult = settled[i];
+      if (settledResult.status !== "fulfilled") {
+        if (options.verbose) log(`  … fetch failed ${url}`);
+        continue;
       }
-    } else if (options.verbose && !result.parsed) {
-      log(`  … no menu on ${url}`);
+      const result = settledResult.value;
+      if (!result.html && !result.parsed) {
+        if (options.verbose) log(`  … fetch failed ${url}`);
+        continue;
+      }
+      if (result.html) {
+        collectDeliveryFromHtml(deliveryUrls, result.html, url);
+        const platformLinks = discoverPlatformUrlsFromHtml(result.html, url);
+        const menuLinks = discoverMenuUrlsFromHtml(result.html, url, {
+          preserveQuery: options.preserveQueryOnDiscover,
+        });
+        discoveredUrls.push(...platformLinks, ...menuLinks);
+
+        if (options.verbose && !result.parsed) log(`  … no menu on ${url}`);
+
+        for (const next of filterMenuProbeUrls(
+          normalizePlatformProbeUrls([...platformLinks, ...menuLinks]).sort(
+            (a, b) => scoreDiscoveredMenuUrl(b) - scoreDiscoveredMenuUrl(a),
+          ),
+        )) {
+          if (!queued.has(next) && !triedUrls.includes(next)) queue.unshift(next);
+        }
+      } else if (options.verbose && !result.parsed) {
+        log(`  … no menu on ${url}`);
+      }
     }
 
-    if (result.parsed && result.parser) {
-      return finalizeProbe({
-        parsed: result.parsed,
-        matchedUrl: url,
-        parser: result.parser,
-        fetchVia: result.fetchVia,
-        triedUrls,
-        discoveredUrls,
-        deliveryUrls,
-      });
+    // Pass 2: return the highest-priority parsed result from this batch.
+    // This is the "bail" path — subsequent batches are not run.
+    for (let i = 0; i < settled.length; i++) {
+      const settledResult = settled[i];
+      if (settledResult.status !== "fulfilled") continue;
+      const result = settledResult.value;
+      if (result.parsed && result.parser) {
+        return finalizeProbe({
+          parsed: result.parsed,
+          matchedUrl: batch[i],
+          parser: result.parser,
+          fetchVia: result.fetchVia,
+          triedUrls,
+          discoveredUrls,
+          deliveryUrls,
+        });
+      }
     }
   }
 
