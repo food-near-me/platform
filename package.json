@@ -17,6 +17,7 @@
     "smoke:mcp": "npm run smoke:mcp -w web",
     "test:rate-limit": "npm run test:rate-limit -w web",
     "check:discovery-copy": "npm run check:discovery-copy -w web",
+    "check:enums": "npm run check:enums -w web",
     "preflight": "npm run preflight -w web",
     "db:migrate:audit-leads": "node scripts/apply-audit-leads.mjs",
     "db:migrate:discovered-layer": "node scripts/apply-discovered-layer.mjs",

@@ -50,6 +50,9 @@ jobs:
       - name: Discovery copy parity
         run: npm run check:discovery-copy
 
+      - name: Enum parity (verification_status TS vs SQL)
+        run: npm run check:enums
+
       - name: Unit tests (menu-protocol crypto + parsers)
         run: |
           npm run test -w @foodnearme/menu-protocol

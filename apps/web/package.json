@@ -12,6 +12,7 @@
     "test:mcp-flows:http": "tsx scripts/mcp-flow-test.ts --url=${MCP_URL:-https://foodnear.me}",
     "smoke:mcp": "tsx scripts/mcp-smoke-probes.ts",
     "check:discovery-copy": "tsx scripts/discovery-copy-parity.ts",
+    "check:enums": "tsx scripts/check-enums.ts",
     "test:x402-flows": "tsx scripts/x402-flow-test.ts",
     "test:rate-limit": "tsx scripts/rate-limit-test.ts",
     "gen:signing-key": "tsx scripts/generate-signing-key.ts",

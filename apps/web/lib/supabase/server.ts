@@ -1,4 +1,5 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import type { VerificationStatus } from "@/lib/discovery/verification-status";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -30,7 +31,11 @@ export type Database = {
           cuisine_type: string[];
           price_range: number | null;
           agent_score: number;
-          verification_status: "discovered" | "menu_indexed" | "verified";
+          /**
+           * Three-tier trust ladder. Source of truth: `lib/discovery/verification-status.ts`.
+           * Kept in sync with the SQL CHECK constraint by `npm run check:enums`.
+           */
+          verification_status: VerificationStatus;
           payment_methods: string[];
           dietary_certifications: string[];
           created_at: string;
