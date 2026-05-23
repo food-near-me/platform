@@ -22,21 +22,13 @@
 
 import { validateMenuProtocolPayload } from "@foodnearme/menu-protocol";
 import { buildValidateCitation } from "@/lib/mcp/citations";
-import { ValidationError } from "@/lib/mcp/errors";
+import type { ValidateMenuProtocolInput } from "./inputs";
 
 /** Maximum number of Zod issues to surface per response to keep payloads small. */
 const MAX_ZOD_ISSUES_SURFACED = 25;
 
-export function validateMenuProtocol(args: Record<string, unknown>) {
-  const payload = args.payload;
-  const strict = args.strict === true;
-
-  if (!payload || typeof payload !== "object") {
-    throw new ValidationError(
-      "payload must be a JSON object",
-      "Pass a Menu Protocol v1.0 object with version, restaurant, and menu fields.",
-    );
-  }
+export function validateMenuProtocol(input: ValidateMenuProtocolInput) {
+  const { payload, strict } = input;
 
   const errors: string[] = [];
   const warnings: string[] = [];

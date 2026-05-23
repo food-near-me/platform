@@ -14,12 +14,12 @@ import {
 } from "@/lib/discovery/verification-status";
 import { buildRestaurantCitation } from "@/lib/mcp/citations";
 import { ResourceNotFoundError } from "@/lib/mcp/errors";
-import { validateRestaurantId } from "@/lib/mcp/validation";
+import type { GetRestaurantInput } from "./inputs";
 
 const PRICE_RANGE_MAP: Record<number, string> = { 1: "$", 2: "$$", 3: "$$$", 4: "$$$$" };
 
-export async function getRestaurant(args: Record<string, unknown>) {
-  const restaurantId = validateRestaurantId(args.restaurant_id);
+export async function getRestaurant(input: GetRestaurantInput) {
+  const { restaurant_id: restaurantId } = input;
   const supabase = createClient();
 
   const { data, error } = await supabase

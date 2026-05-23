@@ -4,6 +4,10 @@
  * Wraps the `search_restaurants_for_agents` Postgres RPC and decorates each
  * row with trust notices, tier aggregates, and (for empty results) actionable
  * next-step hints. Pure function: no caching, no side effects.
+ *
+ * Input is validated by `searchRestaurantsInputSchema` in
+ * `lib/mcp/tools/inputs.ts` before this handler is called; only domain
+ * clamping (radius_miles, min_ado_score) happens here.
  */
 
 import { createClient } from "@/lib/supabase/server";
@@ -13,7 +17,7 @@ import {
 } from "@/lib/discovery/verification-status";
 import { buildSearchCitation } from "@/lib/mcp/citations";
 import { MAX_RESULTS, MAX_SEARCH_RADIUS_MILES } from "@/lib/mcp/constants";
-import { validateDietaryFilters, validateLatLng } from "@/lib/mcp/validation";
+import type { SearchRestaurantsInput } from "./inputs";
 
 type SearchRpcRow = {
   id: string;
@@ -27,17 +31,15 @@ type SearchRpcRow = {
   data_source: string | null;
 };
 
-export async function searchRestaurants(args: Record<string, unknown>) {
-  const { lat, lng } = validateLatLng(args.lat, args.lng);
-
-  const query = typeof args.query === "string" ? args.query.trim() : "";
-  let radiusMiles = typeof args.radius_miles === "number" ? args.radius_miles : 5;
-  radiusMiles = Math.min(Math.max(radiusMiles, 0.1), MAX_SEARCH_RADIUS_MILES);
-
-  const dietary = validateDietaryFilters(args.dietary);
-
-  let minAdoScore = typeof args.min_ado_score === "number" ? args.min_ado_score : 0;
-  minAdoScore = Math.min(Math.max(minAdoScore, 0), 5);
+export async function searchRestaurants(input: SearchRestaurantsInput) {
+  const { lat, lng } = input;
+  const query = (input.query ?? "").trim();
+  const radiusMiles = Math.min(
+    Math.max(input.radius_miles ?? 5, 0.1),
+    MAX_SEARCH_RADIUS_MILES,
+  );
+  const dietary = input.dietary ?? [];
+  const minAdoScore = Math.min(Math.max(input.min_ado_score ?? 0, 0), 5);
 
   const supabase = createClient();
   const radiusMeters = radiusMiles * 1609.34;

@@ -13,10 +13,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { buildAdoCitation } from "@/lib/mcp/citations";
 import { ResourceNotFoundError } from "@/lib/mcp/errors";
-import { validateRestaurantId } from "@/lib/mcp/validation";
+import type { GetAdoScoreBreakdownInput } from "./inputs";
 
-export async function getAdoScoreBreakdown(args: Record<string, unknown>) {
-  const restaurantId = validateRestaurantId(args.restaurant_id);
+export async function getAdoScoreBreakdown(input: GetAdoScoreBreakdownInput) {
+  const { restaurant_id: restaurantId } = input;
   const supabase = createClient();
 
   const { data: restaurant, error } = await supabase

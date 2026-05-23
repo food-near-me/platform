@@ -13,6 +13,8 @@
  * so the `/api/health/mcp` rollup stays accurate.
  */
 
+import type { ZodIssue, ZodTypeAny } from "zod";
+
 import { handleGetPrompt, promptDefinitions } from "@/lib/mcp/prompts";
 import {
   extractResultsCount,
@@ -34,20 +36,68 @@ import { getMenu } from "./tools/menu";
 import { getRestaurant } from "./tools/restaurant";
 import { searchRestaurants } from "./tools/search";
 import { validateMenuProtocol } from "./tools/validate";
+import { TOOL_INPUT_SCHEMAS, type ToolName } from "./tools/inputs";
 
 /**
- * Dispatch table for `tools/call`. Each entry returns the raw tool result
- * object, which the caller wraps into the MCP `{ content, isError }` envelope.
+ * Dispatch table for `tools/call`. Each entry takes the Zod-parsed,
+ * typed input for its tool and returns the raw tool result object, which
+ * the caller wraps into the MCP `{ content, isError }` envelope.
  *
- * Synchronous tools are wrapped to keep the dispatcher uniform.
+ * Synchronous tools are wrapped to keep the dispatcher uniform. The
+ * `unknown` arg type at the dispatcher boundary is safe because parsing
+ * happens immediately via `TOOL_INPUT_SCHEMAS[name].parse(...)`; the
+ * inner tool implementations receive precise types from their inputs
+ * schema.
  */
-const TOOL_DISPATCH: Record<string, (args: Record<string, unknown>) => Promise<unknown>> = {
-  search_restaurants: (args) => searchRestaurants(args),
-  get_restaurant: (args) => getRestaurant(args),
-  get_menu: (args) => getMenu(args),
-  get_ado_score_breakdown: (args) => getAdoScoreBreakdown(args),
-  validate_menu_protocol: async (args) => validateMenuProtocol(args),
+const TOOL_DISPATCH: Record<ToolName, (input: never) => Promise<unknown>> = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  search_restaurants: ((input: any) => searchRestaurants(input)) as (input: never) => Promise<unknown>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get_restaurant: ((input: any) => getRestaurant(input)) as (input: never) => Promise<unknown>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get_menu: ((input: any) => getMenu(input)) as (input: never) => Promise<unknown>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get_ado_score_breakdown: ((input: any) => getAdoScoreBreakdown(input)) as (
+    input: never,
+  ) => Promise<unknown>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  validate_menu_protocol: (async (input: any) => validateMenuProtocol(input)) as (
+    input: never,
+  ) => Promise<unknown>,
 };
+
+function isKnownToolName(name: string): name is ToolName {
+  return Object.prototype.hasOwnProperty.call(TOOL_INPUT_SCHEMAS, name);
+}
+
+function formatZodIssue(issue: ZodIssue): string {
+  const path = issue.path.length > 0 ? issue.path.join(".") : "(root)";
+  return `${path}: ${issue.message}`;
+}
+
+/**
+ * Translate Zod input failures into the same `ValidationError` shape the
+ * old hand-rolled validators threw, so the downstream `toolErrorResult`
+ * code path stays unchanged.
+ */
+function parseToolInput<S extends ZodTypeAny>(
+  schema: S,
+  rawArgs: unknown,
+  toolName: ToolName,
+): ReturnType<S["parse"]> {
+  const result = schema.safeParse(rawArgs ?? {});
+  if (!result.success) {
+    const issues = result.error.issues;
+    const primary = issues[0];
+    const message = formatZodIssue(primary);
+    const remaining = issues.length > 1 ? ` (+${issues.length - 1} more issue(s))` : "";
+    const hint =
+      `Tool ${toolName} expects validated input. ` +
+      `Inspect the JSON schema in tools/list for the canonical shape.${remaining}`;
+    throw new ValidationError(message, hint);
+  }
+  return result.data as ReturnType<S["parse"]>;
+}
 
 async function handleToolCall(params: unknown): Promise<unknown> {
   if (!params || typeof params !== "object") {
@@ -63,16 +113,16 @@ async function handleToolCall(params: unknown): Promise<unknown> {
     throw makeRpcError(RPC_ERRORS.INVALID_PARAMS, "tool name required");
   }
 
-  const dispatcher = TOOL_DISPATCH[name];
-  if (!dispatcher) {
+  if (!isKnownToolName(name)) {
     throw makeRpcError(RPC_ERRORS.METHOD_NOT_FOUND, `Unknown tool: ${name}`);
   }
 
-  const args = toolArgs || {};
   const toolStart = Date.now();
 
   try {
-    const result = await dispatcher(args);
+    const parsed = parseToolInput(TOOL_INPUT_SCHEMAS[name], toolArgs, name);
+    const dispatcher = TOOL_DISPATCH[name];
+    const result = await dispatcher(parsed as never);
 
     void recordMcpInvocation({
       toolName: name,

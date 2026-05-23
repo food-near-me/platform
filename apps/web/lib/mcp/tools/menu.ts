@@ -16,7 +16,7 @@ import { createClient } from "@/lib/supabase/server";
 import { buildMenuTrustNotice } from "@/lib/discovery/verification-status";
 import { buildMenuCitation, buildSigningKeysCitation } from "@/lib/mcp/citations";
 import { ResourceNotFoundError } from "@/lib/mcp/errors";
-import { validateRestaurantId } from "@/lib/mcp/validation";
+import type { GetMenuInput } from "./inputs";
 
 type CategoryRow = {
   id: string;
@@ -45,8 +45,8 @@ type ItemRow = {
   popularity_score: number;
 };
 
-export async function getMenu(args: Record<string, unknown>) {
-  const restaurantId = validateRestaurantId(args.restaurant_id);
+export async function getMenu(input: GetMenuInput) {
+  const { restaurant_id: restaurantId } = input;
   const supabase = createClient();
 
   const { data: restaurant, error: rErr } = await supabase
