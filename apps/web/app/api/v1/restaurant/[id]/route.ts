@@ -10,6 +10,7 @@ import {
   type RestaurantProfileRow,
 } from "@/lib/supabase/columns";
 import { RESTAURANT_PROFILE_CACHE_CONTROL } from "@/lib/http/cache-headers";
+import { log } from "@/lib/log";
 
 const PRICE_RANGE_MAP: Record<number, string> = {
   1: "$",
@@ -93,7 +94,10 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error("Get Restaurant Error:", error);
+    log.error("restaurant.handler_failed", {
+      restaurant_id: id,
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

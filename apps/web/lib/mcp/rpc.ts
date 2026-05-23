@@ -19,9 +19,10 @@ import { handleGetPrompt, promptDefinitions } from "@/lib/mcp/prompts";
 import {
   extractResultsCount,
   extractTierLabel,
-  recordMcpInvocation,
+  scheduleRecordMcpInvocation,
 } from "@/lib/mcp/instrumentation";
 import { toolErrorResult } from "@/lib/mcp/tool-errors";
+import { log } from "@/lib/log";
 
 import { RPC_ERRORS } from "./constants";
 import {
@@ -124,7 +125,7 @@ async function handleToolCall(params: unknown): Promise<unknown> {
     const dispatcher = TOOL_DISPATCH[name];
     const result = await dispatcher(parsed as never);
 
-    void recordMcpInvocation({
+    scheduleRecordMcpInvocation({
       toolName: name,
       status: "success",
       tierReturned: extractTierLabel(result),
@@ -144,7 +145,7 @@ async function handleToolCall(params: unknown): Promise<unknown> {
   } catch (err) {
     const durationMs = Date.now() - toolStart;
     if (err instanceof ValidationError) {
-      void recordMcpInvocation({
+      scheduleRecordMcpInvocation({
         toolName: name,
         status: "error",
         errorCode: "VALIDATION_ERROR",
@@ -158,7 +159,7 @@ async function handleToolCall(params: unknown): Promise<unknown> {
       });
     }
     if (err instanceof ResourceNotFoundError) {
-      void recordMcpInvocation({
+      scheduleRecordMcpInvocation({
         toolName: name,
         status: "error",
         errorCode: "NOT_FOUND",
@@ -171,8 +172,11 @@ async function handleToolCall(params: unknown): Promise<unknown> {
         retryable: false,
       });
     }
-    console.error(`MCP tool ${name} error:`, err);
-    void recordMcpInvocation({
+    log.error("mcp.tool_error", {
+      tool_name: name,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    scheduleRecordMcpInvocation({
       toolName: name,
       status: "error",
       errorCode: "UPSTREAM",

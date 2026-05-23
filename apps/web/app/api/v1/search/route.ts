@@ -6,6 +6,7 @@ import {
   buildSearchTrustNotice,
 } from "@/lib/discovery/verification-status";
 import { SEARCH_CACHE_CONTROL } from "@/lib/http/cache-headers";
+import { log } from "@/lib/log";
 
 export async function GET(request: Request) {
   const paymentRequired = await checkX402Access(request, "search");
@@ -42,7 +43,7 @@ export async function GET(request: Request) {
     });
 
     if (error) {
-      console.error("Supabase RPC Error:", error);
+      log.error("search.rpc_failed", { error_message: error.message });
       throw error;
     }
 
@@ -78,7 +79,9 @@ export async function GET(request: Request) {
       },
     );
   } catch (error) {
-    console.error("Agent Search Error:", error);
+    log.error("search.handler_failed", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

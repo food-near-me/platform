@@ -2,13 +2,18 @@
  * MCP usage instrumentation.
  *
  * Records per-tool, per-tier invocations to Supabase. Writes are best-effort
- * and fire-and-forget so tool-call latency is unaffected when Supabase is slow
- * or unconfigured. Use `getMcpInvocationStats` for the public health endpoint.
+ * but now reliably flushed via Vercel `waitUntil` so a serverless cold-exit
+ * cannot lose them. Use `getMcpInvocationStats` for the public health
+ * endpoint and `request_id` to correlate a row with the originating HTTP
+ * POST (X-Request-ID header on the response).
  *
  * Schema: database/migrations/20260523_mcp_invocations.sql
+ *         + 20260524_mcp_invocations_request_id.sql (request_id column)
  */
 
 import { getSupabaseAdminClient } from "@/lib/supabase-admin";
+import { getCurrentRequestId, log } from "@/lib/log";
+import { safeWaitUntil } from "@/lib/runtime/wait-until";
 
 export type McpInvocationRecord = {
   toolName: string;
@@ -17,6 +22,8 @@ export type McpInvocationRecord = {
   tierReturned?: string | null;
   resultsCount?: number | null;
   durationMs: number;
+  /** Optional override; defaults to the current AsyncLocalStorage request id. */
+  requestId?: string | null;
 };
 
 function adminClientOrNull() {
@@ -28,14 +35,28 @@ function adminClientOrNull() {
 }
 
 /**
- * Best-effort write to mcp_invocations. Never throws; never blocks.
+ * Best-effort write to `mcp_invocations`. Never throws; never blocks the
+ * tool-call response. Schedules the write via `waitUntil` so the Vercel
+ * function stays alive until Supabase confirms the insert.
  *
- * Caller should `void recordMcpInvocation(...)` after computing the result.
- * Failures are logged once but do not surface to the agent.
+ * Usage: `scheduleRecordMcpInvocation({...})` from the dispatcher; the
+ * function is sync-returning to discourage `await` (which would defeat
+ * the no-block goal).
+ */
+export function scheduleRecordMcpInvocation(record: McpInvocationRecord): void {
+  safeWaitUntil(recordMcpInvocation(record));
+}
+
+/**
+ * Direct awaitable variant. Useful from tests/scripts that want to
+ * confirm a row was written. Routes should call
+ * `scheduleRecordMcpInvocation` instead.
  */
 export async function recordMcpInvocation(record: McpInvocationRecord): Promise<void> {
   const supabase = adminClientOrNull();
   if (!supabase) return;
+
+  const requestId = record.requestId ?? getCurrentRequestId() ?? null;
 
   try {
     const { error } = await supabase.from("mcp_invocations").insert({
@@ -45,14 +66,19 @@ export async function recordMcpInvocation(record: McpInvocationRecord): Promise<
       tier_returned: record.tierReturned ?? null,
       results_count: record.resultsCount ?? null,
       duration_ms: record.durationMs,
+      request_id: requestId,
     });
-    if (error && process.env.NODE_ENV !== "production") {
-      console.warn("[mcp instrumentation] insert failed:", error.message);
+    if (error) {
+      log.warn("mcp_instrumentation.insert_failed", {
+        tool_name: record.toolName,
+        error_message: error.message,
+      });
     }
   } catch (err) {
-    if (process.env.NODE_ENV !== "production") {
-      console.warn("[mcp instrumentation] unexpected error:", err);
-    }
+    log.warn("mcp_instrumentation.unexpected_error", {
+      tool_name: record.toolName,
+      error: err instanceof Error ? err.message : String(err),
+    });
   }
 }
 

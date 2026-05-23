@@ -41,5 +41,8 @@ export const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Request-ID",
+  // Let browser-side agents read X-Request-ID / X-Response-Time off
+  // the response so they can echo the id into their own log lines.
+  "Access-Control-Expose-Headers": "X-Request-ID, X-Response-Time",
   "Access-Control-Max-Age": "86400",
 } as const;

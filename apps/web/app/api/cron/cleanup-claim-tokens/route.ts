@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdminClient } from "@/lib/supabase-admin";
+import { log } from "@/lib/log";
 
 /**
  * Daily cleanup of stale `claim_verification_tokens`.
@@ -99,7 +100,9 @@ async function handle(request: Request) {
 
   if (countError) {
     // Non-fatal; we already deleted, just couldn't read the residual count.
-    console.warn("cleanup-claim-tokens: could not read residual count", countError.message);
+    log.warn("cron.cleanup_claim_tokens.residual_count_failed", {
+      error_message: countError.message,
+    });
   }
 
   return NextResponse.json({

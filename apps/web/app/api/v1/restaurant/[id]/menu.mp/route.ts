@@ -8,6 +8,7 @@ import {
   type NestedRestaurantWithMenuRow,
 } from "@/lib/supabase/columns";
 import { MENU_CACHE_CONTROL } from "@/lib/http/cache-headers";
+import { log } from "@/lib/log";
 
 const PRICE_RANGE_MAP: Record<number, string> = {
   1: "$",
@@ -187,7 +188,10 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error("Get Menu Error:", error);
+    log.error("menu_mp.handler_failed", {
+      restaurant_id: id,
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
