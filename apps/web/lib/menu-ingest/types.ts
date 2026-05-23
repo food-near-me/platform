@@ -35,5 +35,6 @@ export type ParsedMenuResult = {
     | "order_online_rsc"
     | "popmenu_json"
     | "olo_json"
+    | "wix_json"
     | "seed";
 };

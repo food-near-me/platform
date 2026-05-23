@@ -50,6 +50,11 @@ jobs:
       - name: Discovery copy parity
         run: npm run check:discovery-copy
 
+      - name: Unit tests (menu-protocol crypto + parsers)
+        run: |
+          npm run test -w @foodnearme/menu-protocol
+          cd apps/web && npx tsx --test lib/menu-ingest/parse-wix.test.ts
+
   mcp-contract:
     name: MCP contract (PR)
     runs-on: ubuntu-latest

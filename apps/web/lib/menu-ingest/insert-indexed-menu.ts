@@ -1,6 +1,6 @@
 import { createHash } from "crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { signMenuHash } from "@foodnearme/menu-protocol";
+import { loadSigningKeyFromEnv, signMenuHash } from "@foodnearme/menu-protocol";
 import type { MenuCategorySeed } from "./types";
 
 async function insertCategoriesAndItems(
@@ -252,16 +252,26 @@ export async function approveMenuVerification(
     }
   }
 
-  const hashPayload = `${restaurantId}:${menuId}:${signerEmail}:${Date.now()}`;
-  const signatureHash = createHash("sha256").update(hashPayload).digest("hex");
-  const signature = signMenuHash(signatureHash, "server");
   const timestamp = new Date().toISOString();
+  const signingKey = loadSigningKeyFromEnv();
+
+  if (!signingKey) {
+    throw new Error(
+      "Cannot verify menu: FNM_VERIFIED_SIGNING_KEY and FNM_VERIFIED_SIGNING_PUBLIC_KEY " +
+        "are not configured. Generate a key pair with `npm run gen:signing-key` and add to env.",
+    );
+  }
+
+  const hashPayload = `${restaurantId}:${menuId}:${signerEmail}:${timestamp}`;
+  const payloadHash = createHash("sha256").update(hashPayload).digest("hex");
+  const signature = signMenuHash(payloadHash, signingKey.privateKeyPem);
+  const signerIdentity = `${signerEmail}|fnm-server:${signingKey.publicKeyFingerprint.slice(0, 16)}`;
 
   const { error: signatureError } = await supabase
     .from("menus")
     .update({
       signature_hash: signature,
-      signature_signer: signerEmail,
+      signature_signer: signerIdentity,
       signature_timestamp: timestamp,
       updated_at: timestamp,
     })

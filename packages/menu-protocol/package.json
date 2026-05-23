@@ -8,13 +8,14 @@
     "build": "tsc",
     "prepare": "tsc",
     "dev": "tsc -w",
-    "test": "jest"
+    "test": "node --import tsx --test src/*.test.ts"
   },
   "dependencies": {
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^20",
+    "tsx": "^4.20.0",
     "typescript": "^5.4.5"
   }
 }

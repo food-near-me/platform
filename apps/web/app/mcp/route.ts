@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { toolErrorResult } from "@/lib/mcp/tool-errors";
 import { promptDefinitions, handleGetPrompt } from "@/lib/mcp/prompts";
+import {
+  extractResultsCount,
+  extractTierLabel,
+  recordMcpInvocation,
+} from "@/lib/mcp/instrumentation";
 import { SEARCH_RESTAURANTS_DESCRIPTION } from "@/lib/discovery/trust-model-copy";
 import {
   buildMenuTrustNotice,
@@ -899,7 +904,8 @@ async function handleRpcRequest(method: string, params?: unknown): Promise<unkno
       }
 
       const args = toolArgs || {};
-      
+      const toolStart = Date.now();
+
       try {
         let result: unknown;
         switch (name) {
@@ -921,7 +927,15 @@ async function handleRpcRequest(method: string, params?: unknown): Promise<unkno
           default:
             throw makeRpcError(RPC_ERRORS.METHOD_NOT_FOUND, `Unknown tool: ${name}`);
         }
-        
+
+        void recordMcpInvocation({
+          toolName: name,
+          status: "success",
+          tierReturned: extractTierLabel(result),
+          resultsCount: extractResultsCount(result),
+          durationMs: Date.now() - toolStart,
+        });
+
         return {
           content: [{
             type: "text",
@@ -930,7 +944,14 @@ async function handleRpcRequest(method: string, params?: unknown): Promise<unkno
           isError: false
         };
       } catch (err) {
+        const durationMs = Date.now() - toolStart;
         if (err instanceof ValidationError) {
+          void recordMcpInvocation({
+            toolName: name,
+            status: "error",
+            errorCode: "VALIDATION_ERROR",
+            durationMs,
+          });
           return toolErrorResult({
             code: "VALIDATION_ERROR",
             message: err.message,
@@ -939,6 +960,12 @@ async function handleRpcRequest(method: string, params?: unknown): Promise<unkno
           });
         }
         if (err instanceof ResourceNotFoundError) {
+          void recordMcpInvocation({
+            toolName: name,
+            status: "error",
+            errorCode: "NOT_FOUND",
+            durationMs,
+          });
           return toolErrorResult({
             code: "NOT_FOUND",
             message: err.message,
@@ -947,6 +974,12 @@ async function handleRpcRequest(method: string, params?: unknown): Promise<unkno
           });
         }
         console.error(`MCP tool ${name} error:`, err);
+        void recordMcpInvocation({
+          toolName: name,
+          status: "error",
+          errorCode: "UPSTREAM",
+          durationMs,
+        });
         return toolErrorResult({
           code: "UPSTREAM",
           message: err instanceof Error ? err.message : "An unexpected error occurred",

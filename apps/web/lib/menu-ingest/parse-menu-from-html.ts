@@ -13,6 +13,7 @@ import { parseSauceMenuHtml } from "./parse-sauce";
 import { parseSpotAppsMenuHtml } from "./parse-spotapps";
 import { parseSquareOnlineMenuHtml } from "./parse-square-online";
 import { parseToastApolloHtml, parseToastMenuHtml } from "./parse-toast";
+import { parseWixMenuHtml } from "./parse-wix";
 import type { ParsedMenuResult } from "./types";
 
 export type MenuParseAttempt = {
@@ -27,6 +28,7 @@ const GENERIC_PARSERS: Array<{
   { id: "toast_apollo", parse: parseToastApolloHtml },
   { id: "json_ld", parse: parseMenuFromJsonLdHtml },
   { id: "bentobox_jsonld", parse: parseBentoBoxMenuHtml },
+  { id: "wix_json", parse: parseWixMenuHtml },
   { id: "squarespace_rich", parse: parseSquarespaceRichHtml },
   { id: "squarespace_html", parse: parseSquarespaceMenuHtml },
   { id: "spotapps_html", parse: parseSpotAppsMenuHtml },
@@ -79,6 +81,15 @@ export function parseMenuForUrl(html: string, url: string): MenuParseAttempt {
   if (host.includes("square.site") || host.includes("squareup.com")) {
     const result = parseSquareOnlineMenuHtml(html);
     if (result) return { result, parser: "square_online_json" };
+  }
+
+  if (
+    host.includes("wixsite.com") ||
+    host.includes("editorx.com") ||
+    host.includes("wix.com")
+  ) {
+    const result = parseWixMenuHtml(html);
+    if (result) return { result, parser: "wix_json" };
   }
 
   if (host.includes("order.online")) {
