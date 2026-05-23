@@ -5,6 +5,7 @@ import {
   buildRestSearchLinks,
   buildSearchTrustNotice,
 } from "@/lib/discovery/verification-status";
+import { SEARCH_CACHE_CONTROL } from "@/lib/http/cache-headers";
 
 export async function GET(request: Request) {
   const paymentRequired = await checkX402Access(request, "search");
@@ -57,19 +58,25 @@ export async function GET(request: Request) {
       };
     });
 
-    return NextResponse.json({
-      metadata: {
-        query,
-        location: { lat, lng },
-        radius_miles: radiusMiles,
-        radius_meters: radiusMeters,
-        min_ado_score: minAdo,
-        dietary_filters: dietary,
-        results_count: results.length
+    return NextResponse.json(
+      {
+        metadata: {
+          query,
+          location: { lat, lng },
+          radius_miles: radiusMiles,
+          radius_meters: radiusMeters,
+          min_ado_score: minAdo,
+          dietary_filters: dietary,
+          results_count: results.length,
+        },
+        data: results,
       },
-      data: results
-    });
-    
+      {
+        headers: {
+          "Cache-Control": SEARCH_CACHE_CONTROL,
+        },
+      },
+    );
   } catch (error) {
     console.error("Agent Search Error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

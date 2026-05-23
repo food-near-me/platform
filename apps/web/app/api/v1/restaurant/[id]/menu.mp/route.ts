@@ -7,6 +7,7 @@ import {
   type NestedMenuItemRow,
   type NestedRestaurantWithMenuRow,
 } from "@/lib/supabase/columns";
+import { MENU_CACHE_CONTROL } from "@/lib/http/cache-headers";
 
 const PRICE_RANGE_MAP: Record<number, string> = {
   1: "$",
@@ -181,7 +182,7 @@ export async function GET(
 
     return NextResponse.json(menuProtocol, {
       headers: {
-        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+        "Cache-Control": MENU_CACHE_CONTROL,
         "Content-Type": "application/json",
       },
     });

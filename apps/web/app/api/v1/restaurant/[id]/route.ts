@@ -9,6 +9,7 @@ import {
   RESTAURANT_PROFILE_COLUMNS,
   type RestaurantProfileRow,
 } from "@/lib/supabase/columns";
+import { RESTAURANT_PROFILE_CACHE_CONTROL } from "@/lib/http/cache-headers";
 
 const PRICE_RANGE_MAP: Record<number, string> = {
   1: "$",
@@ -86,8 +87,11 @@ export async function GET(
         : { claim: `/claim/${id}` },
     };
 
-    return NextResponse.json(restaurantProfile);
-    
+    return NextResponse.json(restaurantProfile, {
+      headers: {
+        "Cache-Control": RESTAURANT_PROFILE_CACHE_CONTROL,
+      },
+    });
   } catch (error) {
     console.error("Get Restaurant Error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
