@@ -132,9 +132,9 @@ export async function GET(
             vegan: item.dietary_vegan,
             gluten_free: item.dietary_gluten_free,
             nut_free: item.dietary_nut_free,
-            dairy_free: false,
-            low_carb: false,
-            keto: false,
+            dairy_free: item.dietary_dairy_free,
+            low_carb: item.dietary_low_carb,
+            keto: item.dietary_keto,
             halal: item.dietary_halal,
             kosher: item.dietary_kosher
           },

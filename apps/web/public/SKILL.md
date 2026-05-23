@@ -6,7 +6,7 @@ Find restaurants near a location and retrieve structured, AI-optimized menus in 
 
 ## Capabilities
 
-- **search**: Three-tier geo search — verified → menu_indexed → discovered; filter by cuisine, location, radius, dietary tags, and ADO score.
+- **search**: Three-tier geo search — verified → menu_indexed → discovered. Cuisine/text and location/radius apply to every tier; **`dietary` and `min_ado_score` filters apply only to the verified tier** (menu_indexed and discovered rows pass through unfiltered for those fields — re-filter at item level via `menu`). The response echoes `filters.applied_to: ["verified"]` and a `filters.note`.
 - **restaurant**: Fetch detailed restaurant profiles with Schema.org JSON-LD markup.
 - **menu**: Retrieve full menus in Menu Protocol v1.0 format with dietary flags, allergens, customization options, and cryptographic owner approval signatures.
 
@@ -26,7 +26,7 @@ GET https://foodnear.me/api/v1/search
 | `lat` | number | Yes | Latitude of search center |
 | `lng` | number | Yes | Longitude of search center |
 | `radius` | number | No | Search radius in miles (default: 5) |
-| `dietary` | string[] | No | Filter by dietary tags: `vegan`, `vegetarian`, `gluten_free`, `halal`, `kosher`, `nut_free` |
+| `dietary` | string[] | No | Filter by dietary tags: `vegan`, `vegetarian`, `gluten_free`, `halal`, `kosher`, `nut_free`, `dairy_free`, `low_carb`, `keto` — applied **only to verified tier** |
 | `ado_min` | number | No | Minimum ADO score (0-5) |
 
 **Example:**

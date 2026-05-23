@@ -62,7 +62,7 @@ export const THREE_TIER_SUMMARY_MARKERS = [
 export const TWO_TIER_SUMMARY_MARKERS = THREE_TIER_SUMMARY_MARKERS;
 
 export const SEARCH_RESTAURANTS_DESCRIPTION =
-  "Search for restaurants near a location. Returns verified venues first, then menu_indexed (automated MP menu with caveat), then discovered (place only). Use menu_available and verification_status on each result. Call get_menu only when menu_available is true.";
+  "Search for restaurants near a location. Returns verified venues first, then menu_indexed (automated MP menu with caveat), then discovered (place only). Use menu_available and verification_status on each result. Call get_menu only when menu_available is true. NOTE: `dietary` and `min_ado_score` filters only apply to the verified tier; menu_indexed and discovered rows are returned unfiltered for those criteria — the response echoes `filters.applied_to: [\"verified\"]` and a `filters.note` so agents know to re-filter at item level using `get_menu`.";
 
 export const LLMS_TRUST_MODEL_SECTION = `## Data Trust Model (Three-Tier Search)
 

@@ -10,7 +10,7 @@ Our MCP (Model Context Protocol) endpoint enables Claude, ChatGPT, and other LLM
 
 ## Services / Features
 
-- **Restaurant Search**: Three-tier geo search — verified → menu_indexed → discovered; filter by cuisine, dietary tags, and ADO score
+- **Restaurant Search**: Three-tier geo search — verified → menu_indexed → discovered; cuisine query matches all tiers, but `dietary` and `min_ado_score` filters apply **only to the verified tier** (menu_indexed and discovered rows pass through unfiltered for those fields — re-filter at item level via `get_menu`)
 - **Menu Protocol Menus**: Retrieve full menus in MP v1.0 format with explicit boolean dietary flags, allergen arrays, customization options, and owner signatures
 - **ADO Scoring**: Agent Discovery Optimization scores (0-5) indicate data quality, verification status, and machine-readability
 - **Restaurant Profiles**: Schema.org/Restaurant JSON-LD with Menu Protocol extensions

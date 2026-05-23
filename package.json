@@ -26,6 +26,7 @@
     "db:migrate:claim-verification-tokens": "node scripts/apply-claim-verification-tokens.mjs",
     "db:migrate:mcp-invocations": "node scripts/apply-mcp-invocations.mjs",
     "db:migrate:rls-hardening": "node scripts/apply-rls-hardening.mjs",
+    "db:migrate:dietary-9flag": "node scripts/apply-dietary-9flag.mjs",
     "db:verify:rls": "node scripts/verify-rls.mjs",
     "db:import:discovered": "npm run db:import:discovered -w web",
     "db:import:discovered:brooklyn": "npm run db:import:discovered:brooklyn -w web"

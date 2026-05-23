@@ -57,6 +57,19 @@ Search for restaurants near a location. Returns **verified venues first** (owner
 
 **Dietary filter values:** `vegan`, `vegetarian`, `gluten_free`, `halal`, `kosher`, `nut_free`, `dairy_free`, `low_carb`, `keto`
 
+**Filter scoping (important):** `dietary` and `min_ado_score` are applied **only to the verified tier**. `menu_indexed` and `discovered` rows are returned unfiltered so the agent can still see nearby venues that have not been certified yet. The response echoes the scope explicitly:
+
+```json
+"filters": {
+  "dietary": ["vegan"],
+  "min_ado_score": 4.0,
+  "applied_to": ["verified"],
+  "note": "Dietary and min_ado_score filters only apply to verified restaurants; menu_indexed and discovered rows are not filtered on these fields."
+}
+```
+
+For `menu_indexed` results that need item-level dietary filtering, call `get_menu` and re-filter on the explicit `dietary.*` booleans and `allergens[]` returned per item.
+
 ### get_restaurant
 Get detailed restaurant profile with Schema.org/Restaurant JSON-LD.
 

@@ -98,12 +98,17 @@ type MenuItemRow = {
   currency: string;
   available: boolean;
   preparation_time_minutes: number | null;
+  // Full Menu Protocol v1.0 dietary flag set (9 flags). All default FALSE in
+  // the database; only flipped to TRUE on an explicit positive signal.
   dietary_vegetarian: boolean;
   dietary_vegan: boolean;
   dietary_gluten_free: boolean;
   dietary_halal: boolean;
   dietary_kosher: boolean;
   dietary_nut_free: boolean;
+  dietary_dairy_free: boolean;
+  dietary_low_carb: boolean;
+  dietary_keto: boolean;
   allergens: string[];
   customization_options: unknown;
   popularity_score: number;

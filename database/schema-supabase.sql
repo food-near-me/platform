@@ -96,13 +96,18 @@ CREATE TABLE menu_items (
     available BOOLEAN DEFAULT TRUE,
     preparation_time_minutes INTEGER,
     
-    -- Dietary & Allergens explicitly typed for agent parsing
-    dietary_vegetarian BOOLEAN DEFAULT FALSE,
-    dietary_vegan BOOLEAN DEFAULT FALSE,
-    dietary_gluten_free BOOLEAN DEFAULT FALSE,
-    dietary_halal BOOLEAN DEFAULT FALSE,
-    dietary_kosher BOOLEAN DEFAULT FALSE,
-    dietary_nut_free BOOLEAN DEFAULT FALSE,
+    -- Dietary & Allergens explicitly typed for agent parsing.
+    -- Full Menu Protocol v1.0 surface (9 flags). All default FALSE; flip TRUE
+    -- only on an explicit positive signal.
+    dietary_vegetarian BOOLEAN NOT NULL DEFAULT FALSE,
+    dietary_vegan BOOLEAN NOT NULL DEFAULT FALSE,
+    dietary_gluten_free BOOLEAN NOT NULL DEFAULT FALSE,
+    dietary_halal BOOLEAN NOT NULL DEFAULT FALSE,
+    dietary_kosher BOOLEAN NOT NULL DEFAULT FALSE,
+    dietary_nut_free BOOLEAN NOT NULL DEFAULT FALSE,
+    dietary_dairy_free BOOLEAN NOT NULL DEFAULT FALSE,
+    dietary_low_carb BOOLEAN NOT NULL DEFAULT FALSE,
+    dietary_keto BOOLEAN NOT NULL DEFAULT FALSE,
     
     allergens TEXT[] DEFAULT '{}',
     

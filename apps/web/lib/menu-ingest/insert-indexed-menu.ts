@@ -28,6 +28,11 @@ async function insertCategoriesAndItems(
     }
 
     for (const item of cat.items) {
+      // Every dietary flag defaults to FALSE unless the parser/seed sets it
+      // TRUE on an explicit positive signal. Inferring nut_free=TRUE from the
+      // absence of nut allergens caused false positive nut-free claims on
+      // indexed menus (Phase 3a fix); the backfill in 20260523_dietary_9flag.sql
+      // cleared those rows.
       const { error: itemError } = await supabase.from("menu_items").insert({
         category_id: category.id,
         name: item.name,
@@ -39,11 +44,12 @@ async function insertCategoriesAndItems(
         dietary_vegetarian: item.dietary_vegetarian ?? false,
         dietary_vegan: item.dietary_vegan ?? false,
         dietary_gluten_free: item.dietary_gluten_free ?? false,
-        dietary_halal: false,
-        dietary_kosher: false,
-        dietary_nut_free: !(
-          item.allergens?.includes("tree_nuts") || item.allergens?.includes("peanuts")
-        ),
+        dietary_halal: item.dietary_halal ?? false,
+        dietary_kosher: item.dietary_kosher ?? false,
+        dietary_nut_free: item.dietary_nut_free ?? false,
+        dietary_dairy_free: item.dietary_dairy_free ?? false,
+        dietary_low_carb: item.dietary_low_carb ?? false,
+        dietary_keto: item.dietary_keto ?? false,
         allergens: item.allergens ?? [],
         popularity_score: 3.0,
       });
