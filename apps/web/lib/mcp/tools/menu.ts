@@ -8,64 +8,69 @@
  * either advertises the active Ed25519 signature + verification URL or
  * explains why no signature is present.
  *
- * TODO(Phase 4): collapse the 4-query restaurant + menu + categories + items
- * chain into a single nested PostgREST select or a Postgres RPC.
+ * Performance: collapses the legacy 4-query chain
+ *   (restaurants -> menus -> menu_categories -> menu_items)
+ * into a single nested PostgREST select so cold-start p95 drops sharply.
+ * See lib/supabase/columns.ts for the projection.
  */
 
 import { createClient } from "@/lib/supabase/server";
 import { buildMenuTrustNotice } from "@/lib/discovery/verification-status";
 import { buildMenuCitation, buildSigningKeysCitation } from "@/lib/mcp/citations";
 import { ResourceNotFoundError } from "@/lib/mcp/errors";
+import {
+  GET_MENU_NESTED_QUERY,
+  type NestedMenuCategoryRow,
+  type NestedMenuItemRow,
+  type NestedRestaurantWithMenuRow,
+} from "@/lib/supabase/columns";
 import type { GetMenuInput } from "./inputs";
+
+function compareCategories(a: NestedMenuCategoryRow, b: NestedMenuCategoryRow) {
+  return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+}
 
 export async function getMenu(input: GetMenuInput) {
   const { restaurant_id: restaurantId } = input;
   const supabase = createClient();
 
-  const { data: restaurant, error: rErr } = await supabase
+  // Single round-trip: restaurant + published menu + categories + items.
+  // The `eq("menus.status", "published")` filter is applied to the nested
+  // relation, so the response either contains menus=[<the published menu>]
+  // or menus=[] (restaurant accessible, no published menu yet).
+  const { data: restaurant, error } = await supabase
     .from("restaurants")
-    .select("*")
+    .select(GET_MENU_NESTED_QUERY)
     .eq("id", restaurantId)
     .in("verification_status", ["verified", "menu_indexed"])
-    .single();
+    .eq("menus.status", "published")
+    .returns<NestedRestaurantWithMenuRow[]>()
+    .maybeSingle();
 
-  if (rErr) {
-    if (rErr.code === "PGRST116") {
-      throw new ResourceNotFoundError(
-        `Restaurant ${restaurantId} not found or has no accessible menu tier`,
-        "Use search_restaurants and call get_menu only when menu_available is true.",
-      );
-    }
-    throw new Error(`Database error: ${rErr.message}`);
+  if (error && error.code !== "PGRST116") {
+    throw new Error(`Database error: ${error.message}`);
   }
 
-  const { data: menu, error: mErr } = await supabase
-    .from("menus")
-    .select("*")
-    .eq("restaurant_id", restaurantId)
-    .eq("status", "published")
-    .single();
-
-  if (mErr) {
-    if (mErr.code === "PGRST116") {
-      throw new ResourceNotFoundError(
-        `No published menu found for restaurant ${restaurantId}`,
-        "This restaurant may not have a published Menu Protocol menu yet.",
-      );
-    }
-    throw new Error(`Database error: ${mErr.message}`);
+  if (!restaurant) {
+    throw new ResourceNotFoundError(
+      `Restaurant ${restaurantId} not found or has no accessible menu tier`,
+      "Use search_restaurants and call get_menu only when menu_available is true.",
+    );
   }
 
-  const { data: categories } = await supabase
-    .from("menu_categories")
-    .select("*")
-    .eq("menu_id", menu.id)
-    .order("sort_order", { ascending: true });
+  const menu = (restaurant.menus ?? [])[0];
+  if (!menu) {
+    throw new ResourceNotFoundError(
+      `No published menu found for restaurant ${restaurantId}`,
+      "This restaurant may not have a published Menu Protocol menu yet.",
+    );
+  }
 
-  const categoryIds = (categories ?? []).map((c) => c.id);
-  const { data: items } = categoryIds.length > 0
-    ? await supabase.from("menu_items").select("*").in("category_id", categoryIds)
-    : { data: [] };
+  const categories = [...(menu.menu_categories ?? [])].sort(compareCategories);
+  const items: NestedMenuItemRow[] = [];
+  for (const cat of categories) {
+    for (const item of cat.menu_items ?? []) items.push(item);
+  }
 
   const isIndexed = restaurant.verification_status === "menu_indexed";
   const itemCaution = isIndexed
@@ -92,14 +97,14 @@ export async function getMenu(input: GetMenuInput) {
       id: menu.id,
       last_updated: menu.updated_at,
       protocol_version: menu.protocol_version,
-      categories: (categories ?? []).map((cat) => ({
+      categories: categories.map((cat) => ({
         id: cat.id,
         name: cat.name,
         description: cat.description,
         sort_order: cat.sort_order,
       })),
-      items_count: (items ?? []).length,
-      items: (items ?? []).map((item) => ({
+      items_count: items.length,
+      items: items.map((item) => ({
         id: item.id,
         category_id: item.category_id,
         name: item.name,

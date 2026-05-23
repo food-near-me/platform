@@ -5,6 +5,10 @@ import {
   buildProfileTrustNotice,
   hasMenuAccess,
 } from "@/lib/discovery/verification-status";
+import {
+  RESTAURANT_PROFILE_COLUMNS,
+  type RestaurantProfileRow,
+} from "@/lib/supabase/columns";
 
 const PRICE_RANGE_MAP: Record<number, string> = {
   1: "$",
@@ -27,9 +31,10 @@ export async function GET(
 
     const { data: restaurant, error } = await supabase
       .from("restaurants")
-      .select("*")
+      .select(RESTAURANT_PROFILE_COLUMNS)
       .eq("id", id)
       .in("verification_status", ["discovered", "menu_indexed", "verified"])
+      .returns<RestaurantProfileRow[]>()
       .single();
 
     if (error || !restaurant) {

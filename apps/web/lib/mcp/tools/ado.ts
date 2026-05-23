@@ -13,6 +13,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { buildAdoCitation } from "@/lib/mcp/citations";
 import { ResourceNotFoundError } from "@/lib/mcp/errors";
+import {
+  RESTAURANT_FOR_ADO_COLUMNS,
+  type RestaurantForAdoRow,
+} from "@/lib/supabase/columns";
 import type { GetAdoScoreBreakdownInput } from "./inputs";
 
 export async function getAdoScoreBreakdown(input: GetAdoScoreBreakdownInput) {
@@ -21,8 +25,9 @@ export async function getAdoScoreBreakdown(input: GetAdoScoreBreakdownInput) {
 
   const { data: restaurant, error } = await supabase
     .from("restaurants")
-    .select("*")
+    .select(RESTAURANT_FOR_ADO_COLUMNS)
     .eq("id", restaurantId)
+    .returns<RestaurantForAdoRow[]>()
     .single();
 
   if (error) {

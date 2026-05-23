@@ -14,6 +14,10 @@ import {
 } from "@/lib/discovery/verification-status";
 import { buildRestaurantCitation } from "@/lib/mcp/citations";
 import { ResourceNotFoundError } from "@/lib/mcp/errors";
+import {
+  RESTAURANT_PROFILE_COLUMNS,
+  type RestaurantProfileRow,
+} from "@/lib/supabase/columns";
 import type { GetRestaurantInput } from "./inputs";
 
 const PRICE_RANGE_MAP: Record<number, string> = { 1: "$", 2: "$$", 3: "$$$", 4: "$$$$" };
@@ -24,9 +28,10 @@ export async function getRestaurant(input: GetRestaurantInput) {
 
   const { data, error } = await supabase
     .from("restaurants")
-    .select("*")
+    .select(RESTAURANT_PROFILE_COLUMNS)
     .eq("id", restaurantId)
     .in("verification_status", ["discovered", "verified", "menu_indexed"])
+    .returns<RestaurantProfileRow[]>()
     .single();
 
   if (error) {
