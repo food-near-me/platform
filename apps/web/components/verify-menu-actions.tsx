@@ -8,15 +8,19 @@ type VerifyMenuActionsProps = {
   restaurantId: string;
   restaurantName: string;
   menuSourceUrl?: string | null;
+  verifiedEmail: string;
+  claimToken: string;
 };
 
 export function VerifyMenuActions({
   restaurantId,
   restaurantName,
   menuSourceUrl,
+  verifiedEmail,
+  claimToken,
 }: VerifyMenuActionsProps) {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(verifiedEmail);
   const [agreed, setAgreed] = useState(false);
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -31,7 +35,7 @@ export function VerifyMenuActions({
       const response = await fetch(`/api/v1/restaurant/${restaurantId}/verify/approve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), agreeToTerms: true }),
+        body: JSON.stringify({ email: email.trim(), agreeToTerms: true, claimToken }),
       });
 
       const data = (await response.json().catch(() => null)) as
@@ -72,10 +76,16 @@ export function VerifyMenuActions({
           type="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
+          readOnly={Boolean(verifiedEmail)}
           className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
           placeholder="you@restaurant.com"
           required
         />
+        {verifiedEmail ? (
+          <span className="mt-1 block text-xs text-zinc-500">
+            Confirmed by the one-time link sent to this inbox.
+          </span>
+        ) : null}
       </label>
 
       <label className="flex items-start gap-2 text-sm text-zinc-700">

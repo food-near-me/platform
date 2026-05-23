@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { VerifyMenuActions } from "@/components/verify-menu-actions";
-import { createClient } from "@/lib/supabase/server";
+import { validateClaimVerificationToken } from "@/lib/claim/tokens";
+import { getSupabaseAdminClient } from "@/lib/supabase-admin";
 
 export const metadata: Metadata = {
   title: "Verify Menu | foodnear.me",
@@ -10,11 +11,11 @@ export const metadata: Metadata = {
 };
 
 type PageProps = {
-  searchParams: Promise<{ restaurantId?: string }>;
+  searchParams: Promise<{ restaurantId?: string; claimToken?: string }>;
 };
 
 export default async function VerifyMenuPage({ searchParams }: PageProps) {
-  const { restaurantId } = await searchParams;
+  const { restaurantId, claimToken } = await searchParams;
 
   if (!restaurantId) {
     return (
@@ -31,7 +32,7 @@ export default async function VerifyMenuPage({ searchParams }: PageProps) {
     );
   }
 
-  const supabase = createClient();
+  const supabase = getSupabaseAdminClient();
 
   const { data: restaurant, error } = await supabase
     .from("restaurants")
@@ -113,6 +114,27 @@ export default async function VerifyMenuPage({ searchParams }: PageProps) {
   }
 
   const isVerified = restaurant.verification_status === "verified";
+  const claimRecord = isVerified
+    ? null
+    : await validateClaimVerificationToken(supabase, restaurantId, claimToken);
+
+  if (!isVerified && !claimRecord) {
+    return (
+      <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-4 px-6 py-12">
+        <h1 className="text-2xl font-semibold">Verification link required</h1>
+        <p className="text-zinc-600">
+          This review page requires a valid one-time claim link sent to an owner email address.
+          Links expire after 24 hours.
+        </p>
+        <p>
+          <Link href={`/claim/${restaurantId}`} className="underline">
+            Request a new verification link
+          </Link>
+        </p>
+      </main>
+    );
+  }
+
   const statusLabel = isVerified
     ? "Verified"
     : menu.status === "pending_approval"
@@ -203,6 +225,8 @@ export default async function VerifyMenuPage({ searchParams }: PageProps) {
             restaurantId={restaurant.id}
             restaurantName={restaurant.name}
             menuSourceUrl={restaurant.website_url}
+            verifiedEmail={claimRecord?.email ?? ""}
+            claimToken={claimToken ?? ""}
           />
         </section>
       ) : (

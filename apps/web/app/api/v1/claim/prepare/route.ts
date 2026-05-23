@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { isTrustedOwnerEmail, websiteDomain } from "@/lib/claim/ownership";
+import { createClaimVerificationToken } from "@/lib/claim/tokens";
 import { probeWebsiteForMenu } from "@/lib/menu-ingest/probe-website-menu";
 import {
   insertPendingMenu,
 } from "@/lib/menu-ingest/insert-indexed-menu";
+import { getResendClient } from "@/lib/resend";
 import { checkMinInterval, checkRateLimit } from "@/lib/rate-limit";
 import { getSupabaseAdminClient } from "@/lib/supabase-admin";
 
@@ -26,6 +28,50 @@ function normalizeUrl(url: string): string | null {
 
 function validateEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function getBaseUrl(request: Request): string {
+  const configured = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (configured) return configured.replace(/\/+$/, "");
+  return new URL(request.url).origin;
+}
+
+async function sendClaimVerificationEmail(input: {
+  to: string;
+  restaurantName: string;
+  verifyUrl: string;
+  expiresAt: string;
+}): Promise<{ sent: boolean }> {
+  const from = process.env.LEADS_FROM_EMAIL;
+  const hasEmailConfig = Boolean(process.env.RESEND_API_KEY && from);
+
+  if (!hasEmailConfig) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("Claim email verification is not configured");
+    }
+    return { sent: false };
+  }
+
+  const resend = getResendClient();
+  await resend.emails.send({
+    from: from!,
+    to: input.to,
+    subject: `Review and verify ${input.restaurantName} on foodnear.me`,
+    text: [
+      `You requested to verify ${input.restaurantName} on foodnear.me.`,
+      "",
+      "Open this one-time link to review the Menu Protocol preview and approve the listing:",
+      input.verifyUrl,
+      "",
+      `This link expires at ${new Date(input.expiresAt).toLocaleString("en-US", {
+        timeZone: "America/New_York",
+      })} Eastern.`,
+      "",
+      "If you did not request this, you can ignore this email.",
+    ].join("\n"),
+  });
+
+  return { sent: true };
 }
 
 export async function POST(request: Request) {
@@ -193,11 +239,24 @@ export async function POST(request: Request) {
       source: `claim:prepare:${restaurantId.slice(0, 36)}`,
     });
 
-    const verifyUrl = `/dashboard/menu/verify?restaurantId=${restaurantId}`;
+    const { token, expiresAt } = await createClaimVerificationToken(
+      supabase,
+      restaurantId,
+      email,
+    );
+    const verifyPath = `/dashboard/menu/verify?restaurantId=${restaurantId}&claimToken=${encodeURIComponent(token)}`;
+    const verifyUrl = `${getBaseUrl(request)}${verifyPath}`;
+    const emailResult = await sendClaimVerificationEmail({
+      to: email,
+      restaurantName: restaurant.name,
+      verifyUrl,
+      expiresAt,
+    });
 
     return NextResponse.json({
       ok: true,
-      verifyUrl,
+      verificationSent: emailResult.sent,
+      verifyUrl: emailResult.sent ? undefined : verifyPath,
       itemCount,
       source,
     });

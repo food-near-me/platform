@@ -53,6 +53,7 @@ export function ClaimSelfServeForm({
             itemCount?: number;
             manualReview?: boolean;
             websiteDomain?: string | null;
+            verificationSent?: boolean;
           }
         | null;
 
@@ -92,20 +93,23 @@ export function ClaimSelfServeForm({
     );
   }
 
-  if (status === "success" && verifyUrl) {
+  if (status === "success") {
     return (
       <div className="claim-success">
         <p>
-          Menu ready for review at <strong>{restaurantName}</strong>.
-          {isIndexed
-            ? " Review the indexed menu and approve to upgrade to verified."
-            : " Review extracted items and approve to publish as verified."}
+          Verification link sent for <strong>{restaurantName}</strong>.
         </p>
         <p>
-          <Link href={verifyUrl} className="btn">
-            Review &amp; approve menu
-          </Link>
+          Check the owner email inbox to review the {isIndexed ? "indexed" : "extracted"} menu
+          and approve it as owner-verified.
         </p>
+        {verifyUrl ? (
+          <p>
+            <Link href={verifyUrl} className="btn">
+              Review &amp; approve menu
+            </Link>
+          </p>
+        ) : null}
       </div>
     );
   }

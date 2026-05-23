@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { isTrustedOwnerEmail } from "@/lib/claim/ownership";
+import {
+  consumeClaimVerificationToken,
+  validateClaimVerificationToken,
+} from "@/lib/claim/tokens";
 import { approveMenuVerification } from "@/lib/menu-ingest/insert-indexed-menu";
 import { checkMinInterval, checkRateLimit } from "@/lib/rate-limit";
 import { getSupabaseAdminClient } from "@/lib/supabase-admin";
@@ -7,6 +11,7 @@ import { getSupabaseAdminClient } from "@/lib/supabase-admin";
 type ApprovePayload = {
   email: string;
   agreeToTerms?: boolean;
+  claimToken?: string;
 };
 
 function validateEmail(email: string): boolean {
@@ -75,7 +80,23 @@ export async function POST(
       );
     }
 
+    const claimRecord = await validateClaimVerificationToken(
+      supabase,
+      restaurantId,
+      body.claimToken,
+    );
+
+    if (!claimRecord || claimRecord.email !== email) {
+      return NextResponse.json(
+        { error: "Valid claim verification link required" },
+        { status: 403 },
+      );
+    }
+
     const result = await approveMenuVerification(supabase, restaurantId, email);
+    if (!result.alreadyVerified) {
+      await consumeClaimVerificationToken(supabase, claimRecord.id);
+    }
 
     return NextResponse.json({
       ok: true,
