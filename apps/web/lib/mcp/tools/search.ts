@@ -19,18 +19,6 @@ import { buildSearchCitation } from "@/lib/mcp/citations";
 import { MAX_RESULTS, MAX_SEARCH_RADIUS_MILES } from "@/lib/mcp/constants";
 import type { SearchRestaurantsInput } from "./inputs";
 
-type SearchRpcRow = {
-  id: string;
-  name: string;
-  slug: string;
-  distance_meters: number;
-  agent_score: number;
-  cuisine_type: string[];
-  verification_status: string;
-  menu_available: boolean;
-  data_source: string | null;
-};
-
 export async function searchRestaurants(input: SearchRestaurantsInput) {
   const { lat, lng } = input;
   const query = (input.query ?? "").trim();
@@ -58,7 +46,7 @@ export async function searchRestaurants(input: SearchRestaurantsInput) {
     throw new Error(`Database error: ${error.message}`);
   }
 
-  const results = (data || []).slice(0, MAX_RESULTS).map((r: SearchRpcRow) => {
+  const results = (data ?? []).slice(0, MAX_RESULTS).map((r) => {
     const menuAvailable = Boolean(r.menu_available);
     return {
       id: r.id,

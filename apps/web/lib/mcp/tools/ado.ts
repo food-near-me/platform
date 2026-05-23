@@ -25,11 +25,14 @@ export async function getAdoScoreBreakdown(input: GetAdoScoreBreakdownInput) {
     .eq("id", restaurantId)
     .single();
 
-  if (error?.code === "PGRST116" || !restaurant) {
-    throw new ResourceNotFoundError(
-      `Restaurant ${restaurantId} not found`,
-      "Call search_restaurants first, then use an id from results.",
-    );
+  if (error) {
+    if (error.code === "PGRST116") {
+      throw new ResourceNotFoundError(
+        `Restaurant ${restaurantId} not found`,
+        "Call search_restaurants first, then use an id from results.",
+      );
+    }
+    throw new Error(`Database error: ${error.message}`);
   }
 
   const hasVerification = restaurant.verification_status === "verified";

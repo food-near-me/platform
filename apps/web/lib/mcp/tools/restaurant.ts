@@ -29,14 +29,20 @@ export async function getRestaurant(input: GetRestaurantInput) {
     .in("verification_status", ["discovered", "verified", "menu_indexed"])
     .single();
 
-  if (error?.code === "PGRST116" || !data) {
+  if (error) {
+    if (error.code === "PGRST116") {
+      throw new ResourceNotFoundError(
+        `Restaurant ${restaurantId} not found`,
+        "Call search_restaurants first, then use an id from results.",
+      );
+    }
+    throw new Error(`Database error: ${error.message}`);
+  }
+  if (!data) {
     throw new ResourceNotFoundError(
       `Restaurant ${restaurantId} not found`,
       "Call search_restaurants first, then use an id from results.",
     );
-  }
-  if (error) {
-    throw new Error(`Database error: ${error.message}`);
   }
 
   const menuTier = hasMenuAccess(data.verification_status);

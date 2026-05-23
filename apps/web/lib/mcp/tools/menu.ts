@@ -18,33 +18,6 @@ import { buildMenuCitation, buildSigningKeysCitation } from "@/lib/mcp/citations
 import { ResourceNotFoundError } from "@/lib/mcp/errors";
 import type { GetMenuInput } from "./inputs";
 
-type CategoryRow = {
-  id: string;
-  name: string;
-  description: string | null;
-  sort_order: number;
-};
-
-type ItemRow = {
-  id: string;
-  category_id: string;
-  name: string;
-  description: string | null;
-  price: number;
-  currency: string;
-  available: boolean;
-  preparation_time_minutes: number | null;
-  dietary_vegetarian: boolean;
-  dietary_vegan: boolean;
-  dietary_gluten_free: boolean;
-  dietary_halal: boolean;
-  dietary_kosher: boolean;
-  dietary_nut_free: boolean;
-  allergens: string[];
-  customization_options: unknown;
-  popularity_score: number;
-};
-
 export async function getMenu(input: GetMenuInput) {
   const { restaurant_id: restaurantId } = input;
   const supabase = createClient();
@@ -56,11 +29,14 @@ export async function getMenu(input: GetMenuInput) {
     .in("verification_status", ["verified", "menu_indexed"])
     .single();
 
-  if (rErr?.code === "PGRST116" || !restaurant) {
-    throw new ResourceNotFoundError(
-      `Restaurant ${restaurantId} not found or has no accessible menu tier`,
-      "Use search_restaurants and call get_menu only when menu_available is true.",
-    );
+  if (rErr) {
+    if (rErr.code === "PGRST116") {
+      throw new ResourceNotFoundError(
+        `Restaurant ${restaurantId} not found or has no accessible menu tier`,
+        "Use search_restaurants and call get_menu only when menu_available is true.",
+      );
+    }
+    throw new Error(`Database error: ${rErr.message}`);
   }
 
   const { data: menu, error: mErr } = await supabase
@@ -70,11 +46,14 @@ export async function getMenu(input: GetMenuInput) {
     .eq("status", "published")
     .single();
 
-  if (mErr?.code === "PGRST116" || !menu) {
-    throw new ResourceNotFoundError(
-      `No published menu found for restaurant ${restaurantId}`,
-      "This restaurant may not have a published Menu Protocol menu yet.",
-    );
+  if (mErr) {
+    if (mErr.code === "PGRST116") {
+      throw new ResourceNotFoundError(
+        `No published menu found for restaurant ${restaurantId}`,
+        "This restaurant may not have a published Menu Protocol menu yet.",
+      );
+    }
+    throw new Error(`Database error: ${mErr.message}`);
   }
 
   const { data: categories } = await supabase
@@ -83,7 +62,7 @@ export async function getMenu(input: GetMenuInput) {
     .eq("menu_id", menu.id)
     .order("sort_order", { ascending: true });
 
-  const categoryIds = (categories || []).map((c: { id: string }) => c.id);
+  const categoryIds = (categories ?? []).map((c) => c.id);
   const { data: items } = categoryIds.length > 0
     ? await supabase.from("menu_items").select("*").in("category_id", categoryIds)
     : { data: [] };
@@ -113,14 +92,14 @@ export async function getMenu(input: GetMenuInput) {
       id: menu.id,
       last_updated: menu.updated_at,
       protocol_version: menu.protocol_version,
-      categories: (categories || []).map((cat: CategoryRow) => ({
+      categories: (categories ?? []).map((cat) => ({
         id: cat.id,
         name: cat.name,
         description: cat.description,
         sort_order: cat.sort_order,
       })),
-      items_count: (items || []).length,
-      items: (items || []).map((item: ItemRow) => ({
+      items_count: (items ?? []).length,
+      items: (items ?? []).map((item) => ({
         id: item.id,
         category_id: item.category_id,
         name: item.name,

@@ -45,17 +45,7 @@ export async function GET(request: Request) {
       throw error;
     }
 
-    const results = (data || []).map((restaurant: {
-      id: string;
-      name: string;
-      slug: string;
-      distance_meters: number;
-      agent_score: number;
-      cuisine_type: string[];
-      verification_status: string;
-      menu_available: boolean;
-      data_source: string | null;
-    }) => {
+    const results = (data ?? []).map((restaurant) => {
       const menuAvailable = Boolean(restaurant.menu_available);
       return {
         ...restaurant,
