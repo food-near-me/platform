@@ -29,6 +29,7 @@
     "db:migrate:dietary-9flag": "node scripts/apply-dietary-9flag.mjs",
     "db:migrate:race-safe-approve": "node scripts/apply-race-safe-approve.mjs",
     "db:migrate:signature-content-binding": "node scripts/apply-signature-content-binding.mjs",
+    "smoke:cron-cleanup": "node scripts/cron-cleanup-smoke.mjs",
     "db:verify:rls": "node scripts/verify-rls.mjs",
     "db:import:discovered": "npm run db:import:discovered -w web",
     "db:import:discovered:brooklyn": "npm run db:import:discovered:brooklyn -w web"
