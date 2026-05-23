@@ -53,10 +53,10 @@ jobs:
       - name: Enum parity (verification_status TS vs SQL)
         run: npm run check:enums
 
-      - name: Unit tests (menu-protocol crypto + parsers)
+      - name: Unit tests (menu-protocol crypto + parsers + approve race-safety)
         run: |
           npm run test -w @foodnearme/menu-protocol
-          cd apps/web && npx tsx --test lib/menu-ingest/parse-wix.test.ts
+          cd apps/web && npx tsx --test lib/menu-ingest/parse-wix.test.ts lib/menu-ingest/approve-menu-verification.test.ts
 
   mcp-contract:
     name: MCP contract (PR)

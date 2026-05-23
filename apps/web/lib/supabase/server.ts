@@ -169,6 +169,20 @@ export type Database = {
           data_source: string | null;
         }[];
       };
+      approve_menu_verification_atomic: {
+        Args: {
+          p_restaurant_id: string;
+          p_expected_menu_id: string;
+          p_signature_hash: string;
+          p_signature_signer: string;
+          p_signature_timestamp: string;
+        };
+        Returns: {
+          menu_id: string | null;
+          already_verified: boolean;
+          menu_state_changed: boolean;
+        }[];
+      };
     };
   };
 };
