@@ -7,7 +7,7 @@ import {
 } from "@/lib/discovery/verification-status";
 
 export async function GET(request: Request) {
-  const paymentRequired = checkX402Access(request, "search");
+  const paymentRequired = await checkX402Access(request, "search");
   if (paymentRequired) return paymentRequired;
 
   const { searchParams } = new URL(request.url);

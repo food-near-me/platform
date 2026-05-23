@@ -9,10 +9,15 @@ export type PaymentRequiredBody = {
     chain: string;
     asset: string;
     network: string;
-    top_up_endpoint: string;
+    /**
+     * Top-up route. Optional because x402 Phase B (settlement) is not yet
+     * shipped — emitted only when `FNM_X402_TOPUP_ENDPOINT` is configured.
+     */
+    top_up_endpoint?: string;
     min_top_up_usd: number;
     min_balance_usd: number;
     usdc_address: string;
+    status: "phase_a_guard_only" | "phase_b_settlement";
   }>;
   auth_options: {
     api_key: {
@@ -21,8 +26,10 @@ export type PaymentRequiredBody = {
     };
     x402_wallet: {
       header: string;
-      top_up_endpoint: string;
+      /** See note on payment_options[].top_up_endpoint. */
+      top_up_endpoint?: string;
       docs: string;
+      status: "phase_a_guard_only" | "phase_b_settlement";
     };
   };
 };

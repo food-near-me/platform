@@ -21,11 +21,14 @@ export function getClientIp(request: Request): string {
 /**
  * Returns a 402 NextResponse when x402 is enabled, quota is exceeded, and no paid auth.
  * Returns null when the request should proceed.
+ *
+ * Async because rate-limit storage may be remote (Upstash). When the in-memory
+ * fallback is used the call resolves synchronously on the next microtask.
  */
-export function checkX402Access(
+export async function checkX402Access(
   request: Request,
   endpoint: X402Endpoint
-): NextResponse | null {
+): Promise<NextResponse | null> {
   const cfg = loadX402Config();
   if (!cfg.enabled) {
     return null;
@@ -37,7 +40,7 @@ export function checkX402Access(
 
   const ip = getClientIp(request);
   const key = `x402:${endpoint}:${ip}`;
-  const { allowed, remaining } = checkRateLimit({
+  const { allowed, remaining } = await checkRateLimit({
     key,
     limit: cfg.freeQuotaPerDay,
     windowMs: cfg.quotaWindowMs,

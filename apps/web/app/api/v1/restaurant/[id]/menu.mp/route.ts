@@ -14,7 +14,7 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const paymentRequired = checkX402Access(request, "menu");
+  const paymentRequired = await checkX402Access(request, "menu");
   if (paymentRequired) return paymentRequired;
 
   const { id } = await params;

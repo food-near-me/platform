@@ -36,42 +36,48 @@ function getBaseUrl(request: Request): string {
   return new URL(request.url).origin;
 }
 
+type EmailSendResult =
+  | { sent: true }
+  | { sent: false; reason: "not_configured" | "send_failed"; message?: string };
+
 async function sendClaimVerificationEmail(input: {
   to: string;
   restaurantName: string;
   verifyUrl: string;
   expiresAt: string;
-}): Promise<{ sent: boolean }> {
+}): Promise<EmailSendResult> {
   const from = process.env.LEADS_FROM_EMAIL;
   const hasEmailConfig = Boolean(process.env.RESEND_API_KEY && from);
 
   if (!hasEmailConfig) {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("Claim email verification is not configured");
-    }
-    return { sent: false };
+    return { sent: false, reason: "not_configured" };
   }
 
-  const resend = getResendClient();
-  await resend.emails.send({
-    from: from!,
-    to: input.to,
-    subject: `Review and verify ${input.restaurantName} on foodnear.me`,
-    text: [
-      `You requested to verify ${input.restaurantName} on foodnear.me.`,
-      "",
-      "Open this one-time link to review the Menu Protocol preview and approve the listing:",
-      input.verifyUrl,
-      "",
-      `This link expires at ${new Date(input.expiresAt).toLocaleString("en-US", {
-        timeZone: "America/New_York",
-      })} Eastern.`,
-      "",
-      "If you did not request this, you can ignore this email.",
-    ].join("\n"),
-  });
-
-  return { sent: true };
+  try {
+    const resend = getResendClient();
+    await resend.emails.send({
+      from: from!,
+      to: input.to,
+      subject: `Review and verify ${input.restaurantName} on foodnear.me`,
+      text: [
+        `You requested to verify ${input.restaurantName} on foodnear.me.`,
+        "",
+        "Open this one-time link to review the Menu Protocol preview and approve the listing:",
+        input.verifyUrl,
+        "",
+        `This link expires at ${new Date(input.expiresAt).toLocaleString("en-US", {
+          timeZone: "America/New_York",
+        })} Eastern.`,
+        "",
+        "If you did not request this, you can ignore this email.",
+      ].join("\n"),
+    });
+    return { sent: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("[claim/prepare] resend send failed:", message);
+    return { sent: false, reason: "send_failed", message };
+  }
 }
 
 export async function POST(request: Request) {
@@ -99,7 +105,7 @@ export async function POST(request: Request) {
     const forwardedFor = request.headers.get("x-forwarded-for");
     const ip = forwardedFor?.split(",")[0]?.trim() || "unknown";
 
-    const intervalCheck = checkMinInterval({
+    const intervalCheck = await checkMinInterval({
       key: `claim:ip:interval:${ip}`,
       minIntervalMs: 10_000,
     });
@@ -107,7 +113,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Too many requests, please wait" }, { status: 429 });
     }
 
-    const ipRateLimit = checkRateLimit({
+    const ipRateLimit = await checkRateLimit({
       key: `claim:ip:window:${ip}`,
       limit: 8,
       windowMs: 10 * 60 * 1000,
@@ -253,10 +259,42 @@ export async function POST(request: Request) {
       expiresAt,
     });
 
+    if (!emailResult.sent) {
+      // Resend misconfiguration or upstream failure: do NOT 500.
+      // Persist the lead so support can follow up out-of-band, and tell the
+      // owner what to expect. Dev environments fall back to surfacing the
+      // verify URL directly so the flow stays testable.
+      const failureSource =
+        emailResult.reason === "send_failed"
+          ? `claim:email-failed:${restaurantId.slice(0, 36)}`
+          : `claim:email-unconfigured:${restaurantId.slice(0, 36)}`;
+      await supabase.from("audit_leads").insert({
+        restaurant_name: restaurant.name,
+        city: "claim-email-fallback",
+        email,
+        source: failureSource,
+      });
+
+      const inDevelopment = process.env.NODE_ENV !== "production";
+      const manualReviewMessage =
+        emailResult.reason === "send_failed"
+          ? "We received your claim but could not send the verification email. Our team will reach out within one business day."
+          : "Verification email is not configured in this environment. Our team will reach out manually.";
+
+      return NextResponse.json({
+        ok: true,
+        verificationSent: false,
+        manualReview: true,
+        message: manualReviewMessage,
+        verifyUrl: inDevelopment ? verifyPath : undefined,
+        itemCount,
+        source,
+      });
+    }
+
     return NextResponse.json({
       ok: true,
-      verificationSent: emailResult.sent,
-      verifyUrl: emailResult.sent ? undefined : verifyPath,
+      verificationSent: true,
       itemCount,
       source,
     });

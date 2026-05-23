@@ -20,6 +20,7 @@ paths=(
   "/.well-known/gemini-extension.json"
   "/.well-known/services.json"
   "/.well-known/agent.json"
+  "/.well-known/menu-signing-keys.json"
 )
 
 echo "Deploy preflight for ${BASE}"

@@ -92,9 +92,9 @@ export async function runX402Flows(): Promise<FlowResult[]> {
   const results: FlowResult[] = [];
 
   results.push(
-    await runFlow("x402-disabled", "x402 disabled passes through", () => {
-      withEnv({ FNM_X402_ENABLED: undefined }, () => {
-        const response = checkX402Access(
+    await runFlow("x402-disabled", "x402 disabled passes through", async () => {
+      await withEnv({ FNM_X402_ENABLED: undefined }, async () => {
+        const response = await checkX402Access(
           makeRequest({ ip: `disabled-${Date.now()}` }),
           "search"
         );
@@ -104,15 +104,15 @@ export async function runX402Flows(): Promise<FlowResult[]> {
   );
 
   results.push(
-    await runFlow("x402-under-quota", "under free quota allowed", () => {
-      withEnv(
+    await runFlow("x402-under-quota", "under free quota allowed", async () => {
+      await withEnv(
         {
           FNM_X402_ENABLED: "1",
           FNM_X402_FREE_QUOTA_PER_DAY: "5",
         },
-        () => {
+        async () => {
           const ip = `under-quota-${Date.now()}`;
-          const response = checkX402Access(makeRequest({ ip }), "search");
+          const response = await checkX402Access(makeRequest({ ip }), "search");
           assert(response === null, "first request under quota should pass");
         }
       );
@@ -129,10 +129,10 @@ export async function runX402Flows(): Promise<FlowResult[]> {
         async () => {
           const ip = `over-quota-${Date.now()}`;
 
-          const first = checkX402Access(makeRequest({ ip }), "search");
+          const first = await checkX402Access(makeRequest({ ip }), "search");
           assert(first === null, "first request should pass");
 
-          const second = checkX402Access(makeRequest({ ip }), "search");
+          const second = await checkX402Access(makeRequest({ ip }), "search");
           assert(second !== null, "second request should be blocked");
 
           const body = await parse402(second as Response);
@@ -142,6 +142,14 @@ export async function runX402Flows(): Promise<FlowResult[]> {
             body.auth_options.x402_wallet.header === "X-Sign-In-With-X",
             "x402_wallet header"
           );
+          assert(
+            body.auth_options.x402_wallet.status === "phase_a_guard_only",
+            "x402_wallet.status should be phase_a_guard_only without FNM_X402_TOPUP_ENDPOINT"
+          );
+          assert(
+            body.auth_options.x402_wallet.top_up_endpoint === undefined,
+            "top_up_endpoint must be omitted until Phase B route is shipped"
+          );
           assert(second!.headers.get("X-Payment-Required") === "x402", "X-Payment-Required header");
         }
       );
@@ -149,19 +157,19 @@ export async function runX402Flows(): Promise<FlowResult[]> {
   );
 
   results.push(
-    await runFlow("x402-bearer-bypass", "Bearer auth bypasses quota", () => {
-      withEnv(
+    await runFlow("x402-bearer-bypass", "Bearer auth bypasses quota", async () => {
+      await withEnv(
         {
           FNM_X402_ENABLED: "1",
           FNM_X402_FREE_QUOTA_PER_DAY: "1",
         },
-        () => {
+        async () => {
           const ip = `bearer-${Date.now()}`;
 
-          checkX402Access(makeRequest({ ip }), "search");
-          checkX402Access(makeRequest({ ip }), "search");
+          await checkX402Access(makeRequest({ ip }), "search");
+          await checkX402Access(makeRequest({ ip }), "search");
 
-          const withAuth = checkX402Access(
+          const withAuth = await checkX402Access(
             makeRequest({ ip, authorization: "Bearer test-key-phase-a" }),
             "search"
           );
@@ -172,19 +180,19 @@ export async function runX402Flows(): Promise<FlowResult[]> {
   );
 
   results.push(
-    await runFlow("x402-siwx-bypass", "SIWX header bypasses quota", () => {
-      withEnv(
+    await runFlow("x402-siwx-bypass", "SIWX header bypasses quota", async () => {
+      await withEnv(
         {
           FNM_X402_ENABLED: "1",
           FNM_X402_FREE_QUOTA_PER_DAY: "1",
         },
-        () => {
+        async () => {
           const ip = `siwx-${Date.now()}`;
 
-          checkX402Access(makeRequest({ ip }), "restaurant");
-          checkX402Access(makeRequest({ ip }), "restaurant");
+          await checkX402Access(makeRequest({ ip }), "restaurant");
+          await checkX402Access(makeRequest({ ip }), "restaurant");
 
-          const withSiwx = checkX402Access(
+          const withSiwx = await checkX402Access(
             makeRequest({ ip, siwx: "phase-a-stub-token" }),
             "restaurant"
           );
@@ -192,6 +200,37 @@ export async function runX402Flows(): Promise<FlowResult[]> {
         }
       );
     })
+  );
+
+  results.push(
+    await runFlow(
+      "x402-topup-when-configured",
+      "top_up_endpoint surfaces when FNM_X402_TOPUP_ENDPOINT is set",
+      async () => {
+        await withEnv(
+          {
+            FNM_X402_ENABLED: "1",
+            FNM_X402_FREE_QUOTA_PER_DAY: "1",
+            FNM_X402_TOPUP_ENDPOINT: "/api/v1/x402/top-up",
+          },
+          async () => {
+            const ip = `topup-${Date.now()}`;
+            await checkX402Access(makeRequest({ ip }), "search");
+            const blocked = await checkX402Access(makeRequest({ ip }), "search");
+            assert(blocked !== null, "second request should be blocked");
+            const body = await parse402(blocked as Response);
+            assert(
+              body.auth_options.x402_wallet.top_up_endpoint === "/api/v1/x402/top-up",
+              "top_up_endpoint should advertise configured value"
+            );
+            assert(
+              body.auth_options.x402_wallet.status === "phase_b_settlement",
+              "status should flip to phase_b_settlement when route is configured"
+            );
+          }
+        );
+      }
+    )
   );
 
   return results;

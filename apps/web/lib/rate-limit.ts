@@ -1,77 +1,89 @@
-type Bucket = {
-  count: number;
-  resetAt: number;
-  lastSeenAt: number;
+/**
+ * Distributed-capable rate limiter.
+ *
+ * Selection:
+ *   - When `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` are set, all
+ *     counters live in Upstash Redis (works across serverless instances /
+ *     Vercel regions, survives restarts).
+ *   - Otherwise falls back to a per-process in-memory store. Suitable for
+ *     local development and tests; NOT suitable for production multi-instance
+ *     deploys, where each instance would enforce its own limit.
+ *
+ * The public API (`checkRateLimit`, `checkMinInterval`) is async regardless of
+ * adapter so callers always `await`. The in-memory adapter resolves
+ * synchronously; the Upstash adapter performs a single HTTP round-trip per
+ * call (pipelined when more than one command is needed).
+ *
+ * On Upstash failure we fail-open (allow the request) and log once. Failing
+ * closed would let a Redis outage take the entire site down; a brief
+ * counter-reset window is the lesser evil and matches what the project's
+ * other resilience layers do (Supabase fallbacks, instrumentation).
+ */
+
+import { checkInMemoryMinInterval, checkInMemoryRateLimit } from "./rate-limit/in-memory";
+import { checkUpstashMinInterval, checkUpstashRateLimit, hasUpstashConfig } from "./rate-limit/upstash";
+
+export type RateLimitResult = {
+  allowed: boolean;
+  remaining: number;
 };
 
-const RATE_LIMIT_STORE_SYMBOL = Symbol.for("foodnearme.rate_limit_store");
+export type MinIntervalResult = {
+  allowed: boolean;
+};
 
-function getStore(): Map<string, Bucket> {
-  const globalObject = globalThis as typeof globalThis & {
-    [RATE_LIMIT_STORE_SYMBOL]?: Map<string, Bucket>;
-  };
-
-  if (!globalObject[RATE_LIMIT_STORE_SYMBOL]) {
-    globalObject[RATE_LIMIT_STORE_SYMBOL] = new Map<string, Bucket>();
-  }
-
-  return globalObject[RATE_LIMIT_STORE_SYMBOL];
-}
-
-export function checkRateLimit(options: {
+export type CheckRateLimitOptions = {
   key: string;
   limit: number;
   windowMs: number;
-}) {
-  const { key, limit, windowMs } = options;
-  const now = Date.now();
-  const store = getStore();
-  const existing = store.get(key);
+};
 
-  if (!existing || now >= existing.resetAt) {
-    store.set(key, {
-      count: 1,
-      resetAt: now + windowMs,
-      lastSeenAt: now,
-    });
-
-    return { allowed: true, remaining: limit - 1 };
-  }
-
-  existing.count += 1;
-  existing.lastSeenAt = now;
-  store.set(key, existing);
-
-  if (existing.count > limit) {
-    return { allowed: false, remaining: 0 };
-  }
-
-  return { allowed: true, remaining: limit - existing.count };
-}
-
-export function checkMinInterval(options: {
+export type CheckMinIntervalOptions = {
   key: string;
   minIntervalMs: number;
-}) {
-  const { key, minIntervalMs } = options;
-  const now = Date.now();
-  const store = getStore();
-  const existing = store.get(key);
+};
 
-  if (!existing) {
-    store.set(key, {
-      count: 1,
-      resetAt: now + minIntervalMs,
-      lastSeenAt: now,
-    });
-    return { allowed: true };
+let warnedAboutFallback = false;
+
+export function rateLimitBackend(): "upstash" | "in-memory" {
+  return hasUpstashConfig() ? "upstash" : "in-memory";
+}
+
+function warnFallbackOnce(error: unknown): void {
+  if (warnedAboutFallback) return;
+  warnedAboutFallback = true;
+  const message = error instanceof Error ? error.message : String(error);
+  console.warn(
+    `[rate-limit] Upstash unavailable, falling back to in-memory for this process. Reason: ${message}`,
+  );
+}
+
+export async function checkRateLimit(
+  options: CheckRateLimitOptions,
+): Promise<RateLimitResult> {
+  if (!hasUpstashConfig()) {
+    return checkInMemoryRateLimit(options);
   }
 
-  if (now - existing.lastSeenAt < minIntervalMs) {
-    return { allowed: false };
+  try {
+    return await checkUpstashRateLimit(options);
+  } catch (error) {
+    warnFallbackOnce(error);
+    return checkInMemoryRateLimit(options);
+  }
+}
+
+export async function checkMinInterval(
+  options: CheckMinIntervalOptions,
+): Promise<MinIntervalResult> {
+  if (!hasUpstashConfig()) {
+    return checkInMemoryMinInterval(options);
   }
 
-  existing.lastSeenAt = now;
-  store.set(key, existing);
-  return { allowed: true };
+  try {
+    return await checkUpstashMinInterval(options);
+  } catch (error) {
+    warnFallbackOnce(error);
+    return checkInMemoryMinInterval(options);
+  }
 }

@@ -15,6 +15,14 @@ import {
   buildSearchTrustNotice,
   hasMenuAccess,
 } from "@/lib/discovery/verification-status";
+import {
+  buildAdoCitation,
+  buildMenuCitation,
+  buildRestaurantCitation,
+  buildSearchCitation,
+  buildSigningKeysCitation,
+  buildValidateCitation,
+} from "@/lib/mcp/citations";
 
 /**
  * MCP (Model Context Protocol) Server for foodnear.me
@@ -347,13 +355,71 @@ async function searchRestaurants(args: Record<string, unknown>) {
     };
   });
 
+  const tierBreakdown = {
+    verified: 0,
+    menu_indexed: 0,
+    discovered: 0,
+  };
+  for (const r of results) {
+    if (r.verification_status === "verified") tierBreakdown.verified++;
+    else if (r.verification_status === "menu_indexed") tierBreakdown.menu_indexed++;
+    else if (r.verification_status === "discovered") tierBreakdown.discovered++;
+  }
+
+  const nextSteps: string[] = [];
+  if (results.length === 0) {
+    if (radiusMiles < MAX_SEARCH_RADIUS_MILES) {
+      const widerRadius = Math.min(radiusMiles * 2, MAX_SEARCH_RADIUS_MILES);
+      nextSteps.push(
+        `Widen the search radius (current: ${radiusMiles} miles, try ${widerRadius})`,
+      );
+    }
+    if (dietary.length > 0) {
+      nextSteps.push(
+        `Drop dietary filters (${dietary.join(", ")}) — these only apply to verified restaurants, so they exclude all indexed and discovered listings`,
+      );
+    }
+    if (minAdoScore > 0) {
+      nextSteps.push(
+        `Lower min_ado_score (current: ${minAdoScore}) — it only applies to verified restaurants`,
+      );
+    }
+    if (query.length > 0) {
+      nextSteps.push(
+        `Omit the "${query}" query or try a more general term`,
+      );
+    }
+    nextSteps.push(
+      "Coverage outside Williamsburg/NYC is mostly discovered-only — call get_menu only when menu_available is true",
+    );
+  } else if (tierBreakdown.verified === 0 && tierBreakdown.menu_indexed === 0) {
+    nextSteps.push(
+      "All results are discovered-only (place data, no menus). Do not cite menu items; agents can offer to claim a listing at https://foodnear.me/claim/{id}",
+    );
+  }
+
   return {
+    citation: buildSearchCitation({
+      lat,
+      lng,
+      radiusMiles,
+      query,
+      dietary,
+      minAdoScore,
+    }),
     query: query || "(all cuisines)",
     location: { lat, lng },
     radius_miles: radiusMiles,
-    filters: { dietary, min_ado_score: minAdoScore },
+    filters: {
+      dietary,
+      min_ado_score: minAdoScore,
+      applied_to: ["verified"],
+      note: "Dietary and min_ado_score filters only apply to verified restaurants; menu_indexed and discovered rows are not filtered on these fields.",
+    },
     results_count: results.length,
-    results
+    tier_breakdown: tierBreakdown,
+    results,
+    ...(nextSteps.length > 0 ? { next_steps: nextSteps } : {}),
   };
 }
 
@@ -402,6 +468,7 @@ async function getRestaurant(args: Record<string, unknown>) {
   return {
     "@context": "https://schema.org",
     "@type": "Restaurant",
+    citation: buildRestaurantCitation(data.id),
     id: data.id,
     name: data.name,
     slug: data.slug,
@@ -419,6 +486,7 @@ async function getRestaurant(args: Record<string, unknown>) {
     website_url: data.website_url ?? null,
     phone: data.phone ?? null,
     health_inspection_grade: data.health_inspection_grade ?? null,
+    last_updated: data.updated_at ?? null,
     links: {
       ...(menuAvailable
         ? {
@@ -484,7 +552,13 @@ async function getMenu(args: Record<string, unknown>) {
     ? await supabase.from("menu_items").select("*").in("category_id", categoryIds)
     : { data: [] };
 
+  const isIndexed = restaurant.verification_status === "menu_indexed";
+  const itemCaution = isIndexed
+    ? "Indexed from a public source. Not safe to cite for allergens, dietary restrictions, or final prices; confirm with the restaurant before final action."
+    : undefined;
+
   return {
+    citation: buildMenuCitation(restaurant.id),
     version: "1.0",
     domain: "foodnear.me",
     verification_status: restaurant.verification_status,
@@ -492,6 +566,7 @@ async function getMenu(args: Record<string, unknown>) {
       restaurant.verification_status,
       Boolean(menu.signature_hash),
     ),
+    last_updated: menu.updated_at,
     restaurant: {
       id: restaurant.id,
       name: restaurant.name,
@@ -546,14 +621,17 @@ async function getMenu(args: Record<string, unknown>) {
         },
         allergens: item.allergens || [],
         customization_options: item.customization_options || [],
-        popularity_score: item.popularity_score
+        popularity_score: item.popularity_score,
+        ...(itemCaution ? { caution: itemCaution } : {}),
       }))
     },
     signature: menu.signature_hash ? {
+      algorithm: "ed25519",
       signer: menu.signature_signer,
       timestamp: menu.signature_timestamp,
       hash: menu.signature_hash,
-      note: "This signature cryptographically proves the restaurant owner approved this menu data"
+      verification_url: buildSigningKeysCitation(),
+      note: "Ed25519 signature over the menu payload. Fetch verification_url for the active public key; see https://foodnear.me/SKILL.md#verifying-signatures."
     } : {
       note: restaurant.verification_status === "menu_indexed"
         ? "Indexed menu — no owner signature. Not authoritative for allergens/dietary."
@@ -648,15 +726,25 @@ async function getAdoScoreBreakdown(args: Record<string, unknown>) {
   recommendations.push("Add high-quality images for menu items");
 
   return {
+    citation: buildAdoCitation(restaurantId),
     restaurant_id: restaurantId,
     restaurant_name: restaurant.name,
     total_score: restaurant.agent_score,
     max_score: 5.0,
     breakdown,
     recommendations: recommendations.slice(0, 5),
+    next_steps: [
+      hasVerification
+        ? "Keep menu data fresh (update weekly) to maintain freshness score"
+        : `Claim this restaurant at https://foodnear.me/claim/${restaurantId} to unlock verified-tier scoring`,
+      "Submit a Menu Protocol payload through validate_menu_protocol before publishing",
+      "Add cuisine type tags and dietary certifications to improve match quality",
+    ],
     scoring_info: {
       description: "ADO (Agent Discovery Optimization) score measures how well a restaurant's data is structured for AI agent consumption",
-      factors: "Menu completeness, location accuracy, data freshness, protocol compliance, verification status, media context"
+      factors: "Menu completeness, location accuracy, data freshness, protocol compliance, verification status, media context",
+      scoring_method: "heuristic_v1",
+      caveat: "Sub-scores in `breakdown` are heuristic estimates derived from presence/absence of fields. Only `total_score` reflects the live `agent_score` column on the restaurants table. Cache invalidates when `scoring_method` changes.",
     }
   };
 }
@@ -780,6 +868,7 @@ function validateMenuProtocol(args: Record<string, unknown>) {
   const isValid = errors.length === 0;
   
   return {
+    citation: buildValidateCitation(),
     valid: isValid,
     errors: errors.length > 0 ? errors : undefined,
     warnings: warnings.length > 0 ? warnings : undefined,

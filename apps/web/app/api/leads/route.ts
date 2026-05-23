@@ -143,7 +143,7 @@ export async function POST(request: Request) {
     const ip = forwardedFor?.split(",")[0]?.trim() || "unknown";
 
     // Burst protection per IP (block rapid repeated submissions).
-    const intervalCheck = checkMinInterval({
+    const intervalCheck = await checkMinInterval({
       key: `leads:ip:interval:${ip}`,
       minIntervalMs: 8_000,
     });
@@ -157,7 +157,7 @@ export async function POST(request: Request) {
     }
 
     // Rolling-window limits.
-    const ipRateLimit = checkRateLimit({
+    const ipRateLimit = await checkRateLimit({
       key: `leads:ip:window:${ip}`,
       limit: 10,
       windowMs: 10 * 60 * 1000,
@@ -170,7 +170,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const emailRateLimit = checkRateLimit({
+    const emailRateLimit = await checkRateLimit({
       key: `leads:email:${lead.email}`,
       limit: 3,
       windowMs: 24 * 60 * 60 * 1000,

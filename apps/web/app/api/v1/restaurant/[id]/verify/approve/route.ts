@@ -41,7 +41,7 @@ export async function POST(
     const forwardedFor = request.headers.get("x-forwarded-for");
     const ip = forwardedFor?.split(",")[0]?.trim() || "unknown";
 
-    const intervalCheck = checkMinInterval({
+    const intervalCheck = await checkMinInterval({
       key: `verify:ip:interval:${ip}`,
       minIntervalMs: 5_000,
     });
@@ -49,7 +49,7 @@ export async function POST(
       return NextResponse.json({ error: "Too many requests, please wait" }, { status: 429 });
     }
 
-    const ipRateLimit = checkRateLimit({
+    const ipRateLimit = await checkRateLimit({
       key: `verify:ip:window:${ip}`,
       limit: 5,
       windowMs: 10 * 60 * 1000,

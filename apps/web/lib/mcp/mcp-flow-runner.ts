@@ -235,6 +235,10 @@ export async function runMcpFlows(
       const data = requireData(result) as Record<string, unknown>;
       assert(data.valid === true, "Expected valid=true for correct payload");
       assert(data.schema_version === "Menu Protocol v1.0", "Expected schema version");
+      assert(
+        typeof data.citation === "string" && (data.citation as string).startsWith("http"),
+        "validate_menu_protocol must return a top-level citation URL",
+      );
     })
   );
 
@@ -256,6 +260,13 @@ export async function runMcpFlows(
 
   if (!db) {
     results.push(await skipFlow("flow-a", "Dietary-safe search", "Database not configured"));
+    results.push(
+      await skipFlow(
+        "flow-search-empty-next-steps",
+        "Empty search returns next_steps guidance",
+        "Database not configured",
+      ),
+    );
     results.push(await skipFlow("flow-a-chain", "Search → get_menu chain", "Database not configured"));
     results.push(await skipFlow("flow-indexed-tier", "menu_indexed tier + trust_notice", "Database not configured"));
     results.push(await skipFlow("flow-c", "ADO score breakdown", "Database not configured"));
@@ -279,6 +290,42 @@ export async function runMcpFlows(
       assert(Array.isArray(data.results), "Expected results array");
       assert(data.location && typeof data.location === "object", "Missing location echo");
 
+      assert(
+        typeof data.citation === "string" && (data.citation as string).startsWith("http"),
+        "search_restaurants must return a top-level citation URL",
+      );
+
+      const tierBreakdown = data.tier_breakdown as
+        | { verified?: number; menu_indexed?: number; discovered?: number }
+        | undefined;
+      assert(
+        tierBreakdown && typeof tierBreakdown === "object",
+        "search_restaurants must return tier_breakdown aggregate",
+      );
+      assert(
+        typeof tierBreakdown!.verified === "number" &&
+          typeof tierBreakdown!.menu_indexed === "number" &&
+          typeof tierBreakdown!.discovered === "number",
+        "tier_breakdown must include verified/menu_indexed/discovered counts",
+      );
+      const tierSum =
+        (tierBreakdown!.verified ?? 0) +
+        (tierBreakdown!.menu_indexed ?? 0) +
+        (tierBreakdown!.discovered ?? 0);
+      assert(
+        tierSum === (data.results_count as number),
+        `tier_breakdown sum (${tierSum}) must match results_count (${data.results_count})`,
+      );
+
+      const filters = data.filters as
+        | { applied_to?: unknown[]; note?: string }
+        | undefined;
+      assert(
+        Array.isArray(filters?.applied_to) &&
+          (filters!.applied_to as unknown[]).includes("verified"),
+        "filters.applied_to must surface dietary/score-filter scoping",
+      );
+
       const resultsList = data.results as Array<Record<string, unknown>>;
       if (resultsList.length > 0) {
         const first = resultsList[0];
@@ -292,6 +339,39 @@ export async function runMcpFlows(
         if (withMenu?.id) sampleRestaurantId = withMenu.id as string;
       }
     })
+  );
+
+  results.push(
+    await runFlow(
+      "flow-search-empty-next-steps",
+      "Empty search returns next_steps guidance",
+      async () => {
+        const data = requireData(
+          await client.callTool("search_restaurants", {
+            lat: -54.8,
+            lng: -68.3,
+            radius_miles: 0.5,
+            query: "ramen",
+            dietary: ["vegan"],
+          }),
+        ) as Record<string, unknown>;
+
+        assert(
+          (data.results_count as number) === 0,
+          "Expected zero results in remote ocean fixture",
+        );
+        const nextSteps = data.next_steps as unknown[] | undefined;
+        assert(
+          Array.isArray(nextSteps) && nextSteps.length > 0,
+          "Empty results must include next_steps array",
+        );
+        const joined = (nextSteps as string[]).join(" ").toLowerCase();
+        assert(
+          joined.includes("radius") || joined.includes("dietary"),
+          "next_steps should suggest widening radius or dropping dietary filters",
+        );
+      },
+    ),
   );
 
   results.push(
@@ -321,6 +401,15 @@ export async function runMcpFlows(
       assert(menu.version === "1.0", "Expected Menu Protocol v1.0");
       assert(menu.restaurant && typeof menu.restaurant === "object", "Missing restaurant block");
       assert(menu.menu && typeof menu.menu === "object", "Missing menu block");
+
+      assert(
+        typeof menu.citation === "string" && (menu.citation as string).startsWith("http"),
+        "get_menu must return a top-level citation URL",
+      );
+      assert(
+        typeof menu.last_updated === "string",
+        "get_menu must return a top-level last_updated ISO timestamp",
+      );
 
       const menuBlock = menu.menu as Record<string, unknown>;
       assert(Array.isArray(menuBlock.categories), "Expected categories array");
@@ -370,9 +459,30 @@ export async function runMcpFlows(
         "Expected indexed trust_notice on get_menu",
       );
 
+      assert(
+        typeof menu.citation === "string" && (menu.citation as string).startsWith("http"),
+        "indexed get_menu must include a top-level citation URL",
+      );
+      assert(
+        typeof menu.last_updated === "string",
+        "indexed get_menu must include a top-level last_updated timestamp",
+      );
+
       const menuBlock = menu.menu as Record<string, unknown>;
       assert(typeof menuBlock.items_count === "number", "Missing items_count");
       assert((menuBlock.items_count as number) > 0, "Expected at least one menu item");
+
+      const items = menuBlock.items as Array<Record<string, unknown>>;
+      const withCaution = items.find((item) => typeof item.caution === "string");
+      assert(
+        withCaution !== undefined,
+        "indexed get_menu items must carry an item-level caution string",
+      );
+      assert(
+        (withCaution!.caution as string).toLowerCase().includes("allergen") ||
+          (withCaution!.caution as string).toLowerCase().includes("not safe"),
+        "item-level caution must reference allergen/safety boundary",
+      );
     }),
   );
 
@@ -391,6 +501,22 @@ export async function runMcpFlows(
       assert(typeof data.total_score === "number", "Missing total_score");
       assert(data.breakdown && typeof data.breakdown === "object", "Missing breakdown");
       assert(Array.isArray(data.recommendations), "Expected recommendations array");
+      assert(
+        typeof data.citation === "string" && (data.citation as string).startsWith("http"),
+        "get_ado_score_breakdown must return a top-level citation URL",
+      );
+      assert(Array.isArray(data.next_steps), "Expected next_steps array");
+      const scoringInfo = data.scoring_info as
+        | { scoring_method?: unknown; caveat?: unknown }
+        | undefined;
+      assert(
+        scoringInfo?.scoring_method === "heuristic_v1",
+        "scoring_info.scoring_method must be heuristic_v1",
+      );
+      assert(
+        typeof scoringInfo?.caveat === "string",
+        "scoring_info.caveat must describe heuristic limitation",
+      );
     })
   );
 

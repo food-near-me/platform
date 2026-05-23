@@ -15,6 +15,7 @@
     "test:mcp-flows": "npm run test:mcp-flows -w web",
     "test:mcp-flows:http": "npm run test:mcp-flows:http -w web",
     "smoke:mcp": "npm run smoke:mcp -w web",
+    "test:rate-limit": "npm run test:rate-limit -w web",
     "check:discovery-copy": "npm run check:discovery-copy -w web",
     "preflight": "npm run preflight -w web",
     "db:migrate:audit-leads": "node scripts/apply-audit-leads.mjs",
@@ -23,6 +24,8 @@
     "db:migrate:three-tier": "node scripts/apply-three-tier-search.mjs",
     "db:migrate:claim-verification-tokens": "node scripts/apply-claim-verification-tokens.mjs",
     "db:migrate:mcp-invocations": "node scripts/apply-mcp-invocations.mjs",
+    "db:migrate:rls-hardening": "node scripts/apply-rls-hardening.mjs",
+    "db:verify:rls": "node scripts/verify-rls.mjs",
     "db:import:discovered": "npm run db:import:discovered -w web",
     "db:import:discovered:brooklyn": "npm run db:import:discovered:brooklyn -w web"
   },
