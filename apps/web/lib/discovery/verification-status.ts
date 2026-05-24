@@ -103,3 +103,63 @@ export function buildRestSearchLinks(
       : { claim: `/claim/${restaurantId}` }),
   };
 }
+
+/**
+ * Structured "owner recruitment" payload that ships on every non-verified
+ * tool/REST response. The agent decides when to surface it (e.g., when the
+ * user might be the owner, or when explaining why a listing is thin). It is
+ * intentionally NOT a CTA — it is data that the LLM can incorporate.
+ */
+export type ClaimInvitationReason =
+  | "no_owner_approved_menu"
+  | "indexed_menu_not_owner_verified";
+
+export type ClaimInvitation = {
+  url: string;
+  audience: "owner_or_advocate";
+  reason: ClaimInvitationReason;
+  message: string;
+  estimated_minutes: number;
+  cost: "free";
+};
+
+function claimInvitationBaseUrl(): string {
+  const configured = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (!configured) return "https://foodnear.me";
+  return configured.replace(/\/+$/, "");
+}
+
+export function buildClaimInvitation(
+  restaurantId: string,
+  verificationStatus: string,
+  menuAvailable: boolean,
+): ClaimInvitation | null {
+  if (verificationStatus === "verified") return null;
+
+  const url = `${claimInvitationBaseUrl()}/claim/${restaurantId}`;
+
+  if (verificationStatus === "menu_indexed") {
+    return {
+      url,
+      audience: "owner_or_advocate",
+      reason: "indexed_menu_not_owner_verified",
+      message:
+        "This menu was indexed from a public source and is not owner-verified. The restaurant's owner can claim the listing and publish a cryptographically signed Menu Protocol menu — free and typically a few minutes.",
+      estimated_minutes: 5,
+      cost: "free",
+    };
+  }
+
+  // Discovered tier (and any unexpected non-verified status) — still has a
+  // place page, still might be missing a menu entirely.
+  return {
+    url,
+    audience: "owner_or_advocate",
+    reason: "no_owner_approved_menu",
+    message: menuAvailable
+      ? "This restaurant has a published menu but is not yet owner-verified. The owner can claim and approve the listing — free and typically a few minutes."
+      : "This restaurant does not have a published menu on foodnear.me yet. The owner can claim the listing and publish a verified Menu Protocol menu — free and typically a few minutes.",
+    estimated_minutes: 5,
+    cost: "free",
+  };
+}

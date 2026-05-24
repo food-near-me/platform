@@ -46,6 +46,21 @@
       "name": "validate_menu_protocol",
       "description": "Validate a Menu Protocol v1.0 JSON payload; returns errors and ADO improvement hints",
       "required_params": ["payload"]
+    },
+    {
+      "name": "explore_area_for_diet",
+      "description": "Composite: neighborhood overview bucketed by trust tier (verified / menu_indexed / discovered). Optional dietary filter narrows the verified tier only; tier_counts and next_steps surface empty buckets.",
+      "required_params": ["location"]
+    },
+    {
+      "name": "compare_restaurants_for_diet",
+      "description": "Composite: compare 2-5 known restaurant IDs by dietary-eligible menu items and trust tier.",
+      "required_params": ["restaurant_ids", "dietary"]
+    },
+    {
+      "name": "find_restaurants_along_route",
+      "description": "Composite: route-adjacent restaurant discovery between origin and destination with optional dietary ranking.",
+      "required_params": ["origin", "destination"]
     }
   ],
   "resource_uris": [
@@ -59,7 +74,10 @@
     "get_restaurant",
     "get_menu",
     "get_ado_score_breakdown",
-    "validate_menu_protocol"
+    "validate_menu_protocol",
+    "explore_area_for_diet",
+    "compare_restaurants_for_diet",
+    "find_restaurants_along_route"
   ],
   "prompt_names": [
     "find_dinner_near_me",

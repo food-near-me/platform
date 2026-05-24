@@ -11,7 +11,7 @@
  */
 
 import { createClient } from "@/lib/supabase/server";
-import { buildAdoCitation } from "@/lib/mcp/citations";
+import { buildAdoCitation, citationFields } from "@/lib/mcp/citations";
 import { ResourceNotFoundError } from "@/lib/mcp/errors";
 import {
   RESTAURANT_FOR_ADO_COLUMNS,
@@ -100,8 +100,10 @@ export async function getAdoScoreBreakdown(input: GetAdoScoreBreakdownInput) {
   recommendations.push("Keep menu data updated weekly for optimal freshness score");
   recommendations.push("Add high-quality images for menu items");
 
+  const citation = buildAdoCitation(restaurantId);
+
   return {
-    citation: buildAdoCitation(restaurantId),
+    ...citationFields(citation),
     restaurant_id: restaurantId,
     restaurant_name: restaurant.name,
     total_score: restaurant.agent_score,

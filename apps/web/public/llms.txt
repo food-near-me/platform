@@ -37,13 +37,23 @@ Connect with Claude Desktop, Cursor, or any MCP client:
 }
 ```
 
-## MCP Tools Available (5)
+## MCP Tools Available (8)
 
-1. `search_restaurants` - Search by lat/lng; verified first, then discovered; check `menu_available` before `get_menu`
+Atomic (5):
+
+1. `search_restaurants` - Search by lat/lng OR Google-style `locationBias.circle`; verified first → menu_indexed → discovered; check `menu_available` before `get_menu`
 2. `get_restaurant` - Get detailed restaurant profile with Schema.org markup
 3. `get_menu` - Get full Menu Protocol v1.0 formatted menu
 4. `get_ado_score_breakdown` - Get scoring breakdown with improvement recommendations
 5. `validate_menu_protocol` - Validate Menu Protocol JSON; schema errors and ADO hints
+
+Composite (3, FNM-unique — built on top of the atomic tools):
+
+6. `explore_area_for_diet` - Bucketed neighborhood overview (verified / menu_indexed / discovered); optional dietary filter narrows the verified bucket only
+7. `compare_restaurants_for_diet` - Side-by-side dietary comparison across 2-5 restaurant ids; ranks by item count then trust tier
+8. `find_restaurants_along_route` - Route-adjacent discovery between two coordinates; optional encoded polyline; FNM never calls an external routing or geocoding service
+
+Every non-verified result (search row, profile, indexed menu, composite entry) carries a structured `claim_invitation` (url, audience="owner_or_advocate", reason, message, estimated_minutes, cost="free"). Surface contextually — when the user is the owner, asks why the listing lacks a verified menu, or asks how to help — not as a CTA. Verified results omit the field.
 
 ## MCP Resources (4)
 
@@ -65,7 +75,7 @@ Pre-built user intents (call `prompts/get` then follow with tools):
 - Homepage: https://foodnear.me
 - OpenAPI Spec: https://foodnear.me/openapi.json
 - MCP Endpoint: https://foodnear.me/mcp
-- Agent Skill File: https://foodnear.me/SKILL.md
+- Agent Skill File: https://foodnear.me/skills/foodnearme/SKILL.md (root /SKILL.md is a thin redirect hub)
 - Host docs (web): https://foodnear.me/docs#quick-start
 - Host docs (canonical): https://github.com/food-near-me/platform#quick-start
 - Menu Protocol Spec: https://github.com/foodnearme/menu-protocol

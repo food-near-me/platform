@@ -11,6 +11,9 @@ export const EXPECTED_MCP_TOOLS = [
   "get_menu",
   "get_ado_score_breakdown",
   "validate_menu_protocol",
+  "explore_area_for_diet",
+  "compare_restaurants_for_diet",
+  "find_restaurants_along_route",
 ] as const;
 
 export const EXPECTED_MCP_RESOURCES = [
@@ -59,8 +62,20 @@ export type McpPromptResult = {
   messages: Array<{ role: string; content: { type: string; text?: string } }>;
 };
 
+export type McpToolDefinition = {
+  name: string;
+  description?: string;
+  annotations?: {
+    readOnlyHint?: boolean;
+    destructiveHint?: boolean;
+    idempotentHint?: boolean;
+    openWorldHint?: boolean;
+  };
+};
+
 export type McpFlowClient = {
   listTools: () => Promise<string[]>;
+  listToolDefinitions: () => Promise<McpToolDefinition[]>;
   listResources: () => Promise<string[]>;
   listPrompts: () => Promise<string[]>;
   getPrompt: (name: string, args?: Record<string, string>) => Promise<McpPromptResult>;
@@ -74,6 +89,24 @@ export type RunMcpFlowsOptions = {
 
 function assert(condition: unknown, message: string): void {
   if (!condition) throw new Error(message);
+}
+
+function stableJson(value: unknown): string {
+  return JSON.stringify(value, Object.keys(value as Record<string, unknown>).sort());
+}
+
+function assertCitationAndAttribution(
+  data: Record<string, unknown>,
+  label: string,
+): void {
+  assert(
+    typeof data.citation === "string" && (data.citation as string).startsWith("http"),
+    `${label} must return a top-level citation URL`,
+  );
+  assert(
+    data.attribution === data.citation,
+    `${label} must return attribution matching citation`,
+  );
 }
 
 async function runFlow(
@@ -115,12 +148,22 @@ export async function runMcpFlows(
   const results: FlowResult[] = [];
 
   results.push(
-    await runFlow("tools-list", "List all 5 MCP tools", async () => {
+    await runFlow("tools-list", `List all ${EXPECTED_MCP_TOOLS.length} MCP tools`, async () => {
       const names = (await client.listTools()).sort();
       const expected = [...EXPECTED_MCP_TOOLS].sort();
       assert(names.length === expected.length, `Expected ${expected.length} tools, got ${names.length}: ${names.join(", ")}`);
       for (let i = 0; i < expected.length; i++) {
         assert(names[i] === expected[i], `Tool mismatch at ${i}: expected ${expected[i]}, got ${names[i]}`);
+      }
+
+      const tools = await client.listToolDefinitions();
+      for (const tool of tools) {
+        const annotations = tool.annotations;
+        assert(annotations, `${tool.name} missing annotations`);
+        assert(annotations!.readOnlyHint === true, `${tool.name} readOnlyHint must be true`);
+        assert(annotations!.destructiveHint === false, `${tool.name} destructiveHint must be false`);
+        assert(annotations!.idempotentHint === false, `${tool.name} idempotentHint must be false`);
+        assert(annotations!.openWorldHint === false, `${tool.name} openWorldHint must be false`);
       }
     })
   );
@@ -235,10 +278,7 @@ export async function runMcpFlows(
       const data = requireData(result) as Record<string, unknown>;
       assert(data.valid === true, "Expected valid=true for correct payload");
       assert(data.schema_version === "Menu Protocol v1.0", "Expected schema version");
-      assert(
-        typeof data.citation === "string" && (data.citation as string).startsWith("http"),
-        "validate_menu_protocol must return a top-level citation URL",
-      );
+      assertCitationAndAttribution(data, "validate_menu_protocol");
     })
   );
 
@@ -334,6 +374,27 @@ export async function runMcpFlows(
     results.push(await skipFlow("flow-a", "Dietary-safe search", "Database not configured"));
     results.push(
       await skipFlow(
+        "flow-search-google-shape",
+        "Google-style locationBias search",
+        "Database not configured",
+      ),
+    );
+    results.push(
+      await skipFlow(
+        "flow-search-text-query-alias",
+        "Google-style textQuery alias",
+        "Database not configured",
+      ),
+    );
+    results.push(
+      await skipFlow(
+        "flow-locale-passthrough",
+        "Google-style locale passthrough",
+        "Database not configured",
+      ),
+    );
+    results.push(
+      await skipFlow(
         "flow-search-empty-next-steps",
         "Empty search returns next_steps guidance",
         "Database not configured",
@@ -341,6 +402,34 @@ export async function runMcpFlows(
     );
     results.push(await skipFlow("flow-a-chain", "Search → get_menu chain", "Database not configured"));
     results.push(await skipFlow("flow-indexed-tier", "menu_indexed tier + trust_notice", "Database not configured"));
+    results.push(
+      await skipFlow(
+        "flow-claim-invitation",
+        "claim_invitation on non-verified results",
+        "Database not configured",
+      ),
+    );
+    results.push(
+      await skipFlow(
+        "flow-explore-area-williamsburg",
+        "explore_area_for_diet tier buckets",
+        "Database not configured",
+      ),
+    );
+    results.push(
+      await skipFlow(
+        "flow-compare-for-diet",
+        "compare_restaurants_for_diet ranking",
+        "Database not configured",
+      ),
+    );
+    results.push(
+      await skipFlow(
+        "flow-along-route-williamsburg",
+        "find_restaurants_along_route route ranking",
+        "Database not configured",
+      ),
+    );
     results.push(await skipFlow("flow-c", "ADO score breakdown", "Database not configured"));
     return results;
   }
@@ -362,10 +451,7 @@ export async function runMcpFlows(
       assert(Array.isArray(data.results), "Expected results array");
       assert(data.location && typeof data.location === "object", "Missing location echo");
 
-      assert(
-        typeof data.citation === "string" && (data.citation as string).startsWith("http"),
-        "search_restaurants must return a top-level citation URL",
-      );
+      assertCitationAndAttribution(data, "search_restaurants");
 
       const tierBreakdown = data.tier_breakdown as
         | { verified?: number; menu_indexed?: number; discovered?: number }
@@ -411,6 +497,90 @@ export async function runMcpFlows(
         if (withMenu?.id) sampleRestaurantId = withMenu.id as string;
       }
     })
+  );
+
+  results.push(
+    await runFlow("flow-search-google-shape", "Google-style locationBias search", async () => {
+      const flat = requireData(
+        await client.callTool("search_restaurants", {
+          ...MENU_INDEXED_TEST_LOCATION,
+          query: "cafe",
+          radius_miles: 0.5,
+        }),
+      ) as Record<string, unknown>;
+
+      const google = requireData(
+        await client.callTool("search_restaurants", {
+          textQuery: "cafe",
+          locationBias: {
+            circle: {
+              center: {
+                latitude: MENU_INDEXED_TEST_LOCATION.lat,
+                longitude: MENU_INDEXED_TEST_LOCATION.lng,
+              },
+              radiusMeters: 804.67,
+            },
+          },
+        }),
+      ) as Record<string, unknown>;
+
+      assert(
+        google.results_count === flat.results_count,
+        `Google-style results_count (${google.results_count}) must match flat-form (${flat.results_count})`,
+      );
+      assert(
+        stableJson(google.tier_breakdown) === stableJson(flat.tier_breakdown),
+        "Google-style tier_breakdown must match flat-form tier_breakdown",
+      );
+      assert(google.query === "cafe", "textQuery must normalize to the response query field");
+      const location = google.location as { lat?: number; lng?: number } | undefined;
+      assert(
+        location?.lat === MENU_INDEXED_TEST_LOCATION.lat &&
+          location?.lng === MENU_INDEXED_TEST_LOCATION.lng,
+        "locationBias center must normalize to response location",
+      );
+    }),
+  );
+
+  results.push(
+    await runFlow("flow-search-text-query-alias", "Google-style textQuery alias", async () => {
+      const data = requireData(
+        await client.callTool("search_restaurants", {
+          textQuery: "thai",
+          locationBias: {
+            circle: {
+              center: {
+                latitude: DEFAULT_TEST_LOCATION.lat,
+                longitude: DEFAULT_TEST_LOCATION.lng,
+              },
+              radiusMeters: 16093.4,
+            },
+          },
+        }),
+      ) as Record<string, unknown>;
+
+      assert(data.query === "thai", "textQuery must normalize to query echo");
+      assert(typeof data.results_count === "number", "Expected results_count");
+    }),
+  );
+
+  results.push(
+    await runFlow("flow-locale-passthrough", "Google-style locale passthrough", async () => {
+      const data = requireData(
+        await client.callTool("search_restaurants", {
+          ...DEFAULT_TEST_LOCATION,
+          languageCode: "es",
+          regionCode: "US",
+        }),
+      ) as Record<string, unknown>;
+
+      const locale = data.request_locale as
+        | { languageCode?: unknown; regionCode?: unknown }
+        | undefined;
+      assert(locale?.languageCode === "es", "Expected languageCode passthrough");
+      assert(locale?.regionCode === "US", "Expected regionCode passthrough");
+      assert(data.locale_support === "us_en_only_v1", "Expected locale support version");
+    }),
   );
 
   results.push(
@@ -466,6 +636,11 @@ export async function runMcpFlows(
         sampleRestaurantId = withMenu.id as string;
       }
 
+      const profile = requireData(
+        await client.callTool("get_restaurant", { restaurant_id: sampleRestaurantId! }),
+      ) as Record<string, unknown>;
+      assertCitationAndAttribution(profile, "get_restaurant");
+
       const menu = requireData(
         await client.callTool("get_menu", { restaurant_id: sampleRestaurantId! })
       ) as Record<string, unknown>;
@@ -474,10 +649,7 @@ export async function runMcpFlows(
       assert(menu.restaurant && typeof menu.restaurant === "object", "Missing restaurant block");
       assert(menu.menu && typeof menu.menu === "object", "Missing menu block");
 
-      assert(
-        typeof menu.citation === "string" && (menu.citation as string).startsWith("http"),
-        "get_menu must return a top-level citation URL",
-      );
+      assertCitationAndAttribution(menu, "get_menu");
       assert(
         typeof menu.last_updated === "string",
         "get_menu must return a top-level last_updated ISO timestamp",
@@ -531,10 +703,7 @@ export async function runMcpFlows(
         "Expected indexed trust_notice on get_menu",
       );
 
-      assert(
-        typeof menu.citation === "string" && (menu.citation as string).startsWith("http"),
-        "indexed get_menu must include a top-level citation URL",
-      );
+      assertCitationAndAttribution(menu, "indexed get_menu");
       assert(
         typeof menu.last_updated === "string",
         "indexed get_menu must include a top-level last_updated timestamp",
@@ -555,7 +724,353 @@ export async function runMcpFlows(
           (withCaution!.caution as string).toLowerCase().includes("not safe"),
         "item-level caution must reference allergen/safety boundary",
       );
+
+      const menuClaim = menu.claim_invitation as Record<string, unknown> | undefined;
+      assert(
+        menuClaim && typeof menuClaim === "object",
+        "indexed get_menu must carry top-level claim_invitation",
+      );
+      assert(
+        (menuClaim!.url as string).includes(`/claim/${indexedId}`),
+        "get_menu claim_invitation.url must point at /claim/<id>",
+      );
+      assert(
+        menuClaim!.reason === "indexed_menu_not_owner_verified",
+        "indexed get_menu claim_invitation.reason mismatch",
+      );
     }),
+  );
+
+  results.push(
+    await runFlow(
+      "flow-claim-invitation",
+      "claim_invitation on non-verified results",
+      async () => {
+        const search = requireData(
+          await client.callTool("search_restaurants", {
+            ...MENU_INDEXED_TEST_LOCATION,
+            radius_miles: 1,
+          }),
+        ) as Record<string, unknown>;
+        const rows = (search.results as Array<Record<string, unknown>>) ?? [];
+        assert(rows.length > 0, "expected non-empty Williamsburg fixture for claim-invitation");
+
+        const verifiedRow = rows.find((r) => r.verification_status === "verified");
+        const indexedRow = rows.find((r) => r.verification_status === "menu_indexed");
+        const discoveredRow = rows.find((r) => r.verification_status === "discovered");
+
+        if (verifiedRow) {
+          assert(
+            verifiedRow.claim_invitation === undefined,
+            "verified-tier rows MUST NOT include claim_invitation",
+          );
+        }
+
+        if (indexedRow) {
+          const inv = indexedRow.claim_invitation as Record<string, unknown> | undefined;
+          assert(inv && typeof inv === "object", "menu_indexed row must carry claim_invitation");
+          assert(
+            typeof inv!.url === "string" && (inv!.url as string).includes("/claim/"),
+            "menu_indexed claim_invitation.url must include /claim/",
+          );
+          assert(
+            inv!.reason === "indexed_menu_not_owner_verified",
+            "menu_indexed claim_invitation.reason mismatch",
+          );
+          assert(
+            inv!.audience === "owner_or_advocate",
+            "claim_invitation.audience must be owner_or_advocate",
+          );
+          assert(inv!.cost === "free", "claim_invitation.cost must be 'free'");
+          assert(
+            typeof inv!.message === "string" && (inv!.message as string).length > 0,
+            "claim_invitation.message must be a non-empty string",
+          );
+        }
+
+        if (discoveredRow) {
+          const inv = discoveredRow.claim_invitation as Record<string, unknown> | undefined;
+          assert(inv && typeof inv === "object", "discovered row must carry claim_invitation");
+          assert(
+            inv!.reason === "no_owner_approved_menu",
+            "discovered claim_invitation.reason mismatch",
+          );
+        }
+
+        if (indexedRow) {
+          const profile = requireData(
+            await client.callTool("get_restaurant", {
+              restaurant_id: indexedRow.id as string,
+            }),
+          ) as Record<string, unknown>;
+          const profileClaim = profile.claim_invitation as Record<string, unknown> | undefined;
+          assert(
+            profileClaim && typeof profileClaim === "object",
+            "indexed get_restaurant must include top-level claim_invitation",
+          );
+          assert(
+            profileClaim!.reason === "indexed_menu_not_owner_verified",
+            "indexed get_restaurant claim_invitation.reason mismatch",
+          );
+        }
+      },
+    ),
+  );
+
+  results.push(
+    await runFlow(
+      "flow-explore-area-williamsburg",
+      "explore_area_for_diet tier buckets",
+      async () => {
+        const data = requireData(
+          await client.callTool("explore_area_for_diet", {
+            location: {
+              latitude: MENU_INDEXED_TEST_LOCATION.lat,
+              longitude: MENU_INDEXED_TEST_LOCATION.lng,
+            },
+            radius_meters: 1500,
+            dietary: ["vegan"],
+            top_n_per_tier: 3,
+          }),
+        ) as Record<string, unknown>;
+
+        assertCitationAndAttribution(data, "explore_area_for_diet");
+
+        const tiers = data.tiers as
+          | {
+              verified?: unknown;
+              menu_indexed?: unknown;
+              discovered?: unknown;
+            }
+          | undefined;
+        assert(
+          tiers && typeof tiers === "object",
+          "explore_area_for_diet must return a tiers object",
+        );
+        assert(Array.isArray(tiers!.verified), "tiers.verified must be an array");
+        assert(Array.isArray(tiers!.menu_indexed), "tiers.menu_indexed must be an array");
+        assert(Array.isArray(tiers!.discovered), "tiers.discovered must be an array");
+
+        const verifiedList = tiers!.verified as Array<Record<string, unknown>>;
+        const indexedList = tiers!.menu_indexed as Array<Record<string, unknown>>;
+        const discoveredList = tiers!.discovered as Array<Record<string, unknown>>;
+        for (const entry of [...verifiedList, ...indexedList, ...discoveredList]) {
+          assert(typeof entry.id === "string", "explore entry must include id");
+          assert(typeof entry.name === "string", "explore entry must include name");
+          assert(typeof entry.tier === "string", "explore entry must include tier");
+          assert(
+            typeof entry.distance_meters === "number",
+            "explore entry must include distance_meters",
+          );
+          assert(
+            typeof entry.menu_available === "boolean",
+            "explore entry must include menu_available",
+          );
+          assert(
+            typeof entry.trust_notice === "string",
+            "explore entry must include trust_notice",
+          );
+        }
+
+        const tierCounts = data.tier_counts as
+          | {
+              verified?: number;
+              menu_indexed?: number;
+              discovered?: number;
+              total?: number;
+            }
+          | undefined;
+        assert(
+          tierCounts && typeof tierCounts === "object",
+          "explore_area_for_diet must return tier_counts",
+        );
+        const verifiedCount = tierCounts!.verified ?? 0;
+        const indexedCount = tierCounts!.menu_indexed ?? 0;
+        const discoveredCount = tierCounts!.discovered ?? 0;
+        const total = tierCounts!.total ?? 0;
+        assert(
+          verifiedCount + indexedCount + discoveredCount === total,
+          `tier_counts buckets (${verifiedCount}+${indexedCount}+${discoveredCount}) must sum to total (${total})`,
+        );
+
+        assert(
+          verifiedList.length <= 3 &&
+            indexedList.length <= 3 &&
+            discoveredList.length <= 3,
+          "trimmed tier buckets must respect top_n_per_tier=3",
+        );
+
+        const hasEmptyBucket =
+          verifiedCount === 0 || indexedCount === 0 || discoveredCount === 0;
+        if (hasEmptyBucket) {
+          assert(
+            Array.isArray(data.next_steps) && (data.next_steps as unknown[]).length > 0,
+            "next_steps must be populated when any tier bucket is empty",
+          );
+        }
+
+        const echoedLocation = data.location as
+          | { latitude?: unknown; longitude?: unknown }
+          | undefined;
+        assert(
+          echoedLocation?.latitude === MENU_INDEXED_TEST_LOCATION.lat &&
+            echoedLocation?.longitude === MENU_INDEXED_TEST_LOCATION.lng,
+          "explore_area_for_diet must echo the requested location",
+        );
+        assert(
+          data.radius_meters === 1500,
+          `explore_area_for_diet must echo radius_meters (got ${String(data.radius_meters)})`,
+        );
+      },
+    ),
+  );
+
+  results.push(
+    await runFlow(
+      "flow-compare-for-diet",
+      "compare_restaurants_for_diet ranking",
+      async () => {
+        const search = requireData(
+          await client.callTool("search_restaurants", {
+            ...MENU_INDEXED_TEST_LOCATION,
+            query: "cafe",
+            radius_miles: 1,
+          }),
+        ) as Record<string, unknown>;
+        const rows = (search.results as Array<Record<string, unknown>>) ?? [];
+        assert(rows.length >= 2, "Need at least 2 restaurants near fixture to compare");
+
+        const picks: string[] = [];
+        const indexed = rows.find(
+          (r) => r.verification_status === "menu_indexed" && r.menu_available === true,
+        );
+        if (indexed?.id) picks.push(indexed.id as string);
+        const discovered = rows.find((r) => r.verification_status === "discovered");
+        if (discovered?.id && !picks.includes(discovered.id as string)) {
+          picks.push(discovered.id as string);
+        }
+        for (const row of rows) {
+          const id = row.id as string | undefined;
+          if (!id || picks.includes(id)) continue;
+          picks.push(id);
+          if (picks.length >= 2) break;
+        }
+        assert(picks.length >= 2, "Could not assemble compare fixture ids");
+
+        const payload = requireData(
+          await client.callTool("compare_restaurants_for_diet", {
+            restaurant_ids: picks.slice(0, 3),
+            dietary: ["vegan"],
+          }),
+        ) as Record<string, unknown>;
+
+        assertCitationAndAttribution(payload, "compare_restaurants_for_diet");
+        const compared = payload.restaurants as Array<Record<string, unknown>>;
+        assert(Array.isArray(compared) && compared.length >= 2, "Expected compared restaurants");
+        for (const row of compared) {
+          assert(typeof row.id === "string", "compare row missing id");
+          assert(typeof row.tier === "string", "compare row missing tier");
+          assert(Array.isArray(row.dietary_eligible_items), "compare row missing dietary_eligible_items");
+          assert(typeof row.item_count === "number", "compare row missing item_count");
+          // v1 should NOT include distance_meters when user_location absent
+          assert(
+            row.distance_meters === undefined,
+            "compare row must omit distance_meters when user_location is not supplied",
+          );
+        }
+        const ranking = (payload.comparison_summary as Record<string, unknown>).ranking as Array<
+          Record<string, unknown>
+        >;
+        assert(Array.isArray(ranking) && ranking.length === compared.length, "ranking mismatch");
+
+        // v2 with user_location supplied
+        const withLocation = requireData(
+          await client.callTool("compare_restaurants_for_diet", {
+            restaurant_ids: picks.slice(0, 3),
+            dietary: ["vegan"],
+            user_location: {
+              latitude: MENU_INDEXED_TEST_LOCATION.lat,
+              longitude: MENU_INDEXED_TEST_LOCATION.lng,
+            },
+          }),
+        ) as Record<string, unknown>;
+
+        const echoedLocation = withLocation.user_location as
+          | { latitude?: unknown; longitude?: unknown }
+          | undefined;
+        assert(
+          echoedLocation?.latitude === MENU_INDEXED_TEST_LOCATION.lat &&
+            echoedLocation?.longitude === MENU_INDEXED_TEST_LOCATION.lng,
+          "compare must echo user_location when supplied",
+        );
+
+        const v2Rows = withLocation.restaurants as Array<Record<string, unknown>>;
+        let rowsWithDistance = 0;
+        for (const row of v2Rows) {
+          if (row.tier === "not_found") continue;
+          if (typeof row.distance_meters === "number") {
+            assert(
+              (row.distance_meters as number) >= 0,
+              "distance_meters must be non-negative",
+            );
+            rowsWithDistance++;
+          } else {
+            const note = String(row.note ?? "");
+            assert(
+              note.includes("distance_not_available"),
+              "rows without distance_meters must carry distance_not_available note",
+            );
+          }
+        }
+        assert(
+          rowsWithDistance >= 1,
+          "at least one Williamsburg compared row should have geocoded coordinates",
+        );
+      },
+    ),
+  );
+
+  results.push(
+    await runFlow(
+      "flow-along-route-williamsburg",
+      "find_restaurants_along_route route ranking",
+      async () => {
+        const payload = requireData(
+          await client.callTool("find_restaurants_along_route", {
+            origin: { latitude: 40.7218, longitude: -73.9569 },
+            destination: { latitude: 40.7061, longitude: -73.9969 },
+            dietary: ["vegan"],
+            max_results: 5,
+          }),
+        ) as Record<string, unknown>;
+
+        assertCitationAndAttribution(payload, "find_restaurants_along_route");
+        assert(
+          typeof payload.direct_distance_meters === "number" &&
+            (payload.direct_distance_meters as number) > 0,
+          "along-route must return positive direct_distance_meters",
+        );
+        assert(typeof payload.route_method === "string", "along-route missing route_method");
+
+        const places = payload.places as Array<Record<string, unknown>>;
+        assert(Array.isArray(places), "along-route places must be an array");
+        for (const place of places) {
+          assert(typeof place.restaurant_id === "string", "along-route place missing restaurant_id");
+          assert(typeof place.tier === "string", "along-route place missing tier");
+          assert(
+            typeof place.route_proximity_meters === "number",
+            "along-route place missing route_proximity_meters",
+          );
+        }
+
+        const tier = payload.tier_breakdown as
+          | { verified?: number; menu_indexed?: number; discovered?: number }
+          | undefined;
+        assert(tier && typeof tier === "object", "along-route must return tier_breakdown");
+        const sum = (tier!.verified ?? 0) + (tier!.menu_indexed ?? 0) + (tier!.discovered ?? 0);
+        assert(sum === places.length, "tier_breakdown must sum to places.length");
+      },
+    ),
   );
 
   results.push(
@@ -573,10 +1088,7 @@ export async function runMcpFlows(
       assert(typeof data.total_score === "number", "Missing total_score");
       assert(data.breakdown && typeof data.breakdown === "object", "Missing breakdown");
       assert(Array.isArray(data.recommendations), "Expected recommendations array");
-      assert(
-        typeof data.citation === "string" && (data.citation as string).startsWith("http"),
-        "get_ado_score_breakdown must return a top-level citation URL",
-      );
+      assertCitationAndAttribution(data, "get_ado_score_breakdown");
       assert(Array.isArray(data.next_steps), "Expected next_steps array");
       const scoringInfo = data.scoring_info as
         | { scoring_method?: unknown; caveat?: unknown }

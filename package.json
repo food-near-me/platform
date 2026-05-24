@@ -32,6 +32,7 @@
     "db:migrate:dietary-9flag": "node scripts/apply-dietary-9flag.mjs",
     "db:migrate:race-safe-approve": "node scripts/apply-race-safe-approve.mjs",
     "db:migrate:signature-content-binding": "node scripts/apply-signature-content-binding.mjs",
+    "db:migrate:get-restaurant-coordinates": "node scripts/apply-get-restaurant-coordinates.mjs",
     "smoke:cron-cleanup": "node scripts/cron-cleanup-smoke.mjs",
     "smoke:cron-mcp-cleanup": "node scripts/cron-mcp-cleanup-smoke.mjs",
     "smoke:site-health-cache": "node scripts/site-health-cache-smoke.mjs",

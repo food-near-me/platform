@@ -31,8 +31,16 @@ import {
   makeRpcError,
 } from "./errors";
 import { RESOURCES, RESOURCE_CONTENT } from "./resources";
-import { SERVER_INFO, TOOLS } from "./server-info";
+import {
+  disabledToolMessage,
+  getEnabledTools,
+  isToolEnabled,
+  SERVER_INFO,
+} from "./server-info";
 import { getAdoScoreBreakdown } from "./tools/ado";
+import { findRestaurantsAlongRoute } from "./tools/along-route";
+import { compareRestaurantsForDiet } from "./tools/compare-for-diet";
+import { exploreAreaForDiet } from "./tools/explore-area";
 import { getMenu } from "./tools/menu";
 import { getRestaurant } from "./tools/restaurant";
 import { searchRestaurants } from "./tools/search";
@@ -63,6 +71,18 @@ const TOOL_DISPATCH: Record<ToolName, (input: never) => Promise<unknown>> = {
   ) => Promise<unknown>,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   validate_menu_protocol: (async (input: any) => validateMenuProtocol(input)) as (
+    input: never,
+  ) => Promise<unknown>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  explore_area_for_diet: ((input: any) => exploreAreaForDiet(input)) as (
+    input: never,
+  ) => Promise<unknown>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  compare_restaurants_for_diet: ((input: any) => compareRestaurantsForDiet(input)) as (
+    input: never,
+  ) => Promise<unknown>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  find_restaurants_along_route: ((input: any) => findRestaurantsAlongRoute(input)) as (
     input: never,
   ) => Promise<unknown>,
 };
@@ -116,6 +136,10 @@ async function handleToolCall(params: unknown): Promise<unknown> {
 
   if (!isKnownToolName(name)) {
     throw makeRpcError(RPC_ERRORS.METHOD_NOT_FOUND, `Unknown tool: ${name}`);
+  }
+
+  if (!isToolEnabled(name)) {
+    throw makeRpcError(RPC_ERRORS.METHOD_NOT_FOUND, disabledToolMessage(name));
   }
 
   const toolStart = Date.now();
@@ -255,7 +279,7 @@ export async function handleRpcRequest(method: string, params?: unknown): Promis
       return null;
 
     case "tools/list":
-      return { tools: TOOLS };
+      return { tools: getEnabledTools() };
 
     case "tools/call":
       return handleToolCall(params);

@@ -4,7 +4,7 @@
 
 [![MCP Registry](https://img.shields.io/badge/MCP-me.foodnear%2Ffoodnear--me-blue)](https://registry.modelcontextprotocol.io/v0.1/servers?search=me.foodnear/foodnear-me)
 
-**Production endpoint:** `https://foodnear.me/mcp` · **5 tools** · **4 resources** · **3 prompts** · **No API key** (beta)
+**Production endpoint:** `https://foodnear.me/mcp` · **8 tools** · **4 resources** · **3 prompts** · **No API key** (beta)
 
 ---
 
@@ -39,7 +39,7 @@ Your agent should call `search_restaurants` → `get_menu` (or `get_restaurant` 
 
 ## What you get
 
-### Tools (5)
+### Tools (8)
 
 | Tool | Description |
 |------|-------------|
@@ -48,6 +48,9 @@ Your agent should call `search_restaurants` → `get_menu` (or `get_restaurant` 
 | `get_menu` | Full Menu Protocol v1.0 menu (dietary flags, allergens, signatures) |
 | `get_ado_score_breakdown` | ADO score factors and improvement recommendations |
 | `validate_menu_protocol` | Validate a Menu Protocol JSON payload before publish |
+| `explore_area_for_diet` | Composite: bucketed neighborhood overview (`verified` / `menu_indexed` / `discovered`); optional `dietary` filter narrows the verified tier only |
+| `compare_restaurants_for_diet` | Composite: compare 2–5 known restaurants by dietary-eligible menu items and trust tier ranking |
+| `find_restaurants_along_route` | Composite: route-adjacent restaurant discovery between origin/destination with optional dietary ranking |
 
 ### Resources (4)
 
@@ -78,6 +81,8 @@ Your agent should call `search_restaurants` → `get_menu` (or `get_restaurant` 
 | **Registry** | `me.foodnear/foodnear-me` ([official MCP Registry](https://registry.modelcontextprotocol.io/v0.1/servers?search=me.foodnear/foodnear-me)) |
 
 **Preview / local:** Replace the URL with `http://localhost:3000/mcp` when running `npm run dev` in `apps/web`.
+
+**Operational tool filter:** set `FNM_MCP_ENABLED_TOOLS=search_restaurants,get_menu` to expose only a comma-separated subset in `tools/list` and `GET /mcp`. Leave unset or `*` to expose all tools. This is for temporary degradation/context control, not privacy or auth.
 
 ---
 

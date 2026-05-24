@@ -87,7 +87,7 @@ export async function GET() {
         generated_at: generatedAt,
         signing_formats: formats,
         verification_instructions:
-          "Ed25519 verify against the menu payload hash from get_menu. See https://foodnear.me/SKILL.md#verifying-signatures.",
+          "Ed25519 verify against the menu payload hash from get_menu. See https://foodnear.me/skills/foodnearme/SKILL.md#verifying-signatures.",
         note: "No active signing key is configured in this environment. Signatures on get_menu responses for the `verified` tier should not be trusted until this endpoint reports an active_key.",
       },
       {
@@ -113,7 +113,7 @@ export async function GET() {
       generated_at: generatedAt,
       signing_formats: formats,
       verification_instructions:
-        "Ed25519 verify against the menu payload hash from get_menu. See https://foodnear.me/SKILL.md#verifying-signatures.",
+        "Ed25519 verify against the menu payload hash from get_menu. See https://foodnear.me/skills/foodnearme/SKILL.md#verifying-signatures.",
     },
     {
       headers: {

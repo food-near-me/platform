@@ -191,6 +191,16 @@ export type Database = {
           menu_state_changed: boolean;
         }[];
       };
+      get_restaurant_coordinates: {
+        Args: {
+          p_ids: string[];
+        };
+        Returns: {
+          id: string;
+          latitude: number;
+          longitude: number;
+        }[];
+      };
     };
   };
 };

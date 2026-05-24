@@ -15,8 +15,15 @@
  */
 
 import { createClient } from "@/lib/supabase/server";
-import { buildMenuTrustNotice } from "@/lib/discovery/verification-status";
-import { buildMenuCitation, buildSigningKeysCitation } from "@/lib/mcp/citations";
+import {
+  buildClaimInvitation,
+  buildMenuTrustNotice,
+} from "@/lib/discovery/verification-status";
+import {
+  buildMenuCitation,
+  buildSigningKeysCitation,
+  citationFields,
+} from "@/lib/mcp/citations";
 import { ResourceNotFoundError } from "@/lib/mcp/errors";
 import {
   GET_MENU_NESTED_QUERY,
@@ -76,9 +83,15 @@ export async function getMenu(input: GetMenuInput) {
   const itemCaution = isIndexed
     ? "Indexed from a public source. Not safe to cite for allergens, dietary restrictions, or final prices; confirm with the restaurant before final action."
     : undefined;
+  const citation = buildMenuCitation(restaurant.id);
+  const claimInvitation = buildClaimInvitation(
+    restaurant.id,
+    restaurant.verification_status,
+    true, // by definition: a published menu exists at this point
+  );
 
   return {
-    citation: buildMenuCitation(restaurant.id),
+    ...citationFields(citation),
     version: "1.0",
     domain: "foodnear.me",
     verification_status: restaurant.verification_status,
@@ -86,6 +99,7 @@ export async function getMenu(input: GetMenuInput) {
       restaurant.verification_status,
       Boolean(menu.signature_hash),
     ),
+    ...(claimInvitation ? { claim_invitation: claimInvitation } : {}),
     last_updated: menu.updated_at,
     restaurant: {
       id: restaurant.id,
@@ -146,7 +160,7 @@ export async function getMenu(input: GetMenuInput) {
           verification_url: buildSigningKeysCitation(),
           note:
             menu.signing_format === "fnm-v1" || menu.payload_hash
-              ? "Ed25519 signature bound to canonical menu content (fnm-v1). Rebuild canonical content from this response with @foodnearme/menu-protocol, verify payload_hash matches, then verify the signature against the active public key at verification_url. Spec: https://foodnear.me/SKILL.md#verifying-signatures."
+              ? "Ed25519 signature bound to canonical menu content (fnm-v1). Rebuild canonical content from this response with @foodnearme/menu-protocol, verify payload_hash matches, then verify the signature against the active public key at verification_url. Spec: https://foodnear.me/skills/foodnearme/SKILL.md#verifying-signatures."
               : "Legacy Ed25519 signature (fnm-v0) over the tuple restaurant:menu:signer:timestamp. Proves owner approval at signing time but is not bound to current menu contents; treat content changes since signature_timestamp with caution.",
         }
       : {

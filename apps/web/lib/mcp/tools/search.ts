@@ -5,23 +5,26 @@
  * row with trust notices, tier aggregates, and (for empty results) actionable
  * next-step hints. Pure function: no caching, no side effects.
  *
- * Input is validated by `searchRestaurantsInputSchema` in
+ * Input is validated and normalized by `searchRestaurantsInputSchema` in
  * `lib/mcp/tools/inputs.ts` before this handler is called; only domain
  * clamping (radius_miles, min_ado_score) happens here.
  */
 
 import { createClient } from "@/lib/supabase/server";
 import {
+  buildClaimInvitation,
   buildSearchLinks,
   buildSearchTrustNotice,
 } from "@/lib/discovery/verification-status";
-import { buildSearchCitation } from "@/lib/mcp/citations";
+import { buildSearchCitation, citationFields } from "@/lib/mcp/citations";
 import { MAX_RESULTS, MAX_SEARCH_RADIUS_MILES } from "@/lib/mcp/constants";
 import type { SearchRestaurantsInput } from "./inputs";
 
 export async function searchRestaurants(input: SearchRestaurantsInput) {
   const { lat, lng } = input;
   const query = (input.query ?? "").trim();
+  const languageCode = input.languageCode?.trim();
+  const regionCode = input.regionCode?.trim();
   const radiusMiles = Math.min(
     Math.max(input.radius_miles ?? 5, 0.1),
     MAX_SEARCH_RADIUS_MILES,
@@ -48,6 +51,11 @@ export async function searchRestaurants(input: SearchRestaurantsInput) {
 
   const results = (data ?? []).slice(0, MAX_RESULTS).map((r) => {
     const menuAvailable = Boolean(r.menu_available);
+    const claimInvitation = buildClaimInvitation(
+      r.id,
+      r.verification_status,
+      menuAvailable,
+    );
     return {
       id: r.id,
       name: r.name,
@@ -61,6 +69,7 @@ export async function searchRestaurants(input: SearchRestaurantsInput) {
       data_source: r.data_source,
       trust_notice: buildSearchTrustNotice(r.verification_status, menuAvailable),
       links: buildSearchLinks(r.id, menuAvailable),
+      ...(claimInvitation ? { claim_invitation: claimInvitation } : {}),
     };
   });
 
@@ -105,18 +114,29 @@ export async function searchRestaurants(input: SearchRestaurantsInput) {
     );
   }
 
+  const citation = buildSearchCitation({
+    lat,
+    lng,
+    radiusMiles,
+    query,
+    dietary,
+    minAdoScore,
+  });
+
   return {
-    citation: buildSearchCitation({
-      lat,
-      lng,
-      radiusMiles,
-      query,
-      dietary,
-      minAdoScore,
-    }),
+    ...citationFields(citation),
     query: query || "(all cuisines)",
     location: { lat, lng },
     radius_miles: radiusMiles,
+    ...(languageCode || regionCode
+      ? {
+          request_locale: {
+            ...(languageCode ? { languageCode } : {}),
+            ...(regionCode ? { regionCode } : {}),
+          },
+          locale_support: "us_en_only_v1",
+        }
+      : {}),
     filters: {
       dietary,
       min_ado_score: minAdoScore,

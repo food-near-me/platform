@@ -93,6 +93,17 @@ export function extractTierLabel(result: unknown): string | null {
 
   const obj = result as Record<string, unknown>;
 
+  // Composite tools (explore_area_for_diet, etc.) expose tier_counts directly.
+  // Prefer the highest tier with a non-zero count so the instrumented label
+  // reflects what the agent actually got back.
+  if (obj.tier_counts && typeof obj.tier_counts === "object") {
+    const counts = obj.tier_counts as Record<string, unknown>;
+    if (typeof counts.verified === "number" && counts.verified > 0) return "verified";
+    if (typeof counts.menu_indexed === "number" && counts.menu_indexed > 0) return "menu_indexed";
+    if (typeof counts.discovered === "number" && counts.discovered > 0) return "discovered";
+    // Fall through if every bucket was empty.
+  }
+
   if (Array.isArray(obj.results)) {
     const tiers = new Set<string>();
     for (const row of obj.results as Array<Record<string, unknown>>) {
@@ -111,11 +122,15 @@ export function extractTierLabel(result: unknown): string | null {
   return null;
 }
 
-/** Count rows returned (search) for the `results_count` dimension. */
+/** Count rows returned (search + composites) for the `results_count` dimension. */
 export function extractResultsCount(result: unknown): number | null {
   if (!result || typeof result !== "object") return null;
   const obj = result as Record<string, unknown>;
   if (typeof obj.results_count === "number") return obj.results_count;
+  if (obj.tier_counts && typeof obj.tier_counts === "object") {
+    const total = (obj.tier_counts as Record<string, unknown>).total;
+    if (typeof total === "number") return total;
+  }
   if (Array.isArray(obj.results)) return obj.results.length;
   return null;
 }

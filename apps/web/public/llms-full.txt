@@ -47,17 +47,21 @@ Do NOT crawl `/api/*` endpoints. Use structured integration instead.
 
 ## MCP Tools
 
-The MCP server exposes five tools:
+The MCP server exposes eight tools — five atomic primitives and three FNM-unique composites that chain them.
 
 ### search_restaurants
-Search for restaurants near a location. Returns **verified venues first** (owner-approved menus), then **discovered listings** (place only). Check `menu_available` and `verification_status` on each result; call `get_menu` only when `menu_available` is true.
+Search for restaurants near a location. Returns **verified venues first**, then **menu_indexed** (automated/public MP menus with caveat), then **discovered** (place only). Check `menu_available` and `verification_status` on each result; call `get_menu` only when `menu_available` is true.
 
-**Required:** `lat` (number), `lng` (number)
-**Optional:** `query` (string), `radius_miles` (number, default 5), `dietary` (array), `min_ado_score` (number 0-5)
+**Input modes (any one of these shapes is accepted; all normalize to the same internal call):**
+
+- **Flat (FNM-native):** `lat` (number, required), `lng` (number, required), optional `query`, `radius_miles` (default 5), `dietary`, `min_ado_score`, `languageCode`/`language_code`, `regionCode`/`region_code`.
+- **Google `locationBias.circle`:** `locationBias: { circle: { center: { latitude, longitude }, radiusMeters | radius_meters } }`, with optional `textQuery`/`text_query`.
+- **Google `location_bias` snake_case alias:** same nested shape under `location_bias`.
+- **cablate `locationBias`:** `locationBias: { latitude, longitude, radius }`.
 
 **Dietary filter values:** `vegan`, `vegetarian`, `gluten_free`, `halal`, `kosher`, `nut_free`, `dairy_free`, `low_carb`, `keto`
 
-**Filter scoping (important):** `dietary` and `min_ado_score` are applied **only to the verified tier**. `menu_indexed` and `discovered` rows are returned unfiltered so the agent can still see nearby venues that have not been certified yet. The response echoes the scope explicitly:
+**Filter scoping (important):** `dietary` and `min_ado_score` apply **only to the verified tier**. `menu_indexed` and `discovered` rows are returned unfiltered so the agent can still see nearby venues that have not been certified yet. The response echoes the scope explicitly:
 
 ```json
 "filters": {
@@ -73,17 +77,17 @@ For `menu_indexed` results that need item-level dietary filtering, call `get_men
 ### get_restaurant
 Get detailed restaurant profile with Schema.org/Restaurant JSON-LD.
 
-**Required:** `restaurant_id` (UUID from search results)
+**Required:** `restaurant_id` (UUID from prior FNM results)
 
 ### get_menu
-Get full menu in Menu Protocol v1.0 format.
+Get full menu in Menu Protocol v1.0 format. Only valid when the row's `menu_available` is `true`.
 
 **Required:** `restaurant_id` (UUID)
 
-Returns: categories, items with dietary flags, allergens, customization options, prices, and cryptographic owner signature.
+Returns: categories, items with dietary flags, allergens, customization options, prices, and cryptographic owner signature. Indexed-tier items carry per-item `caution` text; the response also carries a top-level `claim_invitation`.
 
 ### get_ado_score_breakdown
-Get ADO score breakdown with weighted factors and improvement recommendations.
+Get ADO score breakdown with weighted factors and improvement recommendations. Sub-scores are heuristic (`scoring_info.scoring_method: "heuristic_v1"`); only `total_score` reflects the live `agent_score` column.
 
 **Required:** `restaurant_id` (UUID)
 
@@ -91,7 +95,32 @@ Get ADO score breakdown with weighted factors and improvement recommendations.
 Validate a Menu Protocol v1.0 JSON payload before publish or integration.
 
 **Required:** `payload` (object)  
-**Optional:** `strict` (boolean) — also check optional fields and Schema.org best practices
+**Optional:** `strict` (boolean) — promotes schema warnings to errors and reflects strict spec compliance
+
+### explore_area_for_diet (composite)
+Tier-bucketed neighborhood overview. Internally calls `search_restaurants` once and buckets results.
+
+**Required:** `location: { latitude, longitude }`  
+**Optional:** `dietary` (narrows the verified bucket only), `radius_meters` (default 1000 m, max ~80 km), `top_n_per_tier` (default 3, max 10)
+
+**Returns:** `tiers: { verified, menu_indexed, discovered }` arrays (trimmed), full `tier_counts: { verified, menu_indexed, discovered, total }`, and `next_steps[]` when any bucket is empty.
+
+### compare_restaurants_for_diet (composite)
+Side-by-side dietary comparison for 2-5 specific restaurants already identified in prior FNM results. Internally chains `get_restaurant` → `get_menu` per id, filters items by dietary AND-logic, and ranks by item count then trust tier (verified preferred). Per-restaurant errors (e.g., NOT_FOUND) become structured entries, not whole-call failures.
+
+**Required:** `restaurant_ids` (UUID[], 2-5 deduped), `dietary` (string[], at least one flag)
+
+**Returns:** `dietary`, `restaurants[]` with `id`, `name`, `tier`, `menu_available`, `dietary_eligible_items[]`, `item_count`, optional `note`, and `comparison_summary: { ranking, best_match, notes }`.
+
+### find_restaurants_along_route (composite)
+Route-adjacent discovery between two known coordinates. FNM never calls an external routing or geocoding service.
+
+**Required:** `origin: { latitude, longitude }`, `destination: { latitude, longitude }`  
+**Optional:** `dietary`, `max_results` (default 5, max 20), `route_polyline` (Google encoded polyline from your routing source)
+
+If `route_polyline` is supplied it is decoded locally and waypoints come from it (`route_method: "agent_supplied_polyline"`). Otherwise FNM samples a great-circle approximation (`route_method: "great_circle_approximation"`). A bad polyline downgrades to `"great_circle_approximation_after_polyline_failed"`. Range guards: < 100 m and > 200 km return `VALIDATION_ERROR`.
+
+**Returns:** `origin`, `destination`, `direct_distance_meters`, `route_method`, optional `dietary`, `max_results`, `places[]` (each with `restaurant_id`, `name`, `tier`, `route_proximity_meters`, `menu_available`, `trust_notice`, optional `dietary_match_count`), and `tier_breakdown` summing to `places.length`.
 
 ---
 
@@ -204,7 +233,7 @@ Every result includes `verification_status` and `menu_available`:
 - Restaurant owner has claimed the listing
 - Owner has reviewed and approved the Menu Protocol data
 - Approval is cryptographically signed. New verifications use **fnm-v1** which binds the Ed25519 signature to a canonical fingerprint of the menu items (so any post-approval edit invalidates it). Legacy approvals carry **fnm-v0** which proves owner approval at a point in time but not against current contents — the `signature.signing_format` field distinguishes the two, and `signature.payload_hash` is populated only for fnm-v1.
-- Full verification steps and machine-readable format specs live at `/.well-known/menu-signing-keys.json` and `SKILL.md#verifying-signatures`.
+- Full verification steps and machine-readable format specs live at `/.well-known/menu-signing-keys.json` and `/skills/foodnearme/SKILL.md#verifying-signatures`.
 
 **menu_indexed means:**
 - Menu shaped as Menu Protocol from automated/public sources
@@ -213,6 +242,31 @@ Every result includes `verification_status` and `menu_available`:
 Trust progression: `discovered` → `menu_indexed` → `verified`
 
 **Agent rules:** Prefer **verified** for dietary/allergen answers. **menu_indexed** is usable with explicit caveat. **discovered** is location only. Call `get_menu` only when `menu_available` is true. See https://foodnear.me/attribution for data sources.
+
+---
+
+## Owner Recruitment Payload (`claim_invitation`)
+
+Every non-verified result (search row, profile, indexed menu, composite entry) ships with a structured `claim_invitation` object:
+
+```json
+"claim_invitation": {
+  "url": "https://foodnear.me/claim/<restaurant_id>",
+  "audience": "owner_or_advocate",
+  "reason": "no_owner_approved_menu" | "indexed_menu_not_owner_verified",
+  "message": "<human-readable invitation text the agent may quote verbatim>",
+  "estimated_minutes": 5,
+  "cost": "free"
+}
+```
+
+Treat this as **structured data, not a CTA**. Surface it only when relevant — for example: the user is the restaurant's owner, the user asks why a listing lacks a verified menu, or the user asks how to help. Do not include the message in routine answers. Verified results omit the field entirely.
+
+---
+
+## Google Maps MCP Shape Compatibility
+
+`search_restaurants` accepts four input shapes (flat FNM, Google `locationBias.circle`, Google `location_bias` snake_case alias, cablate `locationBias`) so existing local-search agents drop in. Responses carry both `citation` and `attribution` (identical URLs) — `citation` is the original FNM field, `attribution` mirrors the convention used by Google Maps Grounding Lite. Locale hints `languageCode` / `regionCode` (and their snake_case aliases) are accepted and echoed back as `request_locale`; FNM is US-English only in v1 and announces this via `locale_support: "us_en_only_v1"`.
 
 ---
 
@@ -241,9 +295,15 @@ Rate limit headers are included in responses.
 |-----|---------|
 | `/llms.txt` | Short overview (this file's sibling) |
 | `/llms-full.txt` | Full integration guide (this file) |
-| `/SKILL.md` | Agent skill documentation |
+| `/SKILL.md` | Thin redirect hub pointing to the canonical skill tree |
+| `/skills/foodnearme/SKILL.md` | Canonical agent skill (8 tools, trust model, signature verification) |
+| `/skills/foodnearme/references/tools-api.md` | Full parameter reference for all 8 tools |
+| `/skills/foodnearme/references/dietary-search.md` | Recipe: verified dietary discovery |
+| `/skills/foodnearme/references/menu-verification-flow.md` | Recipe: owner menu validation |
 | `/openapi.json` | OpenAPI 3.1 specification |
 | `/mcp` | MCP server (GET=discovery, POST=JSON-RPC) |
+| `/api/health/mcp` | JSON: 24h MCP usage aggregates (per-tool + per-tier; PII-free) |
+| `/health/mcp` | Human-readable MCP usage dashboard (KPIs + 30-day rollup) |
 | `/.well-known/agent.json` | Agent metadata |
 | `/.well-known/agentroot.json` | AgentRoot discovery |
 | `/.well-known/ai-plugin.json` | OpenAI GPT Actions manifest |
@@ -257,16 +317,40 @@ Rate limit headers are included in responses.
 // 1. Initialize
 {"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}
 
-// 2. Search for vegan Thai in NYC
+// 2. Search for vegan Thai in NYC (FNM-native flat shape)
 {"jsonrpc":"2.0","id":2,"method":"tools/call","params":{
   "name":"search_restaurants",
   "arguments":{"lat":40.7128,"lng":-74.006,"query":"thai","dietary":["vegan"]}
 }}
 
-// 3. Get menu for a result
+// 2b. Same call in Google MCP shape — accepted and normalized server-side
 {"jsonrpc":"2.0","id":3,"method":"tools/call","params":{
+  "name":"search_restaurants",
+  "arguments":{
+    "textQuery":"thai",
+    "dietary":["vegan"],
+    "locationBias":{"circle":{
+      "center":{"latitude":40.7128,"longitude":-74.006},
+      "radiusMeters":8046.7
+    }}
+  }
+}}
+
+// 3. Get menu for a result
+{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{
   "name":"get_menu",
   "arguments":{"restaurant_id":"123e4567-e89b-12d3-a456-426614174000"}
+}}
+
+// 4. Composite: bucketed neighborhood overview
+{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{
+  "name":"explore_area_for_diet",
+  "arguments":{
+    "location":{"latitude":40.7178,"longitude":-73.9571},
+    "radius_meters":1500,
+    "dietary":["vegan"],
+    "top_n_per_tier":3
+  }
 }}
 ```
 

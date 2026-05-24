@@ -32,7 +32,10 @@
     "get_restaurant",
     "get_menu",
     "get_ado_score_breakdown",
-    "validate_menu_protocol"
+    "validate_menu_protocol",
+    "explore_area_for_diet",
+    "compare_restaurants_for_diet",
+    "find_restaurants_along_route"
   ],
   "capabilities": [
     "restaurant_search",

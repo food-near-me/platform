@@ -9,10 +9,11 @@
 
 import { createClient } from "@/lib/supabase/server";
 import {
+  buildClaimInvitation,
   buildProfileTrustNotice,
   hasMenuAccess,
 } from "@/lib/discovery/verification-status";
-import { buildRestaurantCitation } from "@/lib/mcp/citations";
+import { buildRestaurantCitation, citationFields } from "@/lib/mcp/citations";
 import { ResourceNotFoundError } from "@/lib/mcp/errors";
 import {
   RESTAURANT_PROFILE_COLUMNS,
@@ -62,11 +63,17 @@ export async function getRestaurant(input: GetRestaurantInput) {
     : { data: null };
 
   const menuAvailable = menuTier && Boolean(publishedMenu);
+  const citation = buildRestaurantCitation(data.id);
+  const claimInvitation = buildClaimInvitation(
+    data.id,
+    data.verification_status,
+    menuAvailable,
+  );
 
   return {
     "@context": "https://schema.org",
     "@type": "Restaurant",
-    citation: buildRestaurantCitation(data.id),
+    ...citationFields(citation),
     id: data.id,
     name: data.name,
     slug: data.slug,
@@ -93,5 +100,6 @@ export async function getRestaurant(input: GetRestaurantInput) {
           }
         : { claim: `https://foodnear.me/claim/${data.id}` }),
     },
+    ...(claimInvitation ? { claim_invitation: claimInvitation } : {}),
   };
 }

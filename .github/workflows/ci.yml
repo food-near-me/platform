@@ -50,8 +50,14 @@ jobs:
       - name: Discovery copy parity
         run: npm run check:discovery-copy
 
+      - name: MCP tool description guard
+        run: npm run check:mcp-descriptions
+
       - name: Enum parity (verification_status TS vs SQL)
         run: npm run check:enums
+
+      - name: MCP tool filtering
+        run: npm run test:mcp-tool-filtering
 
       - name: Unit tests (menu-protocol crypto + parsers + approve race-safety)
         run: |

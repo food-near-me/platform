@@ -56,7 +56,7 @@ Menu Protocol is a strict superset of Schema.org/Restaurant and Schema.org/MenuI
 - ADO (Agent Discovery Optimization) scoring
 
 ## Full Specification
-See: https://foodnear.me/SKILL.md
+See: https://foodnear.me/skills/foodnearme/SKILL.md
 See: https://foodnear.me/openapi.json
 
 ## Example Menu Item
@@ -86,7 +86,7 @@ Find restaurants and retrieve Menu Protocol formatted menus.
 4. Filter items by dietary flags and allergens
 
 ## Full Documentation
-See: https://foodnear.me/SKILL.md
+See: https://foodnear.me/skills/foodnearme/SKILL.md
 `,
   "foodnearme://examples/search-flow": `# Example: Restaurant Search Flow
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { checkX402Access } from "@/lib/x402";
 import {
+  buildClaimInvitation,
   buildProfileTrustNotice,
   hasMenuAccess,
 } from "@/lib/discovery/verification-status";
@@ -57,6 +58,11 @@ export async function GET(
       : { data: null };
 
     const menuAvailable = menuTier && Boolean(publishedMenu);
+    const claimInvitation = buildClaimInvitation(
+      restaurant.id,
+      restaurant.verification_status,
+      menuAvailable,
+    );
 
     const restaurantProfile = {
       "@context": "https://schema.org",
@@ -86,6 +92,7 @@ export async function GET(
       links: menuAvailable
         ? { menu: `/api/v1/restaurant/${id}/menu.mp` }
         : { claim: `/claim/${id}` },
+      ...(claimInvitation ? { claim_invitation: claimInvitation } : {}),
     };
 
     return NextResponse.json(restaurantProfile, {

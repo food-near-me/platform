@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { checkX402Access } from "@/lib/x402";
 import {
+  buildClaimInvitation,
   buildRestSearchLinks,
   buildSearchTrustNotice,
 } from "@/lib/discovery/verification-status";
@@ -49,6 +50,11 @@ export async function GET(request: Request) {
 
     const results = (data ?? []).map((restaurant) => {
       const menuAvailable = Boolean(restaurant.menu_available);
+      const claimInvitation = buildClaimInvitation(
+        restaurant.id,
+        restaurant.verification_status,
+        menuAvailable,
+      );
       return {
         ...restaurant,
         trust_notice: buildSearchTrustNotice(
@@ -56,6 +62,7 @@ export async function GET(request: Request) {
           menuAvailable,
         ),
         links: buildRestSearchLinks(restaurant.id, menuAvailable),
+        ...(claimInvitation ? { claim_invitation: claimInvitation } : {}),
       };
     });
 

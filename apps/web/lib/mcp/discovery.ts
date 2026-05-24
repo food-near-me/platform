@@ -4,14 +4,15 @@
  * MCP clients that don't speak JSON-RPC (or that want a quick health
  * check before initializing) hit `GET /mcp`. The body is small,
  * cacheable, and changes only when the tool catalogue does — keep it
- * derived from `SERVER_INFO` / `TOOLS` / `RESOURCES` so it stays in sync
- * automatically.
+ * derived from `SERVER_INFO` / `getEnabledTools()` / `RESOURCES` so it stays
+ * in sync automatically while honoring `FNM_MCP_ENABLED_TOOLS`.
  */
 
 import { RESOURCES } from "./resources";
-import { SERVER_INFO, TOOLS } from "./server-info";
+import { getEnabledTools, SERVER_INFO } from "./server-info";
 
 export function buildMcpDiscoveryPayload() {
+  const tools = getEnabledTools();
   return {
     name: SERVER_INFO.name,
     version: SERVER_INFO.version,
@@ -23,7 +24,7 @@ export function buildMcpDiscoveryPayload() {
 
     capabilities: SERVER_INFO.capabilities,
 
-    tools: TOOLS.map((t) => ({
+    tools: tools.map((t) => ({
       name: t.name,
       description: t.description,
       required_params: t.inputSchema.required,

@@ -16,6 +16,16 @@ import {
   THREE_TIER_REQUIRED_MARKERS,
   THREE_TIER_TRUST_FILES,
 } from "../lib/discovery/trust-model-copy";
+import { ALL_TOOLS } from "../lib/mcp/server-info";
+
+/**
+ * The canonical agent skill ships a `tools-api.md` reference that mirrors
+ * the live MCP tool catalogue. We assert here that every tool name in
+ * `ALL_TOOLS` appears in that file so the skill cannot drift away from
+ * `lib/mcp/server-info.ts`. A negative test (mutate one tool name in
+ * server-info.ts → script must fail) keeps the gate honest.
+ */
+const TOOLS_API_REFERENCE_PATH = "public/skills/foodnearme/references/tools-api.md";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const webRoot = resolve(scriptDir, "..");
@@ -91,6 +101,29 @@ function checkTarget(target: CheckTarget): string[] {
   return errors;
 }
 
+function checkToolsApiReference(): string[] {
+  const errors: string[] = [];
+  const absPath = resolve(webRoot, TOOLS_API_REFERENCE_PATH);
+  let content: string;
+  try {
+    content = readFileSync(absPath, "utf8");
+  } catch (err) {
+    return [
+      `${TOOLS_API_REFERENCE_PATH}: ${err instanceof Error ? err.message : String(err)}`,
+    ];
+  }
+
+  for (const tool of ALL_TOOLS) {
+    if (!content.includes(`\`${tool.name}\``)) {
+      errors.push(
+        `${TOOLS_API_REFERENCE_PATH}: missing reference to tool \`${tool.name}\` (must appear backticked at least once)`,
+      );
+    }
+  }
+
+  return errors;
+}
+
 async function main() {
   const { url } = parseArgs(process.argv.slice(2));
   const mode = url ? `production ${url}` : "local files";
@@ -100,6 +133,12 @@ async function main() {
   const targets = url ? await loadRemoteTargets(url) : loadLocalTargets();
   const errors = targets.flatMap(checkTarget);
 
+  // The tools-api parity check is local-only because ALL_TOOLS is the live,
+  // in-process tool catalogue; a remote URL run only validates published copy.
+  if (!url) {
+    errors.push(...checkToolsApiReference());
+  }
+
   if (errors.length > 0) {
     console.error("");
     for (const err of errors) {
@@ -108,7 +147,10 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`OK  ${targets.length} discovery surface(s) — three-tier copy parity`);
+  const summary = url
+    ? `OK  ${targets.length} discovery surface(s) — three-tier copy parity`
+    : `OK  ${targets.length} discovery surface(s) — three-tier copy parity + tools-api reference covers ${ALL_TOOLS.length} tool(s)`;
+  console.log(summary);
   process.exit(0);
 }
 

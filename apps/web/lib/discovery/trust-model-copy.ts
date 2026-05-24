@@ -20,6 +20,10 @@ export const THREE_TIER_TRUST_FILES = [
   "public/llms.txt",
   "public/llms-full.txt",
   "public/SKILL.md",
+  "public/skills/foodnearme/SKILL.md",
+  "public/skills/foodnearme/references/tools-api.md",
+  "public/skills/foodnearme/references/dietary-search.md",
+  "public/skills/foodnearme/references/menu-verification-flow.md",
   "../../README.md",
 ] as const;
 
@@ -62,7 +66,7 @@ export const THREE_TIER_SUMMARY_MARKERS = [
 export const TWO_TIER_SUMMARY_MARKERS = THREE_TIER_SUMMARY_MARKERS;
 
 export const SEARCH_RESTAURANTS_DESCRIPTION =
-  "Search for restaurants near a location. Returns verified venues first, then menu_indexed (automated MP menu with caveat), then discovered (place only). Use menu_available and verification_status on each result. Call get_menu only when menu_available is true. NOTE: `dietary` and `min_ado_score` filters only apply to the verified tier; menu_indexed and discovered rows are returned unfiltered for those criteria — the response echoes `filters.applied_to: [\"verified\"]` and a `filters.note` so agents know to re-filter at item level using `get_menu`.";
+  "Call this tool when the user wants restaurant or food discovery near a known location and may need menu trust signals. Input Requirements (CRITICAL): provide either flat `lat`/`lng` or Google-style `locationBias.circle.center.latitude`/`longitude`; if the user gave only a vague place name, resolve it before calling or include a specific city/region in `textQuery`/`query`. Returns verified venues first, then menu_indexed (automated MP menu with caveat), then discovered (place only). MUST use `menu_available` and `verification_status` on each result; call `get_menu` only when `menu_available` is true. PREFER verified results for dietary/allergen answers. NOTE: `dietary` and `min_ado_score` filters only apply to the verified tier; menu_indexed and discovered rows are returned unfiltered for those criteria — the response echoes `filters.applied_to: [\"verified\"]` and a `filters.note` so agents know to re-filter at item level using `get_menu`. Non-verified rows include a structured `claim_invitation` (url, message, audience=\"owner_or_advocate\", reason); SHOULD surface this when the user is the restaurant's owner or might know them, when the user asks why the listing lacks a verified menu, or when explaining tier differences — never as an unsolicited CTA. Attribute grounded output using `citation` or `attribution`.";
 
 export const LLMS_TRUST_MODEL_SECTION = `## Data Trust Model (Three-Tier Search)
 

@@ -19,6 +19,16 @@ type JsonRpcResponse = {
   error?: { message: string };
 };
 
+type McpTool = {
+  name: string;
+  annotations?: {
+    readOnlyHint?: boolean;
+    destructiveHint?: boolean;
+    idempotentHint?: boolean;
+    openWorldHint?: boolean;
+  };
+};
+
 function parseArgs(argv: string[]) {
   let base = process.env.BASE_URL ?? "https://foodnear.me";
   for (let i = 0; i < argv.length; i++) {
@@ -72,6 +82,23 @@ async function checkDiscoveryManifest(base: string) {
   console.log("OK  discovery  /.well-known/mcp-server.json tool parity");
 }
 
+function assertToolAnnotations(tools: McpTool[]) {
+  for (const tool of tools) {
+    const annotations = tool.annotations;
+    if (!annotations) {
+      throw new Error(`${tool.name}: missing annotations`);
+    }
+    if (
+      annotations.readOnlyHint !== true ||
+      annotations.destructiveHint !== false ||
+      annotations.idempotentHint !== false ||
+      annotations.openWorldHint !== false
+    ) {
+      throw new Error(`${tool.name}: unexpected annotations ${JSON.stringify(annotations)}`);
+    }
+  }
+}
+
 async function main() {
   const base = parseArgs(process.argv.slice(2));
   console.log(`[smoke:mcp] base=${base}`);
@@ -80,11 +107,10 @@ async function main() {
   try {
     await checkDiscoveryManifest(base);
 
-    const toolsResult = (await jsonRpc(base, "tools/list")) as {
-      tools: Array<{ name: string }>;
-    };
+    const toolsResult = (await jsonRpc(base, "tools/list")) as { tools: McpTool[] };
     const toolNames = toolsResult.tools.map((t) => t.name);
     assertSortedEqual(toolNames, EXPECTED_MCP_TOOLS, "tools/list");
+    assertToolAnnotations(toolsResult.tools);
     console.log(`OK  tools/list  ${toolNames.length} tools`);
 
     const resourcesResult = (await jsonRpc(base, "resources/list")) as {

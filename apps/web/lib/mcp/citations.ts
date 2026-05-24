@@ -1,16 +1,29 @@
 /**
  * Canonical citation URL builders for MCP tool responses.
  *
- * Every MCP tool returns a top-level `citation` field so that an agent
- * answering a user can quote a verifiable URL back. The URLs point to the
- * canonical REST API endpoint or public spec for the underlying data so the
- * agent (or end user) can re-fetch the same data on demand.
+ * Every MCP tool returns top-level `citation` and `attribution` fields so an
+ * agent answering a user can quote a verifiable URL back. Both fields point to
+ * the same canonical REST API endpoint or public spec for the underlying data;
+ * `citation` is the original FNM field and `attribution` mirrors the emerging
+ * local-search MCP convention used by Google Maps Grounding Lite.
  *
  * Keep these in sync with the discovery surface (llms.txt, SKILL.md). When
  * the route shape changes, this module is the single point of truth.
  */
 
 const DEFAULT_BASE_URL = "https://foodnear.me";
+
+export type CitationFields = {
+  citation: string;
+  attribution: string;
+};
+
+export function citationFields(citation: string): CitationFields {
+  return {
+    citation,
+    attribution: citation,
+  };
+}
 
 function baseUrl(): string {
   const configured = process.env.NEXT_PUBLIC_APP_URL?.trim();
@@ -66,7 +79,57 @@ export function buildAdoCitation(restaurantId: string): string {
 }
 
 export function buildValidateCitation(): string {
-  return `${baseUrl()}/SKILL.md#menu-protocol-v1`;
+  return `${baseUrl()}/skills/foodnearme/SKILL.md`;
+}
+
+export function buildExploreCitation(args: {
+  lat: number;
+  lng: number;
+  radiusMeters: number;
+  dietary?: string[];
+  topNPerTier: number;
+}): string {
+  const url = new URL(`${baseUrl()}/api/v1/explore`);
+  appendSearchParams(url, {
+    lat: args.lat,
+    lng: args.lng,
+    radius_meters: args.radiusMeters,
+    dietary: args.dietary && args.dietary.length > 0 ? args.dietary : undefined,
+    top_n_per_tier: args.topNPerTier,
+  });
+  return url.toString();
+}
+
+export function buildCompareCitation(args: {
+  restaurantIds: string[];
+  dietary: string[];
+}): string {
+  const url = new URL(`${baseUrl()}/api/v1/compare`);
+  appendSearchParams(url, {
+    restaurant_id: args.restaurantIds,
+    dietary: args.dietary,
+  });
+  return url.toString();
+}
+
+export function buildAlongRouteCitation(args: {
+  origin: { latitude: number; longitude: number };
+  destination: { latitude: number; longitude: number };
+  dietary?: string[];
+  maxResults: number;
+  routeMethod: string;
+}): string {
+  const url = new URL(`${baseUrl()}/api/v1/along-route`);
+  appendSearchParams(url, {
+    origin_lat: args.origin.latitude,
+    origin_lng: args.origin.longitude,
+    destination_lat: args.destination.latitude,
+    destination_lng: args.destination.longitude,
+    dietary: args.dietary && args.dietary.length > 0 ? args.dietary : undefined,
+    max_results: args.maxResults,
+    route_method: args.routeMethod,
+  });
+  return url.toString();
 }
 
 export function buildSigningKeysCitation(): string {

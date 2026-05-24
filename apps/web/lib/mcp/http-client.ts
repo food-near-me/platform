@@ -46,6 +46,21 @@ export function createHttpMcpClient(baseUrl: string): McpFlowClient {
       const result = (await jsonRpc("tools/list")) as { tools: Array<{ name: string }> };
       return result.tools.map((t) => t.name);
     },
+    listToolDefinitions: async () => {
+      const result = (await jsonRpc("tools/list")) as {
+        tools: Array<{
+          name: string;
+          description?: string;
+          annotations?: {
+            readOnlyHint?: boolean;
+            destructiveHint?: boolean;
+            idempotentHint?: boolean;
+            openWorldHint?: boolean;
+          };
+        }>;
+      };
+      return result.tools;
+    },
     listResources: async () => {
       const result = (await jsonRpc("resources/list")) as { resources: Array<{ uri: string }> };
       return result.resources.map((r) => r.uri);

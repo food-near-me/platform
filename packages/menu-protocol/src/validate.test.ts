@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { validateMenuProtocolPayload } from "./validate";
+import {
+  classifyMenuProtocolIssues,
+  isLenientFatalIssue,
+  validateMenuProtocolPayload,
+  type MenuProtocolIssue,
+} from "./validate";
 
 const VALID_PAYLOAD = {
   version: "1.0" as const,
@@ -121,4 +126,97 @@ test("validateMenuProtocolPayload surfaces per-item issues with indexed paths", 
     indexedPaths.length > 0,
     `expected indexed item issues, got: ${result.issues.map((i) => i.path).join(", ")}`,
   );
+});
+
+function issue(path: string): MenuProtocolIssue {
+  return { path, message: "test", code: "invalid_type" };
+}
+
+test("isLenientFatalIssue flags structural-core paths", () => {
+  const fatalPaths = [
+    "version",
+    "restaurant",
+    "restaurant.id",
+    "restaurant.name",
+    "restaurant.@type",
+    "menu",
+    "menu.id",
+    "menu.restaurant_id",
+    "menu.categories",
+    "menu.items",
+    "menu.items.0.name",
+    "menu.items.5.name",
+    "menu.items.999.name",
+  ];
+  for (const path of fatalPaths) {
+    assert.equal(
+      isLenientFatalIssue(issue(path)),
+      true,
+      `expected ${path} to be lenient-fatal`,
+    );
+  }
+});
+
+test("isLenientFatalIssue does NOT flag schema-strict-only paths", () => {
+  const notFatalPaths = [
+    "domain",
+    "restaurant.slug",
+    "restaurant.@context",
+    "restaurant.address",
+    "restaurant.geo",
+    "restaurant.payment_methods",
+    "menu.last_updated",
+    "menu.language",
+    "menu.currency",
+    "menu.categories.0.id",
+    "menu.categories.0.name",
+    "menu.items.0.id",
+    "menu.items.0.@type",
+    "menu.items.0.category_id",
+    "menu.items.0.dietary",
+    "menu.items.0.dietary.vegan",
+    "menu.items.0.allergens",
+    "menu.items.0.customization_options",
+    "menu.items.0.images",
+    // Edge cases that look item-name-ish but aren't:
+    "menu.items.0.name_alt",
+    "menu.items.0.nameless",
+    "menu.items",
+  ];
+  for (const path of notFatalPaths) {
+    if (path === "menu.items") continue; // exact-match path IS fatal; covered above
+    assert.equal(
+      isLenientFatalIssue(issue(path)),
+      false,
+      `expected ${path} to NOT be lenient-fatal`,
+    );
+  }
+});
+
+test("classifyMenuProtocolIssues splits cleanly into the two buckets", () => {
+  const issues: MenuProtocolIssue[] = [
+    issue("version"),
+    issue("domain"),
+    issue("restaurant.id"),
+    issue("restaurant.slug"),
+    issue("menu.items.0.name"),
+    issue("menu.items.0.@type"),
+    issue("menu.items.3.dietary"),
+  ];
+  const { lenientFatal, schemaStrictOnly } = classifyMenuProtocolIssues(issues);
+
+  const fatalPaths = lenientFatal.map((i) => i.path).sort();
+  const strictPaths = schemaStrictOnly.map((i) => i.path).sort();
+
+  assert.deepEqual(fatalPaths, [
+    "menu.items.0.name",
+    "restaurant.id",
+    "version",
+  ]);
+  assert.deepEqual(strictPaths, [
+    "domain",
+    "menu.items.0.@type",
+    "menu.items.3.dietary",
+    "restaurant.slug",
+  ]);
 });
