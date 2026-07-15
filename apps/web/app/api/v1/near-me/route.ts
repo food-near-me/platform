@@ -104,10 +104,10 @@ export async function GET(request: Request) {
       [query, lat, lng, radiusMeters, 0, []],
     )) as SearchRow[];
 
-    // Also pull curated allergy places in radius that FTS query might miss
-    const curatedExtra =
-      need && !query
-        ? ((await sql.query(
+    // Always pull curated allergy places in radius when need is set (even with a
+    // cuisine query) so Also nearby stays on-need instead of padding with chains.
+    const curatedExtra = need
+      ? ((await sql.query(
             `SELECT
                id, name, slug,
                ST_Distance(location, ST_SetSRID(ST_MakePoint($2,$1), 4326)::geography) AS distance_meters,
@@ -131,7 +131,7 @@ export async function GET(request: Request) {
              LIMIT 30`,
             [lat, lng, need, radiusMeters],
           )) as SearchRow[])
-        : [];
+      : [];
 
     const byId = new Map<string, SearchRow>();
     for (const r of [...rows, ...curatedExtra]) byId.set(r.id, r);

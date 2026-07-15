@@ -142,8 +142,12 @@ function cuisineMatchBonus(cuisine: string[], query: string): number {
     const cl = c.toLowerCase();
     if (tokens.some((t) => cl.includes(t) || t.includes(cl))) hit += 1;
   }
-  if (hit === 0) return 0;
-  return Math.min(18, 8 + hit * 5);
+  if (hit === 0) {
+    // Soft penalty so a "pizza" search doesn't lead with a GF bakery when
+    // curated GF pizza options exist — still keep them in Also nearby.
+    return -8;
+  }
+  return Math.min(42, 20 + hit * 12);
 }
 
 function distanceScore(meters: number): number {
@@ -168,7 +172,7 @@ function allergyScore(
     return { points: 0, matches: false };
   }
   const matches = (place.allergy_needs ?? []).includes(need);
-  if (!matches) return { points: -40, matches: false };
+  if (!matches) return { points: -55, matches: false };
   if (place.allergy_safety_tier === "dedicated") return { points: 55, matches: true };
   if (place.allergy_safety_tier === "strong_protocol") return { points: 38, matches: true };
   if (place.allergy_safety_tier === "shared_verify") return { points: 18, matches: true };
@@ -223,10 +227,28 @@ export function scorePlace(
 
   breakdown.cuisine = cuisineMatchBonus(place.cuisine_type ?? [], opts.query ?? "");
   breakdown.menu = place.menu_available ? 6 : 0;
-  breakdown.chain = is_chain ? -14 : 0;
 
   const allergy = allergyScore(place, opts.need);
   breakdown.allergy = allergy.points;
+
+  // Harder chain penalty when a dietary need is active — uncurated chains are noise.
+  if (opts.need && is_chain && !allergy.matches) {
+    breakdown.chain = -60;
+  } else {
+    breakdown.chain = is_chain ? -14 : 0;
+  }
+
+  // Drop unmatched mega-chains entirely when filtering by need
+  if (opts.need && is_chain && !allergy.matches) {
+    return {
+      score: -9999,
+      breakdown: { ...breakdown, chain_drop: -9999 },
+      hours,
+      is_chain,
+      matches_need: false,
+      drop: true,
+    };
+  }
 
   const score = Object.values(breakdown).reduce((a, b) => a + b, 0);
   return {
@@ -278,7 +300,20 @@ export function rankPlaces(
     return a.distance_meters - b.distance_meters;
   });
 
-  const top = scored.slice(0, limit);
+  let pool = scored;
+  if (opts.need) {
+    const curated = scored.filter((p) => p.matches_need);
+    // Prefer an allergy-relevant list: if we have curated hits, don't pad with
+    // uncurated local pizza/cafes (Rey's, random OSM) — keep Also nearby on-need.
+    if (curated.length >= 1) {
+      pool = curated;
+    } else {
+      // No curated hits — allow non-chain fillers only (chains already dropped)
+      pool = scored.filter((p) => !p.is_chain);
+    }
+  }
+
+  const top = pool.slice(0, limit);
   if (top[0]) {
     top[0].is_top_pick = true;
     if (opts.need && !top[0].why) {
