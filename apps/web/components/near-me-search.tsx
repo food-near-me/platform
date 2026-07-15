@@ -151,6 +151,29 @@ export function NearMeSearch() {
   const [results, setResults] = useState<NearMePlace[] | null>(null);
   const [meta, setMeta] = useState<NearMeResponse["metadata"] | null>(null);
 
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const n = params.get("need");
+      if (n && NEED_OPTIONS.some((o) => o.id === n)) setNeed(n);
+      if (params.get("open_now") === "1") setOpenNow(true);
+      const q = params.get("query");
+      if (q) setQuery(q);
+      // Deep links: jump straight into beachhead search
+      if (params.has("need") || params.has("browse")) {
+        setLoc({
+          status: "ready",
+          lat: BEACHHEAD.lat,
+          lng: BEACHHEAD.lng,
+          source: "fallback",
+          city: BEACHHEAD.city,
+        });
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   const useBeachhead = useCallback(() => {
     setLoc({
       status: "ready",

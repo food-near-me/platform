@@ -231,6 +231,11 @@ export function scorePlace(
   const allergy = allergyScore(place, opts.need);
   breakdown.allergy = allergy.points;
 
+  // Vague / placeholder addresses are weaker tips
+  if (place.address && /verify (current |nearest )?address/i.test(place.address)) {
+    breakdown.address_quality = -12;
+  }
+
   // Harder chain penalty when a dietary need is active — uncurated chains are noise.
   if (opts.need && is_chain && !allergy.matches) {
     breakdown.chain = -60;
