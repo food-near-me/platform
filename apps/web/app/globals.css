@@ -1663,7 +1663,17 @@ main.page {
   color: var(--fg-dim);
 }
 
-.place-verify a {
+.place-verify p a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.place-verify .btn {
+  color: var(--bg);
+}
+
+.place-verify .btn-ghost {
   color: var(--accent);
 }
 
