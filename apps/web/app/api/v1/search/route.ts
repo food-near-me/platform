@@ -48,7 +48,7 @@ export async function GET(request: Request) {
       throw error;
     }
 
-    const results = (data ?? []).map((restaurant) => {
+    const results = (data ?? []).map((restaurant: any) => {
       const menuAvailable = Boolean(restaurant.menu_available);
       const claimInvitation = buildClaimInvitation(
         restaurant.id,

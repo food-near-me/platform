@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { NeonDbClient } from "@/lib/db/compat";
 import {
   buildCanonicalMenuContent,
   loadSigningKeyFromEnv,
@@ -7,7 +7,7 @@ import {
 import type { MenuCategorySeed } from "./types";
 
 async function insertCategoriesAndItems(
-  supabase: SupabaseClient,
+  supabase: NeonDbClient,
   menuId: string,
   categories: MenuCategorySeed[],
 ): Promise<number> {
@@ -68,7 +68,7 @@ async function insertCategoriesAndItems(
 }
 
 async function deleteMenusByStatus(
-  supabase: SupabaseClient,
+  supabase: NeonDbClient,
   restaurantId: string,
   status: string,
 ): Promise<void> {
@@ -86,7 +86,7 @@ async function deleteMenusByStatus(
 }
 
 export async function refreshPublishedIndexedMenu(
-  supabase: SupabaseClient,
+  supabase: NeonDbClient,
   restaurantId: string,
   categories: MenuCategorySeed[],
   menuSource: string,
@@ -127,7 +127,7 @@ export async function refreshPublishedIndexedMenu(
 }
 
 export async function insertPublishedIndexedMenu(
-  supabase: SupabaseClient,
+  supabase: NeonDbClient,
   restaurantId: string,
   categories: MenuCategorySeed[],
   menuSource: string,
@@ -178,7 +178,7 @@ export async function insertPublishedIndexedMenu(
 }
 
 export async function insertPendingMenu(
-  supabase: SupabaseClient,
+  supabase: NeonDbClient,
   restaurantId: string,
   categories: MenuCategorySeed[],
 ): Promise<{ itemCount: number; menuId: string }> {
@@ -203,7 +203,7 @@ export async function insertPendingMenu(
 }
 
 async function pickCandidateMenuId(
-  supabase: SupabaseClient,
+  supabase: NeonDbClient,
   restaurantId: string,
 ): Promise<string | undefined> {
   const { data: pending } = await supabase
@@ -235,7 +235,7 @@ type MenuContentSnapshot = ReturnType<typeof buildCanonicalMenuContent>;
  * assert payload_hash matches.
  */
 async function loadCanonicalMenuContent(
-  supabase: SupabaseClient,
+  supabase: NeonDbClient,
   menuId: string,
   protocolVersion: string,
 ): Promise<MenuContentSnapshot> {
@@ -246,7 +246,7 @@ async function loadCanonicalMenuContent(
 
   if (catErr) throw new Error(`Failed to load categories for signing: ${catErr.message}`);
 
-  const categoryIds = (categories ?? []).map((c) => c.id);
+  const categoryIds = (categories ?? []).map((c: { id: string }) => c.id);
   let items: Array<Record<string, unknown>> = [];
   if (categoryIds.length > 0) {
     const { data: itemRows, error: itemErr } = await supabase
@@ -316,7 +316,7 @@ async function loadCanonicalMenuContent(
 const APPROVE_MAX_RETRIES = 3;
 
 export async function approveMenuVerification(
-  supabase: SupabaseClient,
+  supabase: NeonDbClient,
   restaurantId: string,
   signerEmail: string,
 ): Promise<{ menuId: string; alreadyVerified: boolean }> {

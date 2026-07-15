@@ -18,14 +18,12 @@
  * `distance_meters` from the response with an explanatory note).
  */
 
-import type { SupabaseClient } from "@supabase/supabase-js";
-
-import type { Database } from "@/lib/supabase/server";
+import type { NeonDbClient } from "@/lib/db/compat";
 
 export type RestaurantCoordinate = { lat: number; lng: number };
 
 export async function fetchRestaurantCoordinates(
-  supabase: SupabaseClient<Database>,
+  supabase: NeonDbClient,
   ids: readonly string[],
 ): Promise<Map<string, RestaurantCoordinate>> {
   const unique = Array.from(new Set(ids));
@@ -40,7 +38,8 @@ export async function fetchRestaurantCoordinates(
   }
 
   const map = new Map<string, RestaurantCoordinate>();
-  for (const row of data ?? []) {
+  const rows = Array.isArray(data) ? data : [];
+  for (const row of rows as { id: string; latitude: number; longitude: number }[]) {
     if (typeof row.latitude !== "number" || typeof row.longitude !== "number") continue;
     map.set(row.id, { lat: row.latitude, lng: row.longitude });
   }

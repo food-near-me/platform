@@ -1,17 +1,10 @@
-import { createClient } from "@supabase/supabase-js";
+import { createNeonDbClient, type NeonDbClient } from "@/lib/db/compat";
+import { isDatabaseConfigured } from "@/lib/db/neon";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-export function getSupabaseAdminClient() {
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error("Missing Supabase admin env vars");
+/** Server-side DB client (Neon). Name kept for call-site compatibility. */
+export function getSupabaseAdminClient(): NeonDbClient {
+  if (!isDatabaseConfigured()) {
+    throw new Error("Missing DATABASE_URL (Neon connection string)");
   }
-
-  return createClient(supabaseUrl, serviceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
+  return createNeonDbClient();
 }

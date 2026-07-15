@@ -398,7 +398,7 @@ export default async function McpUsagePage() {
                 <tbody>
                   {daily.map((d, i) => (
                     <tr key={`${d.day}-${d.tool_name}-${i}`} className="border-t border-zinc-800/60">
-                      <Td subtle mono>{d.day.slice(0, 10)}</Td>
+                      <Td subtle mono>{String(d.day).slice(0, 10)}</Td>
                       <Td mono>{d.tool_name}</Td>
                       <Td>
                         <span

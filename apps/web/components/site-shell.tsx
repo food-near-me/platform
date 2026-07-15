@@ -4,16 +4,30 @@ import type { ReactNode } from "react";
 type SiteShellProps = {
   children: ReactNode;
   crumb?: string;
+  /** consumer = diner-facing nav; restaurants = B2B pitch nav */
+  variant?: "consumer" | "restaurants";
   mobileCtaHref?: string;
   mobileCtaLabel?: string;
+  showMobileCta?: boolean;
 };
 
 export function SiteShell({
   children,
-  crumb = "infrastructure",
-  mobileCtaHref = "#launch-offer",
-  mobileCtaLabel = "Get free ADO audit",
+  crumb,
+  variant = "consumer",
+  mobileCtaHref,
+  mobileCtaLabel,
+  showMobileCta,
 }: SiteShellProps) {
+  const isConsumer = variant === "consumer";
+  const resolvedCrumb = crumb ?? (isConsumer ? "near me" : "infrastructure");
+  const resolvedMobileHref =
+    mobileCtaHref ?? (isConsumer ? "#near-me" : "#launch-offer");
+  const resolvedMobileLabel =
+    mobileCtaLabel ?? (isConsumer ? "Find food nearby" : "Get free ADO audit");
+  const resolvedShowMobile =
+    showMobileCta ?? (isConsumer ? false : true);
+
   return (
     <>
       <div className="bg-glow" aria-hidden />
@@ -30,24 +44,43 @@ export function SiteShell({
             </span>
           </Link>
           <span className="crumb">
-            / <b>{crumb}</b>
+            / <b>{resolvedCrumb}</b>
           </span>
           <span className="spacer" />
-          <span className="pill hide-sm">
-            <span className="dot live" aria-hidden />
-            agent-ready
-          </span>
-          <Link href="/tokenization" className="nav-link">
-            tokenization
-          </Link>
-          <Link href="/pricing" className="nav-link">
-            pricing
-          </Link>
+          {isConsumer ? (
+            <>
+              <Link href="/for-restaurants" className="nav-link hide-sm">
+                for restaurants
+              </Link>
+              <Link href="/docs" className="nav-link hide-sm">
+                docs
+              </Link>
+            </>
+          ) : (
+            <>
+              <span className="pill hide-sm">
+                <span className="dot live" aria-hidden />
+                agent-ready
+              </span>
+              <Link href="/" className="nav-link">
+                near me
+              </Link>
+              <Link href="/pricing" className="nav-link">
+                pricing
+              </Link>
+            </>
+          )}
         </header>
         <main className="page">{children}</main>
         <footer className="foot">
-          <span>© {new Date().getFullYear()} foodnear.me · Menu Protocol v1.0</span>
+          <span>© {new Date().getFullYear()} foodnear.me</span>
           <span>
+            <Link href="/for-restaurants">restaurants</Link>
+            {" · "}
+            <Link href="/pricing">pricing</Link>
+            {" · "}
+            <Link href="/docs">docs</Link>
+            {" · "}
             <Link href="/terms">terms</Link>
             {" · "}
             <Link href="/privacy">privacy</Link>
@@ -56,19 +89,17 @@ export function SiteShell({
             {" · "}
             <Link href="/support">support</Link>
             {" · "}
-            <a href="https://foodnear.me/openapi.json">openapi</a>
-            {" · "}
             <a href="https://foodnear.me/.well-known/mcp-server.json">mcp</a>
-            {" · "}
-            <a href="mailto:api@foodnear.me">api@foodnear.me</a>
           </span>
         </footer>
       </div>
-      <div className="mobile-cta">
-        <a href={mobileCtaHref} className="btn">
-          {mobileCtaLabel}
-        </a>
-      </div>
+      {resolvedShowMobile ? (
+        <div className="mobile-cta">
+          <a href={resolvedMobileHref} className="btn">
+            {resolvedMobileLabel}
+          </a>
+        </div>
+      ) : null}
     </>
   );
 }

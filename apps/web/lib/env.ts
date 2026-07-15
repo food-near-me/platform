@@ -1,7 +1,4 @@
-const REQUIRED_LEADS_ENV = [
-  "NEXT_PUBLIC_SUPABASE_URL",
-  "SUPABASE_SERVICE_ROLE_KEY",
-] as const;
+const REQUIRED_LEADS_ENV = ["DATABASE_URL"] as const;
 
 type RequiredLeadsEnv = (typeof REQUIRED_LEADS_ENV)[number];
 

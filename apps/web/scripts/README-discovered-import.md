@@ -6,16 +6,14 @@ Populate `verification_status = discovered` restaurants from public data.
 
 ## Prerequisites
 
-1. Supabase env in `apps/web/.env.local`:
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `SUPABASE_SERVICE_ROLE_KEY` (recommended for import)
+1. Neon env in `apps/web/.env.local`:
+   - `DATABASE_URL` (Neon connection string; HTTP driver works behind VPN)
 
-2. Apply migrations:
+2. Schema applied (includes discovered columns + `find_nearby_for_import` + `import_runs`):
 
 ```bash
-# From repo root — SQL Editor or:
-npm run db:migrate:discovered-layer
-npm run db:migrate:import-dedup   # M3 spatial dedup RPC + import_runs
+# From repo root:
+node --env-file=apps/web/.env.local scripts/apply-neon-schema.mjs
 ```
 
 ## Commands
@@ -38,10 +36,13 @@ npm run db:import:discovered:tier2
 npm run db:import:discovered:batch -- --preset=tier3-osm --pending-only --dry-run
 npm run db:import:discovered:tier3
 
-# Default: Williamsburg
+# Default: Miami (Florida beachhead)
 npm run db:import:discovered
 
-# Brooklyn borough (already run ~12k rows)
+# Explicit Miami
+npm run db:import:discovered:miami
+
+# Brooklyn borough (legacy NYC)
 npm run db:import:discovered:brooklyn
 
 # Other NYC boroughs

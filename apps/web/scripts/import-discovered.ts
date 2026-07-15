@@ -7,15 +7,14 @@
  *   npx tsx scripts/import-discovered.ts --list-regions
  *   npx tsx scripts/import-discovered.ts --dry-run
  *
- * Requires migrations:
- *   npm run db:migrate:discovered-layer
- *   npm run db:migrate:import-dedup
- * Env: NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (or anon for dev)
+ * Requires Neon schema (apply-neon-schema.mjs) including find_nearby_for_import + import_runs.
+ * Env: DATABASE_URL in apps/web/.env.local
  */
 
-import { createClient } from "@supabase/supabase-js";
 import * as dotenv from "dotenv";
 import * as path from "path";
+import { createNeonDbClient } from "../lib/db/compat";
+import { isDatabaseConfigured } from "../lib/db/neon";
 import {
   printHelp,
   printRegionList,
@@ -38,16 +37,12 @@ if (args.includes("--help")) {
 
 dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  console.error("Missing NEXT_PUBLIC_SUPABASE_URL or Supabase key in .env.local");
+if (!isDatabaseConfigured()) {
+  console.error("Missing DATABASE_URL in .env.local (Neon connection string)");
   process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createNeonDbClient();
 
 const NYC_INSPECTIONS_URL =
   "https://data.cityofnewyork.us/resource/43nn-pn8j.json";
@@ -97,6 +92,7 @@ type DiscoveredRow = {
   import_confidence: number;
   website_url: string | null;
   phone: string | null;
+  opening_hours: string | null;
   health_inspection_grade: string | null;
 };
 
@@ -255,6 +251,7 @@ function parseOsmElement(el: OverpassElement): DiscoveredRow | null {
     import_confidence: tags["addr:street"] ? 0.75 : 0.6,
     website_url: tags.website || tags["contact:website"] || null,
     phone: tags.phone || tags["contact:phone"] || null,
+    opening_hours: tags.opening_hours?.trim() || null,
     health_inspection_grade: null,
   };
 }
@@ -369,6 +366,7 @@ async function fetchNycOpenData(): Promise<DiscoveredRow[]> {
       import_confidence: 0.85,
       website_url: null,
       phone: null,
+      opening_hours: null,
       health_inspection_grade: row.grade?.trim() || null,
     });
   }
@@ -576,6 +574,7 @@ function rowToInsertPayload(row: DiscoveredRow, now: string) {
     last_external_update: now,
     website_url: row.website_url,
     phone: row.phone,
+    opening_hours: row.opening_hours,
     health_inspection_grade: row.health_inspection_grade,
   };
 }
@@ -600,6 +599,7 @@ async function applyEnrichment(
   } else if (row.source === "osm" && dup.source === "nyc_open_data") {
     if (row.website_url) updates.website_url = row.website_url;
     if (row.phone) updates.phone = row.phone;
+    if (row.opening_hours) updates.opening_hours = row.opening_hours;
     updates.import_confidence = Math.max(0.75, row.import_confidence);
   }
 

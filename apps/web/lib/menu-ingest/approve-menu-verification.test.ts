@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { NeonDbClient } from "@/lib/db/compat";
 
 import { approveMenuVerification } from "./insert-indexed-menu";
 
@@ -73,7 +73,7 @@ function makeQueryBuilder(takeNext: () => SelectScript) {
   return builder;
 }
 
-type FakeSupabase = SupabaseClient & {
+type FakeSupabase = NeonDbClient & {
   __rpcCalls: Array<{ name: string; args: Record<string, unknown> }>;
 };
 

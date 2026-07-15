@@ -1,34 +1,20 @@
-import {
-  createClient as createSupabaseClient,
-  type SupabaseClient,
-} from "@supabase/supabase-js";
-import type { VerificationStatus } from "@/lib/discovery/verification-status";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
 /**
- * Anon-key (RLS-enforced) Supabase client for server-side reads.
+ * Database client for server-side reads/writes.
  *
- * The generic argument is parameterised against the schema described
- * in this file so every `.from(...)` / `.rpc(...)` chain is type-checked:
- * column projections, filter predicates, and RPC arg/return shapes are
- * all known to the compiler. Service-role writes go through
- * `lib/supabase-admin.ts` instead.
+ * Historically this wrapped `@supabase/supabase-js`. It now returns a Neon
+ * HTTP adapter with the same `.from()` / `.rpc()` call shape so existing
+ * call sites keep working. Types below still describe the Postgres schema.
  */
-export function createClient(): SupabaseClient<Database> {
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error(
-      "Missing Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY",
-    );
-  }
 
-  return createSupabaseClient<Database>(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
+import type { VerificationStatus } from "@/lib/discovery/verification-status";
+import { createNeonDbClient, type NeonDbClient } from "@/lib/db/compat";
+import { isDatabaseConfigured } from "@/lib/db/neon";
+
+export function createClient(): NeonDbClient {
+  if (!isDatabaseConfigured()) {
+    throw new Error("Missing DATABASE_URL (Neon connection string)");
+  }
+  return createNeonDbClient();
 }
 
 export type MenuStatus = "draft" | "pending_approval" | "published";
@@ -37,21 +23,15 @@ type RestaurantRow = {
   id: string;
   name: string;
   slug: string;
-  /** PostGIS GEOGRAPHY(POINT, 4326) — opaque to TS, fetched via RPCs. */
   location: unknown;
   address: string | null;
   delivery_radius_miles: number;
   cuisine_type: string[];
   price_range: number | null;
   agent_score: number;
-  /**
-   * Three-tier trust ladder. Source of truth: `lib/discovery/verification-status.ts`.
-   * Kept in sync with the SQL CHECK constraint by `npm run check:enums`.
-   */
   verification_status: VerificationStatus;
   payment_methods: string[];
   dietary_certifications: string[];
-
   source: string | null;
   source_record_id: string | null;
   import_confidence: number | null;
@@ -60,11 +40,8 @@ type RestaurantRow = {
   website_url: string | null;
   phone: string | null;
   health_inspection_grade: string | null;
-
   created_at: string;
   updated_at: string;
-
-  /** tsvector — opaque to TS clients. */
   fts: unknown;
 };
 
@@ -76,8 +53,6 @@ type MenuRow = {
   signature_hash: string | null;
   signature_signer: string | null;
   signature_timestamp: string | null;
-  // fnm-v1 content-bound signature columns. NULL on legacy fnm-v0 signatures
-  // and on unsigned menus. See packages/menu-protocol/src/crypto.ts.
   payload_hash: string | null;
   signing_format: "fnm-v0" | "fnm-v1" | null;
   created_at: string;
@@ -102,8 +77,6 @@ type MenuItemRow = {
   currency: string;
   available: boolean;
   preparation_time_minutes: number | null;
-  // Full Menu Protocol v1.0 dietary flag set (9 flags). All default FALSE in
-  // the database; only flipped to TRUE on an explicit positive signal.
   dietary_vegetarian: boolean;
   dietary_vegan: boolean;
   dietary_gluten_free: boolean;
@@ -118,23 +91,9 @@ type MenuItemRow = {
   popularity_score: number;
   created_at: string;
   updated_at: string;
-  /** tsvector — opaque to TS clients. */
   fts: unknown;
 };
 
-/**
- * `Insert` and `Update` shapes for the public anon client.
- *
- * Anon writes are blocked by RLS (see `database/migrations/20260523_rls_hardening.sql`).
- * Insert/Update types are left intentionally permissive (`Partial<Row>`) so
- * service-role code paths that share the typed client signature do not
- * paint themselves into a corner; structural correctness for admin writes
- * is enforced by the admin client and database constraints.
- *
- * `Relationships: []` is required by `postgrest-js`'s `GenericTable` even
- * when we don't model foreign-key joins; otherwise the type system widens
- * `.from(...)` results to `never`.
- */
 type TableEntry<T> = {
   Row: T;
   Insert: Partial<T>;
@@ -168,46 +127,11 @@ export type Database = {
           distance_meters: number;
           agent_score: number;
           cuisine_type: string[];
-          verification_status: VerificationStatus;
+          verification_status: string;
           menu_available: boolean;
           data_source: string | null;
-        }[];
-      };
-      approve_menu_verification_atomic: {
-        Args: {
-          p_restaurant_id: string;
-          p_expected_menu_id: string;
-          p_signature_hash: string;
-          p_signature_signer: string;
-          p_signature_timestamp: string;
-          /** fnm-v1: SHA-256 of canonical menu content; NULL for legacy callers. */
-          p_payload_hash?: string | null;
-          /** fnm-v0 | fnm-v1; NULL falls back to fnm-v0 in the RPC. */
-          p_signing_format?: string | null;
-        };
-        Returns: {
-          menu_id: string | null;
-          already_verified: boolean;
-          menu_state_changed: boolean;
-        }[];
-      };
-      get_restaurant_coordinates: {
-        Args: {
-          p_ids: string[];
-        };
-        Returns: {
-          id: string;
-          latitude: number;
-          longitude: number;
         }[];
       };
     };
   };
 };
-
-// Convenience aliases for downstream code (tools, REST routes).
-export type Restaurant = RestaurantRow;
-export type Menu = MenuRow;
-export type MenuCategory = MenuCategoryRow;
-export type MenuItem = MenuItemRow;
-export type SearchRestaurantsRow = Database["public"]["Functions"]["search_restaurants_for_agents"]["Returns"][number];

@@ -15,22 +15,22 @@ const ibmMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "foodnear.me — AI-native food discovery infrastructure",
+  title: "foodnear.me — food near you",
   description:
-    "Get discovered by AI agents, pay lower fees than delivery platforms, and keep your customer relationship.",
+    "Find allergy-aware places to eat in Miami — curated kitchen notes, hours when we have them, no ads.",
   openGraph: {
-    title: "foodnear.me — AI-native food discovery infrastructure",
+    title: "foodnear.me — food near you",
     description:
-      "Get discovered by AI agents, pay lower fees than delivery platforms, and keep your customer relationship.",
+      "Find allergy-aware places to eat in Miami — curated kitchen notes, hours when we have them, no ads.",
     url: "https://foodnear.me",
     siteName: "foodnear.me",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "foodnear.me — AI-native food discovery infrastructure",
+    title: "foodnear.me — food near you",
     description:
-      "Get discovered by AI agents, pay lower fees than delivery platforms, and keep your customer relationship.",
+      "Find allergy-aware places to eat in Miami — curated kitchen notes, hours when we have them, no ads.",
   },
   alternates: {
     canonical: "https://foodnear.me",

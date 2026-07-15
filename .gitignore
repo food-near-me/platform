@@ -20,3 +20,5 @@ mcp-registry-auth
 *.log
 tmp/
 apps/web/scripts/data/probe-failure-cache.json
+.vercel
+.env*

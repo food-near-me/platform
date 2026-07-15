@@ -81,7 +81,7 @@ export default async function VerifyMenuPage({ searchParams }: PageProps) {
     .eq("menu_id", menu.id)
     .order("sort_order", { ascending: true });
 
-  const categoryIds = (categories ?? []).map((c) => c.id);
+  const categoryIds = (categories ?? []).map((c: { id: string }) => c.id);
 
   type MenuItemRow = {
     id: string;
@@ -167,7 +167,7 @@ export default async function VerifyMenuPage({ searchParams }: PageProps) {
         </div>
 
         <div className="max-h-[60vh] overflow-y-auto p-4 space-y-6">
-          {(categories ?? []).map((category) => (
+          {(categories ?? []).map((category: any) => (
             <div key={category.id} className="space-y-3">
               <h3 className="text-lg font-medium border-b border-zinc-100 pb-2">
                 {category.name}

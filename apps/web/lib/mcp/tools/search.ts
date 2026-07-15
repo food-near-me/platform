@@ -49,7 +49,7 @@ export async function searchRestaurants(input: SearchRestaurantsInput) {
     throw new Error(`Database error: ${error.message}`);
   }
 
-  const results = (data ?? []).slice(0, MAX_RESULTS).map((r) => {
+  const results = (data ?? []).slice(0, MAX_RESULTS).map((r: any) => {
     const menuAvailable = Boolean(r.menu_available);
     const claimInvitation = buildClaimInvitation(
       r.id,

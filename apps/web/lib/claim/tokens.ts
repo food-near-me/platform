@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { NeonDbClient } from "@/lib/db/compat";
 
 export type ClaimVerificationRecord = {
   id: string;
@@ -25,7 +25,7 @@ function claimTokenExpiry(): string {
 }
 
 export async function createClaimVerificationToken(
-  supabase: SupabaseClient,
+  supabase: NeonDbClient,
   restaurantId: string,
   email: string,
 ): Promise<{ token: string; expiresAt: string }> {
@@ -47,7 +47,7 @@ export async function createClaimVerificationToken(
 }
 
 export async function validateClaimVerificationToken(
-  supabase: SupabaseClient,
+  supabase: NeonDbClient,
   restaurantId: string,
   token: string | null | undefined,
 ): Promise<ClaimVerificationRecord | null> {
@@ -69,7 +69,7 @@ export async function validateClaimVerificationToken(
 }
 
 export async function consumeClaimVerificationToken(
-  supabase: SupabaseClient,
+  supabase: NeonDbClient,
   tokenId: string,
 ): Promise<void> {
   const { error } = await supabase

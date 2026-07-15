@@ -181,7 +181,7 @@ export async function POST(request: Request) {
         .from("menu_categories")
         .select("id")
         .eq("menu_id", pendingMenu.id);
-      const categoryIds = (categories ?? []).map((c) => c.id);
+      const categoryIds = (categories ?? []).map((c: { id: string }) => c.id);
       if (categoryIds.length > 0) {
         const { count } = await supabase
           .from("menu_items")
@@ -198,7 +198,7 @@ export async function POST(request: Request) {
         .from("menu_categories")
         .select("id")
         .eq("menu_id", publishedMenu.id);
-      const categoryIds = (categories ?? []).map((c) => c.id);
+      const categoryIds = (categories ?? []).map((c: { id: string }) => c.id);
       if (categoryIds.length > 0) {
         const { count } = await supabase
           .from("menu_items")

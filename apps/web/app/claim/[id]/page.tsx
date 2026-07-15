@@ -48,7 +48,7 @@ export default async function ClaimListingPage({ params }: PageProps) {
       .from("menu_categories")
       .select("id")
       .eq("menu_id", publishedMenu.id);
-    const categoryIds = (categories ?? []).map((category) => category.id);
+    const categoryIds = (categories ?? []).map((category: { id: string }) => category.id);
     if (categoryIds.length > 0) {
       const { count } = await supabase
         .from("menu_items")

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "defaultRegion": "williamsburg",
+  "defaultRegion": "miami",
   "regions": {
     "williamsburg": {
       "label": "Williamsburg, Brooklyn",
@@ -197,14 +197,15 @@
       "tier": 1,
       "status": "imported",
       "bbox": {
-        "south": 25.709,
-        "west": -80.319,
-        "north": 25.855,
-        "east": -80.139
+        "south": 25.55,
+        "west": -80.42,
+        "north": 25.95,
+        "east": -80.1
       },
       "dataSources": [
         "osm"
-      ]
+      ],
+      "notes": "Expanded 2026-07-15 for allergy beachhead (Gables, Kendall, Pinecrest, Miami Lakes, South Beach)"
     },
     "dc": {
       "label": "Washington DC",
