@@ -1898,6 +1898,31 @@ main.page {
   text-underline-offset: 2px;
 }
 
+.gf-cuban-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+  font-size: 1.05rem;
+  line-height: 1.45;
+  color: var(--fg-dim);
+}
+
+.gf-cuban-list a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.gf-cuban-note {
+  margin: var(--space-4) 0 0;
+  font-size: 0.9rem;
+  color: var(--fg-mute);
+  max-width: 40rem;
+}
+
 @media (max-width: 640px) {
   .near-me-panel {
     padding: var(--space-4);

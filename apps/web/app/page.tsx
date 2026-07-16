@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { GfCubanTip } from "@/components/gf-cuban-tip";
 import { NearMeSearch } from "@/components/near-me-search";
 import { SiteShell } from "@/components/site-shell";
 
@@ -30,6 +31,7 @@ export default function Home() {
   return (
     <SiteShell variant="consumer">
       <NearMeSearch />
+      <GfCubanTip />
       <section className="section">
         <div className="section-body full">
           <p className="near-me-secondary">

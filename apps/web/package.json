@@ -35,6 +35,7 @@
     "db:enrich:osm:dry-run": "tsx scripts/enrich-discovered-from-osm.ts --region=miami --dry-run",
     "db:seed:miami-allergy": "tsx scripts/seed-miami-allergy.ts",
     "db:seed:miami-allergy:dry-run": "tsx scripts/seed-miami-allergy.ts --dry-run",
+    "db:usage:near-me": "tsx scripts/near-me-usage.ts",
     "db:import:menu-indexed": "tsx scripts/import-menu-indexed.ts",
     "db:import:menu-indexed:dry-run": "tsx scripts/import-menu-indexed.ts --dry-run",
     "db:import:menu-indexed:website": "tsx scripts/import-menu-indexed-from-website.ts",
