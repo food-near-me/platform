@@ -22,6 +22,56 @@ const HOODS: Hood[] = [
   { name: "Upper Buena Vista", lat: 25.82, lng: -80.191, radiusKm: 0.9 },
 ];
 
+/** Chip list for near-me UI — recenter search on the hood centroid. */
+export type FilterNeighborhood = {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  /** Search radius when this hood is selected (miles). */
+  radiusMiles: number;
+};
+
+export const FILTER_NEIGHBORHOODS: FilterNeighborhood[] = [
+  { id: "brickell", name: "Brickell", lat: 25.7617, lng: -80.1918, radiusMiles: 2.2 },
+  { id: "wynwood", name: "Wynwood", lat: 25.801, lng: -80.199, radiusMiles: 2.0 },
+  { id: "design-district", name: "Design District", lat: 25.813, lng: -80.192, radiusMiles: 1.8 },
+  { id: "coral-gables", name: "Coral Gables", lat: 25.75, lng: -80.258, radiusMiles: 3.0 },
+  { id: "coconut-grove", name: "Coconut Grove", lat: 25.728, lng: -80.242, radiusMiles: 2.5 },
+  { id: "south-beach", name: "South Beach", lat: 25.7907, lng: -80.13, radiusMiles: 2.8 },
+  { id: "little-havana", name: "Little Havana", lat: 25.765, lng: -80.22, radiusMiles: 2.5 },
+  { id: "downtown", name: "Downtown", lat: 25.775, lng: -80.19, radiusMiles: 2.0 },
+  { id: "kendall", name: "Kendall", lat: 25.68, lng: -80.35, radiusMiles: 4.0 },
+];
+
+export function getFilterNeighborhood(
+  idOrName: string | null | undefined,
+): FilterNeighborhood | null {
+  if (!idOrName) return null;
+  const key = idOrName.trim().toLowerCase();
+  return (
+    FILTER_NEIGHBORHOODS.find(
+      (h) => h.id === key || h.name.toLowerCase() === key,
+    ) ?? null
+  );
+}
+
+/** True when address/coords best-effort label matches the selected hood. */
+export function matchesNeighborhoodFilter(
+  hoodName: string,
+  opts: { address?: string | null; lat?: number | null; lng?: number | null },
+): boolean {
+  const inferred = inferNeighborhood(opts);
+  if (!inferred) return false;
+  const a = inferred.toLowerCase();
+  const b = hoodName.toLowerCase();
+  if (a === b) return true;
+  // South Beach sits inside broader Miami Beach labeling
+  if (b === "south beach" && a === "miami beach") return true;
+  if (b === "miami beach" && a === "south beach") return true;
+  return false;
+}
+
 const ADDRESS_HINTS: Array<{ re: RegExp; name: string }> = [
   { re: /brickell/i, name: "Brickell" },
   { re: /coral gables|giralda|galiano|ponce de leon/i, name: "Coral Gables" },

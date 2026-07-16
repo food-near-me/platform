@@ -2,6 +2,11 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import {
+  FILTER_NEIGHBORHOODS,
+  getFilterNeighborhood,
+  type FilterNeighborhood,
+} from "@/lib/near-me/neighborhood";
 
 export const BEACHHEAD = {
   city: "Miami, FL",
@@ -53,6 +58,7 @@ type NearMeResponse = {
     radius_miles: number;
     need?: string | null;
     open_now?: boolean;
+    neighborhood?: string | null;
     curated_matches?: number;
     allergy_disclaimer?: string;
     ranking?: string;
@@ -74,6 +80,29 @@ function clientTimeZone(): string {
   } catch {
     return "America/New_York";
   }
+}
+
+function searchPoint(
+  loc: Extract<LocState, { status: "ready" }>,
+  hood: FilterNeighborhood | null,
+  needKey: string,
+): { lat: number; lng: number; city: string; radius: number; source: "geo" | "fallback" } {
+  if (hood) {
+    return {
+      lat: hood.lat,
+      lng: hood.lng,
+      city: hood.name,
+      radius: hood.radiusMiles,
+      source: "fallback",
+    };
+  }
+  return {
+    lat: loc.lat,
+    lng: loc.lng,
+    city: loc.city,
+    radius: needKey ? BEACHHEAD.allergyRadiusMiles : BEACHHEAD.radiusMiles,
+    source: loc.source,
+  };
 }
 
 function PlaceCard({ place, featured }: { place: NearMePlace; featured?: boolean }) {
@@ -145,6 +174,7 @@ export function NearMeSearch() {
   const [loc, setLoc] = useState<LocState>({ status: "idle" });
   const [query, setQuery] = useState("");
   const [need, setNeed] = useState("gluten_free");
+  const [neighborhoodId, setNeighborhoodId] = useState("");
   const [openNow, setOpenNow] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -159,8 +189,10 @@ export function NearMeSearch() {
       if (params.get("open_now") === "1") setOpenNow(true);
       const q = params.get("query");
       if (q) setQuery(q);
+      const hood = getFilterNeighborhood(params.get("neighborhood"));
+      if (hood) setNeighborhoodId(hood.id);
       // Deep links: jump straight into beachhead search
-      if (params.has("need") || params.has("browse")) {
+      if (params.has("need") || params.has("browse") || params.has("neighborhood")) {
         setLoc({
           status: "ready",
           lat: BEACHHEAD.lat,
@@ -209,29 +241,29 @@ export function NearMeSearch() {
 
   const runSearch = useCallback(
     async (
-      lat: number,
-      lng: number,
-      source: "geo" | "fallback",
-      city: string,
+      base: Extract<LocState, { status: "ready" }>,
       q: string,
       needKey: string,
       openNowOnly: boolean,
+      hoodId: string,
     ) => {
       setLoading(true);
       setError(null);
       try {
-        const radius = needKey ? BEACHHEAD.allergyRadiusMiles : BEACHHEAD.radiusMiles;
+        const hood = getFilterNeighborhood(hoodId);
+        const point = searchPoint(base, hood, needKey);
         const params = new URLSearchParams({
-          lat: String(lat),
-          lng: String(lng),
-          radius: String(radius),
-          city,
-          source,
+          lat: String(point.lat),
+          lng: String(point.lng),
+          radius: String(point.radius),
+          city: point.city,
+          source: point.source,
           query: q,
           tz: clientTimeZone(),
         });
         if (needKey) params.set("need", needKey);
         if (openNowOnly) params.set("open_now", "1");
+        if (hood) params.set("neighborhood", hood.id);
         const res = await fetch(`/api/v1/near-me?${params}`);
         const json = (await res.json()) as NearMeResponse & { error?: string };
         if (!res.ok) {
@@ -255,33 +287,57 @@ export function NearMeSearch() {
 
   useEffect(() => {
     if (loc.status !== "ready") return;
-    void runSearch(loc.lat, loc.lng, loc.source, loc.city, query, need, openNow);
+    void runSearch(loc, query, need, openNow, neighborhoodId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loc.status === "ready" ? `${loc.lat},${loc.lng},${loc.source}` : ""]);
 
-  function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (loc.status !== "ready") {
-      useBeachhead();
+  function ensureReadyThen(
+    fn: (base: Extract<LocState, { status: "ready" }>) => void,
+  ) {
+    if (loc.status === "ready") {
+      fn(loc);
       return;
     }
-    void runSearch(loc.lat, loc.lng, loc.source, loc.city, query, need, openNow);
+    const base = {
+      status: "ready" as const,
+      lat: BEACHHEAD.lat,
+      lng: BEACHHEAD.lng,
+      source: "fallback" as const,
+      city: BEACHHEAD.city,
+    };
+    setLoc(base);
+    fn(base);
+  }
+
+  function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    ensureReadyThen((base) => {
+      void runSearch(base, query, need, openNow, neighborhoodId);
+    });
   }
 
   function onNeedChange(next: string) {
     setNeed(next);
     if (loc.status === "ready") {
-      void runSearch(loc.lat, loc.lng, loc.source, loc.city, query, next, openNow);
+      void runSearch(loc, query, next, openNow, neighborhoodId);
     }
+  }
+
+  function onNeighborhoodChange(nextId: string) {
+    setNeighborhoodId(nextId);
+    ensureReadyThen((base) => {
+      void runSearch(base, query, need, openNow, nextId);
+    });
   }
 
   function onOpenNowChange(next: boolean) {
     setOpenNow(next);
     if (loc.status === "ready") {
-      void runSearch(loc.lat, loc.lng, loc.source, loc.city, query, need, next);
+      void runSearch(loc, query, need, next, neighborhoodId);
     }
   }
 
+  const activeHood = getFilterNeighborhood(neighborhoodId);
   const topPick = results?.find((p) => p.is_top_pick) ?? results?.[0] ?? null;
   const alsoNearby = results?.filter((p) => p.id !== topPick?.id) ?? [];
 
@@ -326,10 +382,19 @@ export function NearMeSearch() {
             )}
             {loc.status === "ready" && (
               <p className="near-me-status">
-                Searching <strong>{loc.city}</strong>
-                {loc.source === "fallback" ? " (beachhead)" : ""} ·{" "}
+                Searching <strong>{meta?.city ?? activeHood?.name ?? loc.city}</strong>
+                {activeHood
+                  ? " (neighborhood)"
+                  : loc.source === "fallback"
+                    ? " (beachhead)"
+                    : ""}{" "}
+                ·{" "}
                 {meta?.radius_miles ??
-                  (need ? BEACHHEAD.allergyRadiusMiles : BEACHHEAD.radiusMiles)}{" "}
+                  (activeHood
+                    ? activeHood.radiusMiles
+                    : need
+                      ? BEACHHEAD.allergyRadiusMiles
+                      : BEACHHEAD.radiusMiles)}{" "}
                 mi
               </p>
             )}
@@ -345,6 +410,28 @@ export function NearMeSearch() {
                 aria-pressed={need === opt.id}
               >
                 {opt.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="near-me-hoods" role="group" aria-label="Neighborhood">
+            <button
+              type="button"
+              className={`near-me-chip${neighborhoodId === "" ? " is-active" : ""}`}
+              onClick={() => onNeighborhoodChange("")}
+              aria-pressed={neighborhoodId === ""}
+            >
+              Any area
+            </button>
+            {FILTER_NEIGHBORHOODS.map((hood) => (
+              <button
+                key={hood.id}
+                type="button"
+                className={`near-me-chip${neighborhoodId === hood.id ? " is-active" : ""}`}
+                onClick={() => onNeighborhoodChange(hood.id)}
+                aria-pressed={neighborhoodId === hood.id}
+              >
+                {hood.name}
               </button>
             ))}
           </div>
@@ -380,7 +467,9 @@ export function NearMeSearch() {
             <p className="near-me-empty">
               No matches within {meta?.radius_miles ?? BEACHHEAD.radiusMiles} miles
               {query ? ` for “${query}”` : ""}
-              {need ? " with that need" : ""}. Try Any need, turn off Open now, or widen cuisine.
+              {need ? " with that need" : ""}
+              {activeHood ? ` in ${activeHood.name}` : ""}. Try Any area, Any need, or turn off
+              Open now.
             </p>
           )}
 

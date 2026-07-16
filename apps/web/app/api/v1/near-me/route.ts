@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSql, isDatabaseConfigured } from "@/lib/db/neon";
 import { buildSearchTrustNotice } from "@/lib/discovery/verification-status";
 import { telHref } from "@/lib/near-me/hours";
+import { getFilterNeighborhood } from "@/lib/near-me/neighborhood";
 import {
   isAllergyNeed,
   rankPlaces,
@@ -71,12 +72,18 @@ export async function GET(request: Request) {
   const need = needRaw && isAllergyNeed(needRaw) ? needRaw : null;
   const openNowOnly =
     searchParams.get("open_now") === "1" || searchParams.get("open_now") === "true";
-  const defaultRadius = need ? ALLERGY_RADIUS_MILES : DEFAULT_RADIUS_MILES;
+  const neighborhoodRaw = (searchParams.get("neighborhood") || "").trim();
+  const neighborhood = getFilterNeighborhood(neighborhoodRaw);
+  const defaultRadius = neighborhood
+    ? neighborhood.radiusMiles
+    : need
+      ? ALLERGY_RADIUS_MILES
+      : DEFAULT_RADIUS_MILES;
   const radiusMiles = Math.min(
     Math.max(parseFloat(searchParams.get("radius") || String(defaultRadius)), 0.5),
     20,
   );
-  const city = (searchParams.get("city") || "unknown").slice(0, 64);
+  const city = (searchParams.get("city") || neighborhood?.name || "unknown").slice(0, 64);
   const sourceParam = searchParams.get("source");
   const source = sourceParam === "geo" ? "geo" : "fallback";
   const timeZone = (searchParams.get("tz") || DEFAULT_TZ).slice(0, 64);
@@ -221,7 +228,7 @@ export async function GET(request: Request) {
         [
           city,
           source,
-          [need ? `need:${need}` : "", openNowOnly ? "open_now" : "", query]
+          [need ? `need:${need}` : "", openNowOnly ? "open_now" : "", neighborhood ? `hood:${neighborhood.id}` : "", query]
             .filter(Boolean)
             .join(" ")
             .slice(0, 80),
@@ -239,6 +246,7 @@ export async function GET(request: Request) {
         query,
         need,
         open_now: openNowOnly,
+        neighborhood: neighborhood?.name ?? null,
         city,
         source,
         location: { lat, lng },
