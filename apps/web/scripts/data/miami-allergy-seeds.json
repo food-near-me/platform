@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "region": "miami",
   "disclaimer": "Curated notes are not medical advice. Safety tiers describe kitchen mechanism, not a guarantee. Always verify with the restaurant before dining. Cross-check Find Me Gluten Free for high-stakes celiac decisions. Re-verify periodically — dedicated spots close and protocols change.",
   "places": [
@@ -11,11 +11,20 @@
       "address": "1250 S Miami Ave #105, Miami, FL 33130",
       "phone": "+17866717155",
       "website_url": "https://www.eattap.co/",
-      "cuisine_type": ["brazilian", "cafe", "acai", "gluten_free"],
+      "cuisine_type": [
+        "brazilian",
+        "cafe",
+        "acai",
+        "gluten_free"
+      ],
       "opening_hours": "Mo-Su 07:00-21:00",
-      "allergy_needs": ["gluten_free", "dairy_free", "vegetarian"],
+      "allergy_needs": [
+        "gluten_free",
+        "dairy_free",
+        "vegetarian"
+      ],
       "allergy_safety_tier": "dedicated",
-      "allergy_safety_note": "100% gluten-free Brazilian café (tapioca sandwiches, açaí, pão de queijo). Dedicated facility — a top Brickell pick for celiac. Confirm dairy/nut needs with staff."
+      "allergy_safety_note": "100% gluten-free Brazilian café (tapioca sandwiches, açaí, pão de queijo). Dedicated GF facility — top Brickell celiac pick. Confirm dairy/nut needs with staff (not a dedicated nut-free kitchen)."
     },
     {
       "name": "Dora's Bakery & Bistro",
@@ -25,9 +34,17 @@
       "address": "3822 SW 8th St, Coral Gables, FL 33134",
       "phone": "+13056657818",
       "website_url": "https://www.doraglutenfree.com/",
-      "cuisine_type": ["bakery", "cafe", "gluten_free", "cuban"],
+      "cuisine_type": [
+        "bakery",
+        "cafe",
+        "gluten_free",
+        "cuban"
+      ],
       "opening_hours": "Tu-Th 10:00-18:00; Fr-Sa 10:00-20:00; Su 10:00-18:00",
-      "allergy_needs": ["gluten_free", "dairy_free"],
+      "allergy_needs": [
+        "gluten_free",
+        "dairy_free"
+      ],
       "allergy_safety_tier": "dedicated",
       "allergy_safety_note": "Dedicated gluten-free bakery & bistro — the local answer for GF Cuban-style breads/pastries. Not a shared kitchen."
     },
@@ -39,11 +56,20 @@
       "address": "14395 SW 139th Ct Suite 102, Miami, FL 33186",
       "phone": "+17862503436",
       "website_url": "https://almotti.com/",
-      "cuisine_type": ["italian", "bakery", "gluten_free"],
+      "cuisine_type": [
+        "italian",
+        "bakery",
+        "gluten_free"
+      ],
       "opening_hours": "Tu-Sa 10:00-18:00; Su 10:00-15:00",
-      "allergy_needs": ["gluten_free", "dairy_free", "vegetarian"],
+      "allergy_needs": [
+        "gluten_free",
+        "dairy_free",
+        "vegetarian",
+        "nut_aware"
+      ],
       "allergy_safety_tier": "dedicated",
-      "allergy_safety_note": "100% dedicated gluten-free Italian bakery (certified). Pasta, breads, and pastries without shared-kitchen wheat risk. Facility also uses dairy/nuts/eggs — ask if those are your concern."
+      "allergy_safety_note": "100% dedicated gluten-free Italian bakery; also peanut-free per their FAQ. Tree nuts (almond/pistachio/hazelnut) ARE used on-site — ask before ordering if those are your concern. Dairy/eggs also present."
     },
     {
       "name": "Archetti's Boutique Bakery",
@@ -53,9 +79,17 @@
       "address": "5040 NE 2nd Ave, Miami, FL 33137",
       "phone": "+13058495259",
       "website_url": "https://www.archettisbakery.com/",
-      "cuisine_type": ["bakery", "dessert", "gluten_free"],
+      "cuisine_type": [
+        "bakery",
+        "dessert",
+        "gluten_free"
+      ],
       "opening_hours": "Mo-Su 08:00-20:00",
-      "allergy_needs": ["gluten_free", "dairy_free", "vegetarian"],
+      "allergy_needs": [
+        "gluten_free",
+        "dairy_free",
+        "vegetarian"
+      ],
       "allergy_safety_tier": "dedicated",
       "allergy_safety_note": "Dedicated zero-gluten artisan bakery (Upper Buena Vista). Owner-family celiac story; keto/vegan options exist — confirm dairy/nut handling for your need."
     },
@@ -67,9 +101,17 @@
       "address": "184 NE 50th Terrace, Miami, FL 33137",
       "phone": "+17542170918",
       "website_url": null,
-      "cuisine_type": ["ice_cream", "dessert", "gluten_free"],
+      "cuisine_type": [
+        "ice_cream",
+        "dessert",
+        "gluten_free"
+      ],
       "opening_hours": "Mo-We 12:00-22:00; Th-Sa 12:00-23:00; Su 12:00-22:00",
-      "allergy_needs": ["gluten_free", "dairy_free", "vegetarian"],
+      "allergy_needs": [
+        "gluten_free",
+        "dairy_free",
+        "vegetarian"
+      ],
       "allergy_safety_tier": "dedicated",
       "allergy_safety_note": "100% gluten-free gelato/ice cream shop next to Archetti's. Designed for dietary restrictions — still ask about dairy and nut flavors."
     },
@@ -81,9 +123,15 @@
       "address": "156 NE 41st St, Miami, FL 33137",
       "phone": "+17865988848",
       "website_url": "https://www.naminori.us/design-district",
-      "cuisine_type": ["japanese", "sushi", "gluten_free"],
+      "cuisine_type": [
+        "japanese",
+        "sushi",
+        "gluten_free"
+      ],
       "opening_hours": "Mo-Sa 12:00-16:00,17:00-22:00; Su 12:00-19:00",
-      "allergy_needs": ["gluten_free"],
+      "allergy_needs": [
+        "gluten_free"
+      ],
       "allergy_safety_tier": "dedicated",
       "allergy_safety_note": "Hand-roll sushi treated as a rare dedicated celiac-friendly sushi option in Miami. Confirm soy/sauce protocols — do not assume every add-on is safe."
     },
@@ -95,9 +143,18 @@
       "address": "7880 SW 104th St #101, Miami, FL 33156",
       "phone": "+17868009835",
       "website_url": "https://bolay.com/locations/pinecrest",
-      "cuisine_type": ["healthy", "bowls", "american", "gluten_free"],
+      "cuisine_type": [
+        "healthy",
+        "bowls",
+        "american",
+        "gluten_free"
+      ],
       "opening_hours": "Mo-Su 10:30-21:00",
-      "allergy_needs": ["gluten_free", "dairy_free", "vegetarian"],
+      "allergy_needs": [
+        "gluten_free",
+        "dairy_free",
+        "vegetarian"
+      ],
       "allergy_safety_tier": "dedicated",
       "allergy_safety_note": "Build-your-own bowls in a dedicated gluten-free kitchen. Strong everyday pick for sensitive diners — confirm other allergens day-of."
     },
@@ -109,9 +166,18 @@
       "address": "15141 NW 67th Ave, Miami Lakes, FL 33014",
       "phone": "+17866880710",
       "website_url": "https://bolay.com/locations/miami-lakes",
-      "cuisine_type": ["healthy", "bowls", "american", "gluten_free"],
+      "cuisine_type": [
+        "healthy",
+        "bowls",
+        "american",
+        "gluten_free"
+      ],
       "opening_hours": "Mo-Su 10:45-21:00",
-      "allergy_needs": ["gluten_free", "dairy_free", "vegetarian"],
+      "allergy_needs": [
+        "gluten_free",
+        "dairy_free",
+        "vegetarian"
+      ],
       "allergy_safety_tier": "dedicated",
       "allergy_safety_note": "Same dedicated Bolay concept north of the city. Confirm with staff before ordering."
     },
@@ -123,9 +189,16 @@
       "address": "600 NW 1st Ave, MiamiCentral Brightline, Miami, FL 33136",
       "phone": "+17864021732",
       "website_url": "https://www.stephaniescrepes.com/",
-      "cuisine_type": ["crepes", "cafe", "gluten_free"],
+      "cuisine_type": [
+        "crepes",
+        "cafe",
+        "gluten_free"
+      ],
       "opening_hours": "Mo-Fr 07:30-19:00; Sa-Su 09:30-19:00",
-      "allergy_needs": ["gluten_free", "vegetarian"],
+      "allergy_needs": [
+        "gluten_free",
+        "vegetarian"
+      ],
       "allergy_safety_tier": "dedicated",
       "allergy_safety_note": "Every crêpe made with 100% gluten-free batter (all locations). Brightline MiamiCentral — open to the public. Confirm dairy fillings if needed."
     },
@@ -137,9 +210,16 @@
       "address": "2423 Galiano St, Coral Gables, FL 33134",
       "phone": "+17866368939",
       "website_url": "https://www.stephaniescrepes.com/",
-      "cuisine_type": ["crepes", "cafe", "gluten_free"],
+      "cuisine_type": [
+        "crepes",
+        "cafe",
+        "gluten_free"
+      ],
       "opening_hours": "Mo-Th 12:00-00:00; Fr-Sa 09:00-02:00; Su 09:00-00:00",
-      "allergy_needs": ["gluten_free", "vegetarian"],
+      "allergy_needs": [
+        "gluten_free",
+        "vegetarian"
+      ],
       "allergy_safety_tier": "dedicated",
       "allergy_safety_note": "Same Stephanie's gluten-free batter concept near Miracle Mile. Dedicated GF batter — still ask about fillings and shared toppings."
     },
@@ -151,9 +231,16 @@
       "address": "723 Lincoln Ln S Booth 110, Miami Beach, FL 33139",
       "phone": "+17864021732",
       "website_url": "https://www.stephaniescrepes.com/",
-      "cuisine_type": ["crepes", "cafe", "gluten_free"],
+      "cuisine_type": [
+        "crepes",
+        "cafe",
+        "gluten_free"
+      ],
       "opening_hours": "Mo-Th 09:00-18:00; Fr-Su 09:00-20:00",
-      "allergy_needs": ["gluten_free", "vegetarian"],
+      "allergy_needs": [
+        "gluten_free",
+        "vegetarian"
+      ],
       "allergy_safety_tier": "dedicated",
       "allergy_safety_note": "South Beach Stephanie's inside The Lincoln Eatery — 100% gluten-free crêpe batter. Handy near Lincoln Road for a dedicated GF stop."
     },
@@ -165,11 +252,21 @@
       "address": "6678 Stirling Rd, Hollywood, FL 33024",
       "phone": "+19543228291",
       "website_url": "https://www.sweetlovepastries.com/",
-      "cuisine_type": ["bakery", "gluten_free", "vegan", "kosher"],
+      "cuisine_type": [
+        "bakery",
+        "gluten_free",
+        "vegan",
+        "kosher"
+      ],
       "opening_hours": "Tu-Fr 10:00-18:00; Su 10:00-14:00",
-      "allergy_needs": ["gluten_free", "dairy_free", "vegetarian"],
+      "allergy_needs": [
+        "gluten_free",
+        "dairy_free",
+        "vegetarian",
+        "nut_aware"
+      ],
       "allergy_safety_tier": "dedicated",
-      "allergy_safety_note": "Dedicated kosher gluten-free bakery (also soy-free / peanut-free; many vegan options). Hollywood / Broward — confirm dairy/nut products day-of."
+      "allergy_safety_note": "Dedicated kosher gluten-free bakery that also states soy-free and peanut-free (many vegan options). Hollywood / Broward. Confirm tree-nut handling day-of — protocols can change."
     },
     {
       "name": "Pizza Fusion",
@@ -179,9 +276,15 @@
       "address": "1115 5th St, Miami Beach, FL 33139",
       "phone": "+13056727778",
       "website_url": "https://pizzafusion.com",
-      "cuisine_type": ["pizza", "american"],
+      "cuisine_type": [
+        "pizza",
+        "american"
+      ],
       "opening_hours": "Mo-Su 11:00-22:00",
-      "allergy_needs": ["gluten_free", "vegetarian"],
+      "allergy_needs": [
+        "gluten_free",
+        "vegetarian"
+      ],
       "allergy_safety_tier": "strong_protocol",
       "allergy_safety_note": "Strong GF pizza protocols and allergy-aware menu — NOT a dedicated facility. Residual shared-kitchen risk; better for 'GF options' than hyper-sensitive celiac. Confirm the Miami Beach shop is open before you go."
     },
@@ -193,11 +296,18 @@
       "address": "1003 S University Dr, Plantation, FL 33324",
       "phone": "+17549000077",
       "website_url": "https://burtonsgrill.com/locations/fl/plantation/",
-      "cuisine_type": ["american", "grill"],
+      "cuisine_type": [
+        "american",
+        "grill"
+      ],
       "opening_hours": "Mo-Th 11:00-22:00; Fr-Sa 11:00-23:00; Su 11:00-21:00",
-      "allergy_needs": ["gluten_free", "nut_aware", "dairy_free"],
+      "allergy_needs": [
+        "gluten_free",
+        "nut_aware",
+        "dairy_free"
+      ],
       "allergy_safety_tier": "strong_protocol",
-      "allergy_safety_note": "Well-known allergy-trained program (Broward / Plantation). Shared kitchen — not dedicated. Useful when you need trained staff protocols north of Miami-Dade."
+      "allergy_safety_note": "Allergy-trained program; restaurants are 100% peanut-free brand-wide with written allergy protocols (AllergyEats standout). Shared kitchen for other allergens — not a dedicated nut-free facility for tree nuts. Confirm tree-nut dishes day-of."
     },
     {
       "name": "True Food Kitchen",
@@ -207,9 +317,17 @@
       "address": "8888 SW 136th St Suite 340A, Miami, FL 33176",
       "phone": "+19545859933",
       "website_url": "https://www.truefoodkitchen.com/restaurants/miami/",
-      "cuisine_type": ["healthy", "american", "vegetarian"],
+      "cuisine_type": [
+        "healthy",
+        "american",
+        "vegetarian"
+      ],
       "opening_hours": "Mo-Th 11:00-21:00; Fr 11:00-22:00; Sa 10:00-22:00; Su 10:00-21:00",
-      "allergy_needs": ["gluten_free", "vegetarian", "dairy_free"],
+      "allergy_needs": [
+        "gluten_free",
+        "vegetarian",
+        "dairy_free"
+      ],
       "allergy_safety_tier": "strong_protocol",
       "allergy_safety_note": "Allergy-aware national brand at The Falls (Kendall) with GF-marked plates and vegetarian options. Shared kitchen — confirm cross-contact practices for your need."
     },
@@ -221,9 +339,17 @@
       "address": "1001 S Miami Ave, Miami, FL 33131",
       "phone": "+13056779418",
       "website_url": "https://www.iamaflowerchild.com",
-      "cuisine_type": ["healthy", "bowls", "vegetarian"],
+      "cuisine_type": [
+        "healthy",
+        "bowls",
+        "vegetarian"
+      ],
       "opening_hours": "Mo-Su 10:30-21:00",
-      "allergy_needs": ["gluten_free", "vegetarian", "dairy_free"],
+      "allergy_needs": [
+        "gluten_free",
+        "vegetarian",
+        "dairy_free"
+      ],
       "allergy_safety_tier": "strong_protocol",
       "allergy_safety_note": "Build bowls with GF grains/proteins marked on menu. Shared prep — ask about fryer and sauce cross-contact if highly sensitive."
     },
@@ -235,9 +361,18 @@
       "address": "701 Brickell Ave, Miami, FL 33131",
       "phone": "+13055354142",
       "website_url": "https://www.puravidamiami.com/",
-      "cuisine_type": ["healthy", "cafe", "acai", "vegetarian"],
+      "cuisine_type": [
+        "healthy",
+        "cafe",
+        "acai",
+        "vegetarian"
+      ],
       "opening_hours": "Mo-Su 07:00-20:00",
-      "allergy_needs": ["vegetarian", "dairy_free", "gluten_free"],
+      "allergy_needs": [
+        "vegetarian",
+        "dairy_free",
+        "gluten_free"
+      ],
       "allergy_safety_tier": "strong_protocol",
       "allergy_safety_note": "Menu flags vegan and gluten-friendly items. Shared café kitchen — good for preference/flex needs; celiac should confirm prep and oats/granola cross-contact."
     },
@@ -249,9 +384,18 @@
       "address": "1104 S Miami Ave, Miami, FL 33130",
       "phone": "+13055354142",
       "website_url": "https://www.puravidamiami.com/locations/florida/brickellmillecento",
-      "cuisine_type": ["healthy", "cafe", "acai", "vegetarian"],
+      "cuisine_type": [
+        "healthy",
+        "cafe",
+        "acai",
+        "vegetarian"
+      ],
       "opening_hours": "Mo-Su 07:00-20:00",
-      "allergy_needs": ["vegetarian", "dairy_free", "gluten_free"],
+      "allergy_needs": [
+        "vegetarian",
+        "dairy_free",
+        "gluten_free"
+      ],
       "allergy_safety_tier": "strong_protocol",
       "allergy_safety_note": "Same Pura Vida gluten-friendly / vegan-flagged menu near Mary Brickell Village. Shared kitchen — verify if highly sensitive."
     },
@@ -263,9 +407,17 @@
       "address": "3201 N Miami Ave Suite 103, Miami, FL 33127",
       "phone": "+13052396005",
       "website_url": "https://www.eatfreshkitchen.com/locations/miami",
-      "cuisine_type": ["healthy", "bowls", "american"],
+      "cuisine_type": [
+        "healthy",
+        "bowls",
+        "american"
+      ],
       "opening_hours": "Mo-Su 11:00-21:00",
-      "allergy_needs": ["gluten_free", "dairy_free", "vegetarian"],
+      "allergy_needs": [
+        "gluten_free",
+        "dairy_free",
+        "vegetarian"
+      ],
       "allergy_safety_tier": "strong_protocol",
       "allergy_safety_note": "Fast-casual bowls frequently cited by Miami celiac community. Treat as strong protocols / verify dedicated claims per location — do not assume every franchise kitchen is identical."
     },
@@ -277,9 +429,15 @@
       "address": "1506 NW 2nd Ave, Miami, FL 33136",
       "phone": "+17865802479",
       "website_url": "https://taquiza.com/",
-      "cuisine_type": ["mexican", "tacos"],
+      "cuisine_type": [
+        "mexican",
+        "tacos"
+      ],
       "opening_hours": "Mo-Su 12:00-23:00",
-      "allergy_needs": ["gluten_free", "vegetarian"],
+      "allergy_needs": [
+        "gluten_free",
+        "vegetarian"
+      ],
       "allergy_safety_tier": "strong_protocol",
       "allergy_safety_note": "Nixtamal corn tortillas — strong natural GF base. Still a busy shared kitchen; confirm fryers/sauces if highly sensitive."
     },
@@ -291,9 +449,16 @@
       "address": "3112 Commodore Plaza, Miami, FL 33133",
       "phone": "+17868508226",
       "website_url": "https://bartaco.com/location/coconut-grove/",
-      "cuisine_type": ["mexican", "tacos"],
+      "cuisine_type": [
+        "mexican",
+        "tacos"
+      ],
       "opening_hours": "Mo-We 11:00-23:00; Th-Sa 11:00-00:00; Su 11:00-23:00",
-      "allergy_needs": ["gluten_free", "vegetarian", "dairy_free"],
+      "allergy_needs": [
+        "gluten_free",
+        "vegetarian",
+        "dairy_free"
+      ],
       "allergy_safety_tier": "strong_protocol",
       "allergy_safety_note": "Corn-tortilla taco concept with allergy-aware national protocols. Shared kitchen — not dedicated."
     },
@@ -305,9 +470,16 @@
       "address": "150 NE 8th St Suite 135, Miami, FL 33132",
       "phone": "+17866077846",
       "website_url": "https://www.sixtyvines.com/locations/miami",
-      "cuisine_type": ["american", "wine_bar", "pizza"],
+      "cuisine_type": [
+        "american",
+        "wine_bar",
+        "pizza"
+      ],
       "opening_hours": "Mo-Th 11:00-22:00; Fr-Sa 11:00-23:00; Su 11:00-22:00",
-      "allergy_needs": ["gluten_free", "vegetarian"],
+      "allergy_needs": [
+        "gluten_free",
+        "vegetarian"
+      ],
       "allergy_safety_tier": "strong_protocol",
       "allergy_safety_note": "Wine-bar American at Miami Worldcenter with GF pizza/pasta options commonly noted by diners. Shared kitchen — confirm prep for celiac."
     },
@@ -319,9 +491,14 @@
       "address": "3555 SW 8th St, Miami, FL 33135",
       "phone": "+13054440247",
       "website_url": "https://versaillesrestaurant.com",
-      "cuisine_type": ["cuban", "latin_american"],
+      "cuisine_type": [
+        "cuban",
+        "latin_american"
+      ],
       "opening_hours": "Mo-Su 08:00-01:00",
-      "allergy_needs": ["gluten_free"],
+      "allergy_needs": [
+        "gluten_free"
+      ],
       "allergy_safety_tier": "shared_verify",
       "allergy_safety_note": "Iconic Cuban — some plates can work gluten-free, but it is a SHARED kitchen with flour everywhere. Call ahead; higher risk for celiac. Traditional Cuban bread/croquetas are wheat — go to Dora's or Almotti for GF versions."
     },
@@ -333,9 +510,15 @@
       "address": "2542 SW 27th Ave, Miami, FL 33133",
       "phone": null,
       "website_url": null,
-      "cuisine_type": ["cuban", "cafe", "late_night"],
+      "cuisine_type": [
+        "cuban",
+        "cafe",
+        "late_night"
+      ],
       "opening_hours": "Mo-Su 00:00-24:00",
-      "allergy_needs": ["gluten_free"],
+      "allergy_needs": [
+        "gluten_free"
+      ],
       "allergy_safety_tier": "shared_verify",
       "allergy_safety_note": "24/7 ventanita useful for late-night context only. Croquettes are floured (NOT GF). Shared kitchen — verify, higher risk."
     },
@@ -347,11 +530,18 @@
       "address": "2300 NW 2nd Ave, Miami, FL 33127",
       "phone": "+13055738228",
       "website_url": "https://www.coyo-taco.com/restaurants/wynwood",
-      "cuisine_type": ["mexican", "tacos"],
+      "cuisine_type": [
+        "mexican",
+        "tacos"
+      ],
       "opening_hours": "Mo-We 11:00-02:00; Th-Su 11:00-03:00",
-      "allergy_needs": ["gluten_free", "vegetarian"],
+      "allergy_needs": [
+        "gluten_free",
+        "vegetarian",
+        "nut_aware"
+      ],
       "allergy_safety_tier": "shared_verify",
-      "allergy_safety_note": "Corn tortillas help many GF diners, but shared kitchen / fryers. Verify sauces and prep — not a dedicated facility."
+      "allergy_safety_note": "Corn tortillas help many GF diners. Nut-allergic diners on Spokin report safe visits when staff are told — still a shared kitchen / fryers. Verify sauces and prep; not a dedicated nut-free facility."
     },
     {
       "name": "My Ceviche",
@@ -361,9 +551,16 @@
       "address": "1250 S Miami Ave, Miami, FL 33130",
       "phone": "+13059607825",
       "website_url": "https://myceviche.com/",
-      "cuisine_type": ["seafood", "latin_american", "ceviche"],
+      "cuisine_type": [
+        "seafood",
+        "latin_american",
+        "ceviche"
+      ],
       "opening_hours": "Mo-Th 11:30-22:00; Fr-Sa 11:30-23:00; Su 11:30-22:00",
-      "allergy_needs": ["gluten_free", "dairy_free"],
+      "allergy_needs": [
+        "gluten_free",
+        "dairy_free"
+      ],
       "allergy_safety_tier": "shared_verify",
       "allergy_safety_note": "Ceviche/seafood bowls are often naturally wheat-light, but shared prep and marinades vary. Ask about crackers, soy, and fryer oil — not a dedicated kitchen. Confirm Brickell is open (South Beach has been under renovation)."
     },
@@ -375,9 +572,15 @@
       "address": "2390 NW 2nd Ave, Miami, FL 33127",
       "phone": "+13056773952",
       "website_url": "https://www.panthercoffee.com",
-      "cuisine_type": ["coffee", "cafe"],
+      "cuisine_type": [
+        "coffee",
+        "cafe"
+      ],
       "opening_hours": "Mo-Su 07:00-19:00",
-      "allergy_needs": ["dairy_free", "vegetarian"],
+      "allergy_needs": [
+        "dairy_free",
+        "vegetarian"
+      ],
       "allergy_safety_tier": "shared_verify",
       "allergy_safety_note": "Coffee shop with plant-milk options. Not an allergy kitchen — ask about milk steamer cross-contact if dairy-allergic."
     },
@@ -389,11 +592,192 @@
       "address": "2775 NW 3rd Ave, Miami, FL 33127",
       "phone": "+17868038070",
       "website_url": "https://www.jajajamexicana.com/wynwood-miami-fl",
-      "cuisine_type": ["mexican", "vegan", "vegetarian"],
+      "cuisine_type": [
+        "mexican",
+        "vegan",
+        "vegetarian"
+      ],
       "opening_hours": "Mo-Tu 11:00-21:00; We 11:00-22:00; Th 11:00-23:00; Fr-Sa 11:00-00:00; Su 11:00-22:00",
-      "allergy_needs": ["vegetarian", "dairy_free", "gluten_free"],
+      "allergy_needs": [
+        "vegetarian",
+        "dairy_free",
+        "gluten_free"
+      ],
       "allergy_safety_tier": "shared_verify",
       "allergy_safety_note": "Plant-based Mexican — strong for vegetarian/dairy-free. Shared kitchen; vegan ≠ dedicated gluten-free — confirm tortillas and fryers."
+    },
+    {
+      "name": "Bodega Taqueria y Tequila",
+      "slug": "bodega-taqueria-south-beach-allergy",
+      "lat": 25.7888,
+      "lng": -80.1435,
+      "address": "1220 16th St, Miami Beach, FL 33139",
+      "phone": "+13057042145",
+      "website_url": "https://www.bodegataqueria.com/location/southbeach/",
+      "cuisine_type": [
+        "mexican",
+        "tacos",
+        "tequila"
+      ],
+      "opening_hours": "Su-We 11:30-01:00; Th-Sa 11:30-03:00",
+      "allergy_needs": [
+        "nut_aware",
+        "dairy_free",
+        "gluten_free"
+      ],
+      "allergy_safety_tier": "strong_protocol",
+      "allergy_safety_note": "Nut-allergic diners report kitchen has no nuts except Nutella. Corn tortillas; many tacos modifiable dairy-free. Shared kitchen — disclose peanut/tree-nut allergy and avoid Nutella items."
+    },
+    {
+      "name": "Bodega Taqueria y Tequila",
+      "slug": "bodega-taqueria-coconut-grove-allergy",
+      "lat": 25.7275,
+      "lng": -80.2412,
+      "address": "3419 Main Hwy, Coconut Grove, FL 33133",
+      "phone": "+13057043674",
+      "website_url": "https://www.bodegataqueria.com/location/coconutgrove/",
+      "cuisine_type": [
+        "mexican",
+        "tacos",
+        "tequila"
+      ],
+      "opening_hours": "Su-We 11:30-01:00; Th-Sa 11:30-03:00",
+      "allergy_needs": [
+        "nut_aware",
+        "dairy_free",
+        "gluten_free"
+      ],
+      "allergy_safety_tier": "strong_protocol",
+      "allergy_safety_note": "Same Bodega concept as South Beach — nut-allergic diners cite no nuts in-house except Nutella. Shared kitchen; disclose allergy and skip Nutella desserts/sauces."
+    },
+    {
+      "name": "Mister O1 Extraordinary Pizza",
+      "slug": "mister-o1-brickell-allergy",
+      "lat": 25.7658,
+      "lng": -80.1932,
+      "address": "900 S Miami Ave Suite 130, Miami, FL 33130",
+      "phone": "+13059021605",
+      "website_url": "https://mistero1.com/",
+      "cuisine_type": [
+        "pizza",
+        "italian"
+      ],
+      "opening_hours": "Mo-Th 11:30-23:00; Fr 11:30-00:00; Sa 12:00-00:00; Su 12:00-23:00",
+      "allergy_needs": [
+        "nut_aware",
+        "vegetarian"
+      ],
+      "allergy_safety_tier": "strong_protocol",
+      "allergy_safety_note": "Nut-allergic diners report savory pizzas are free of peanut/tree nuts; Nutella appears only on dessert pizza. Shared kitchen — tell staff and skip Nutella pies. Not a dedicated nut-free facility."
+    },
+    {
+      "name": "Aubi & Ramsa",
+      "slug": "aubi-ramsa-design-district-allergy",
+      "lat": 25.8138,
+      "lng": -80.1925,
+      "address": "172 NE 41st St, Miami, FL 33137",
+      "phone": null,
+      "website_url": "https://aubiramsa.com/",
+      "cuisine_type": [
+        "ice_cream",
+        "dessert"
+      ],
+      "opening_hours": "Mo-Th 12:00-21:00; Fr-Sa 12:00-23:00; Su 12:00-19:00",
+      "allergy_needs": [
+        "nut_aware",
+        "dairy_free",
+        "vegetarian"
+      ],
+      "allergy_safety_tier": "strong_protocol",
+      "allergy_safety_note": "21+ alcoholic ice cream; servings individually packaged with clear nut labeling. Strong cross-contact control vs scoop shops — still read labels; some flavors contain nuts. Vegan/sorbet options exist."
+    },
+    {
+      "name": "Barton G. The Restaurant",
+      "slug": "barton-g-miami-beach-allergy",
+      "lat": 25.7865,
+      "lng": -80.1428,
+      "address": "1427 West Ave, Miami Beach, FL 33139",
+      "phone": "+13056728881",
+      "website_url": "https://www.bartong.com/restaurants/miami-beach/",
+      "cuisine_type": [
+        "american",
+        "steak",
+        "seafood"
+      ],
+      "opening_hours": "Su-Th 18:00-22:00; Fr-Sa 18:00-23:00",
+      "allergy_needs": [
+        "nut_aware",
+        "dairy_free"
+      ],
+      "allergy_safety_tier": "strong_protocol",
+      "allergy_safety_note": "Repeat Spokin praise for multi-allergy accommodation; diners note no nuts in the fryer. Shared kitchen with dairy cross-contact risk on desserts. Disclose peanut/tree-nut needs — not a dedicated facility."
+    },
+    {
+      "name": "Carrot Express",
+      "slug": "carrot-express-brickell-allergy",
+      "lat": 25.7605,
+      "lng": -80.1915,
+      "address": "1111 Brickell Ave, Miami, FL 33131",
+      "phone": "+17867622607",
+      "website_url": "https://carrotexpress.com/locations/brickell-breakfast/",
+      "cuisine_type": [
+        "healthy",
+        "bowls",
+        "juice",
+        "vegetarian"
+      ],
+      "opening_hours": "Mo-Su 07:00-20:45",
+      "allergy_needs": [
+        "nut_aware",
+        "gluten_free",
+        "vegetarian",
+        "dairy_free"
+      ],
+      "allergy_safety_tier": "shared_verify",
+      "allergy_safety_note": "Fast-casual healthy bowls; Spokin diners with tree-nut allergies report accommodation. Shared prep / toppings bar risk — tell staff and watch granola/nut toppings. Not dedicated."
+    },
+    {
+      "name": "Chipotle Mexican Grill",
+      "slug": "chipotle-brickell-allergy",
+      "lat": 25.7652,
+      "lng": -80.1935,
+      "address": "891 S Miami Ave, Miami, FL 33130",
+      "phone": "+17863611540",
+      "website_url": "https://locations.chipotle.com/fl/miami/891-s-miami-ave",
+      "cuisine_type": [
+        "mexican",
+        "fast_casual",
+        "bowls"
+      ],
+      "opening_hours": "Mo-Tu 10:45-21:30; We-Sa 10:45-00:00; Su 10:45-21:30",
+      "allergy_needs": [
+        "nut_aware",
+        "dairy_free",
+        "vegetarian",
+        "gluten_free"
+      ],
+      "allergy_safety_tier": "strong_protocol",
+      "allergy_safety_note": "Corporate allergen statement: peanuts and tree nuts are not used as ingredients. Shared line / cross-contact still possible — use in-app allergen tools and tell the crew. Not a medical guarantee."
+    },
+    {
+      "name": "Bella Cuba Restaurant",
+      "slug": "bella-cuba-miami-beach-allergy",
+      "lat": 25.7902,
+      "lng": -80.1318,
+      "address": "1659 Washington Ave, Miami Beach, FL 33139",
+      "phone": "+13056727466",
+      "website_url": null,
+      "cuisine_type": [
+        "cuban",
+        "latin_american"
+      ],
+      "opening_hours": "Mo-Su 11:00-23:00",
+      "allergy_needs": [
+        "nut_aware",
+        "gluten_free"
+      ],
+      "allergy_safety_tier": "shared_verify",
+      "allergy_safety_note": "Spokin diner report: staff said no nuts in the kitchen; peanut-free Cuban plates worked for them. Shared kitchen — verify oils and desserts day-of. Not dedicated."
     }
   ]
 }
