@@ -1513,6 +1513,21 @@ main.page {
   border-color: var(--accent-dim);
 }
 
+.near-me-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+  width: 100%;
+}
+
+.near-me-share {
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.7rem;
+}
+
 .near-me-status {
   margin: 0;
   color: var(--fg-dim);

@@ -82,6 +82,53 @@ function clientTimeZone(): string {
   }
 }
 
+/** Beachhead share URL — never embeds personal geo. */
+function buildShareSearchParams(opts: {
+  need: string;
+  neighborhoodId: string;
+  openNow: boolean;
+  query: string;
+}): URLSearchParams {
+  const params = new URLSearchParams();
+  params.set("browse", "1");
+  if (opts.need) params.set("need", opts.need);
+  if (opts.neighborhoodId) params.set("neighborhood", opts.neighborhoodId);
+  if (opts.openNow) params.set("open_now", "1");
+  const q = opts.query.trim();
+  if (q) params.set("query", q);
+  return params;
+}
+
+function shareUrlFromFilters(opts: {
+  need: string;
+  neighborhoodId: string;
+  openNow: boolean;
+  query: string;
+}): string {
+  const params = buildShareSearchParams(opts);
+  if (typeof window === "undefined") {
+    return `https://foodnear.me/?${params.toString()}`;
+  }
+  return `${window.location.origin}/?${params.toString()}`;
+}
+
+function syncShareUrl(opts: {
+  need: string;
+  neighborhoodId: string;
+  openNow: boolean;
+  query: string;
+}) {
+  if (typeof window === "undefined") return;
+  try {
+    const next = `/?${buildShareSearchParams(opts).toString()}`;
+    if (`${window.location.pathname}${window.location.search}` !== next) {
+      window.history.replaceState(null, "", next);
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
 function searchPoint(
   loc: Extract<LocState, { status: "ready" }>,
   hood: FilterNeighborhood | null,
@@ -180,6 +227,7 @@ export function NearMeSearch() {
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<NearMePlace[] | null>(null);
   const [meta, setMeta] = useState<NearMeResponse["metadata"] | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     try {
@@ -192,7 +240,13 @@ export function NearMeSearch() {
       const hood = getFilterNeighborhood(params.get("neighborhood"));
       if (hood) setNeighborhoodId(hood.id);
       // Deep links: jump straight into beachhead search
-      if (params.has("need") || params.has("browse") || params.has("neighborhood")) {
+      if (
+        params.has("need") ||
+        params.has("browse") ||
+        params.has("neighborhood") ||
+        params.has("query") ||
+        params.has("open_now")
+      ) {
         setLoc({
           status: "ready",
           lat: BEACHHEAD.lat,
@@ -205,6 +259,12 @@ export function NearMeSearch() {
       /* ignore */
     }
   }, []);
+
+  // Keep the address bar shareable once a search is active (no personal geo).
+  useEffect(() => {
+    if (loc.status !== "ready") return;
+    syncShareUrl({ need, neighborhoodId, openNow, query });
+  }, [loc.status, need, neighborhoodId, openNow, query]);
 
   const useBeachhead = useCallback(() => {
     setLoc({
@@ -337,6 +397,20 @@ export function NearMeSearch() {
     }
   }
 
+  async function onCopyShareLink() {
+    const url = shareUrlFromFilters({ need, neighborhoodId, openNow, query });
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback: still sync URL so user can copy from the bar
+      syncShareUrl({ need, neighborhoodId, openNow, query });
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    }
+  }
+
   const activeHood = getFilterNeighborhood(neighborhoodId);
   const topPick = results?.find((p) => p.is_top_pick) ?? results?.[0] ?? null;
   const alsoNearby = results?.filter((p) => p.id !== topPick?.id) ?? [];
@@ -381,22 +455,31 @@ export function NearMeSearch() {
               </div>
             )}
             {loc.status === "ready" && (
-              <p className="near-me-status">
-                Searching <strong>{meta?.city ?? activeHood?.name ?? loc.city}</strong>
-                {activeHood
-                  ? " (neighborhood)"
-                  : loc.source === "fallback"
-                    ? " (beachhead)"
-                    : ""}{" "}
-                ·{" "}
-                {meta?.radius_miles ??
-                  (activeHood
-                    ? activeHood.radiusMiles
-                    : need
-                      ? BEACHHEAD.allergyRadiusMiles
-                      : BEACHHEAD.radiusMiles)}{" "}
-                mi
-              </p>
+              <div className="near-me-status-row">
+                <p className="near-me-status">
+                  Searching <strong>{meta?.city ?? activeHood?.name ?? loc.city}</strong>
+                  {activeHood
+                    ? " (neighborhood)"
+                    : loc.source === "fallback"
+                      ? " (beachhead)"
+                      : ""}{" "}
+                  ·{" "}
+                  {meta?.radius_miles ??
+                    (activeHood
+                      ? activeHood.radiusMiles
+                      : need
+                        ? BEACHHEAD.allergyRadiusMiles
+                        : BEACHHEAD.radiusMiles)}{" "}
+                  mi
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-ghost near-me-share"
+                  onClick={() => void onCopyShareLink()}
+                >
+                  {copied ? "Copied" : "Copy share link"}
+                </button>
+              </div>
             )}
           </div>
 
