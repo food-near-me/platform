@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 
 import { isPickupOnly, ogTierBadge, rankPlaces, type RankablePlace } from "./rank";
 
@@ -180,4 +181,44 @@ test("no per-place OG/metadata surface hardcodes a curated claim", () => {
     !/curated allergy notes when available/i.test(page),
     "place metadata description must not claim curated notes for uncurated listings",
   );
+});
+
+// Auto-discovering guard: the two explicit checks above only cover the files we
+// remembered to name. This sweeps EVERY surface under app/ so a *new* OG/metadata
+// file can't hand-roll a fabricated curated badge and slip past the sentinel.
+// Curated claims must always be derived from ogTierBadge()/safetyTierLabel() (the
+// shared whitelist), never spelled out as a literal on a presentation path.
+test("no app/ surface hardcodes a fabricated curated badge (auto-swept)", () => {
+  const appDir = fileURLToPath(new URL("../../app/", import.meta.url));
+
+  const walk = (dir: string): string[] =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+      const full = `${dir}${e.name}`;
+      if (e.isDirectory()) return walk(`${full}/`);
+      // Skip tests (they legitimately quote the banned literals) and non-source files.
+      if (!/\.(ts|tsx)$/.test(e.name) || e.name.endsWith(".test.ts")) return [];
+      return [full];
+    });
+
+  // Fabricated *badge* claims — specific enough not to catch the honest disclaimers
+  // ("Curated notes describe kitchen mechanism…", "Curated allergy notes first…").
+  const FABRICATED: Array<[RegExp, string]> = [
+    [/Curated · human-checked/, "the 'Curated · human-checked' badge (root cause of the 2026-07 OSM mislabel)"],
+    [/curated allergy-aware spot/i, "a 'curated allergy-aware spot' claim"],
+    [/curated allergy notes when available/i, "a 'curated allergy notes when available' claim"],
+  ];
+
+  const files = walk(appDir);
+  assert.ok(files.length > 0, "sweep must actually find app/ source files (path drift?)");
+
+  for (const file of files) {
+    const src = readFileSync(file, "utf8");
+    const rel = file.slice(appDir.length);
+    for (const [pattern, what] of FABRICATED) {
+      assert.ok(
+        !pattern.test(src),
+        `app/${rel} hardcodes ${what} — derive it from ogTierBadge()/safetyTierLabel() instead`,
+      );
+    }
+  }
 });

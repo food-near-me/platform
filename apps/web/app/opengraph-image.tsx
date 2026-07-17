@@ -10,7 +10,7 @@ export default async function Image() {
     (
       <ShareCard
         name="Allergy-safe dining"
-        tier="Curated · human-checked"
+        tier="Curated allergy tiers"
         meta="gluten-free · dairy-free · nut-aware"
         letter="f"
       />
