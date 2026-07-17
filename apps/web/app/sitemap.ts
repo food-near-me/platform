@@ -14,6 +14,7 @@ const STATIC_PATHS = [
   "/privacy",
   "/attribution",
   "/tokenization",
+  "/why-ai-gets-allergy-safety-wrong",
 ];
 
 // Refresh at most hourly; place rows change slowly.
