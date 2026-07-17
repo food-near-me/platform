@@ -5,8 +5,9 @@ import { SiteShell } from "@/components/site-shell";
 import { getSql, isDatabaseConfigured } from "@/lib/db/neon";
 import { evaluateOpeningHours, telHref } from "@/lib/near-me/hours";
 import { formatNeedTags, tierBlurb, trustLabel } from "@/lib/near-me/labels";
+import { formatLastCheckedDate } from "@/lib/near-me/format-date";
 import { inferNeighborhood } from "@/lib/near-me/neighborhood";
-import { safetyTierLabel } from "@/lib/near-me/rank";
+import { CURATED_TIERS, safetyTierLabel } from "@/lib/near-me/rank";
 
 type PlaceRow = {
   id: string;
@@ -21,6 +22,7 @@ type PlaceRow = {
   allergy_needs: string[] | null;
   allergy_safety_tier: string | null;
   allergy_safety_note: string | null;
+  last_external_update: string | null;
   lat: number | null;
   lng: number | null;
 };
@@ -86,6 +88,7 @@ export default async function PlacePage({
     `SELECT id, name, slug, address, website_url, phone, opening_hours,
             cuisine_type, verification_status,
             allergy_needs, allergy_safety_tier, allergy_safety_note,
+            last_external_update,
             ST_Y(location::geometry) AS lat,
             ST_X(location::geometry) AS lng
      FROM restaurants WHERE slug = $1 LIMIT 1`,
@@ -140,9 +143,11 @@ export default async function PlacePage({
 
   const searchHref = primaryNeed ? `/?need=${encodeURIComponent(primaryNeed)}` : "/";
 
-  // Restaurant structured data — factual business fields only. Allergy tokens are
-  // intentionally excluded: a machine-readable safety claim would overstate the
-  // curated, verify-with-the-restaurant nature of our notes.
+  // Restaurant structured data — factual business fields only. Scraped allergy
+  // tokens are intentionally excluded from servesCuisine: a machine-readable
+  // safety claim would overstate the curated, verify-with-the-restaurant nature
+  // of our notes. Curated tier/needs ARE emitted, but only via the CURATED_TIERS
+  // whitelist below (never for an uncurated "unknown" listing).
   const allergyTokens = new Set([
     "gluten_free",
     "dairy_free",
@@ -153,6 +158,14 @@ export default async function PlacePage({
   const structuredCuisines = (place.cuisine_type ?? []).filter(
     (c) => !allergyTokens.has(c),
   );
+  // A machine-readable tier is honest ONLY for a curated listing. Gate on the
+  // same whitelist that governs the badge/ranking so an "unknown" tier emits
+  // nothing tier-related — never a fabricated safety claim for an uncurated spot.
+  const isCurated = (CURATED_TIERS as readonly string[]).includes(tier);
+  // Freshness marker: last_external_update is bumped by automated external-source
+  // refreshes (OSM/import), so the copy says "last updated", not "last checked" —
+  // it never implies a human re-verified the listing or its allergy tier.
+  const lastUpdated = formatLastCheckedDate(place.last_external_update);
   const placeJsonLd = {
     "@context": "https://schema.org",
     "@type": "Restaurant",
@@ -182,6 +195,29 @@ export default async function PlacePage({
         }
       : {}),
     ...(place.opening_hours ? { openingHours: place.opening_hours } : {}),
+    ...(isCurated
+      ? {
+          additionalProperty: [
+            {
+              "@type": "PropertyValue",
+              name: "allergySafetyTier",
+              value: tier,
+              description: safetyTierLabel(tier),
+            },
+            ...(place.allergy_needs?.length
+              ? [
+                  {
+                    "@type": "PropertyValue",
+                    name: "allergyNeeds",
+                    value: place.allergy_needs.join(", "),
+                    description:
+                      "Curated allergen/dietary needs this restaurant addresses",
+                  },
+                ]
+              : []),
+          ],
+        }
+      : {}),
   };
 
   return (
@@ -220,6 +256,11 @@ export default async function PlacePage({
             </p>
             {place.opening_hours ? (
               <p className="place-hours-raw">Listed hours: {place.opening_hours}</p>
+            ) : null}
+            {lastUpdated ? (
+              <p className="place-freshness">
+                Contact details last updated: {lastUpdated}
+              </p>
             ) : null}
 
             {place.address ? (

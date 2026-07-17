@@ -2201,6 +2201,12 @@ main.page {
   font-family: var(--mono);
 }
 
+.place-freshness {
+  margin: var(--space-1) 0 0;
+  font-size: 0.8rem;
+  color: var(--fg-faint);
+}
+
 .place-allergy-blurb {
   margin: var(--space-2) 0 0;
   font-size: 0.95rem;
