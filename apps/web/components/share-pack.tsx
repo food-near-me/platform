@@ -78,8 +78,10 @@ export function SharePack() {
         <ul className="share-pack-list">
           {pack.map((item) => (
             <li key={item.href}>
-              <Link href={item.href}>{item.label}</Link>
-              <span>{item.blurb}</span>
+              <Link href={item.href}>
+                <span className="share-pack-label">{item.label}</span>
+                <span className="share-pack-blurb">{item.blurb}</span>
+              </Link>
             </li>
           ))}
         </ul>

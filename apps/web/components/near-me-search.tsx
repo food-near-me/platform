@@ -160,6 +160,13 @@ function searchPoint(
   };
 }
 
+function mediaHue(name: string): number {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h + name.charCodeAt(i) * (i + 1)) % 360;
+  // Bias away from muddy browns toward food-friendly hues
+  return (h % 280) + 10;
+}
+
 function PlaceCard({ place, featured }: { place: NearMePlace; featured?: boolean }) {
   const openClass =
     place.open_now === true
@@ -167,61 +174,80 @@ function PlaceCard({ place, featured }: { place: NearMePlace; featured?: boolean
       : place.open_now === false
         ? "is-closed"
         : "is-unknown";
+  const letter = (place.name.trim()[0] || "?").toUpperCase();
+  const hue = mediaHue(place.name);
 
   return (
-    <li className={`near-me-card${featured ? " near-me-card-featured" : ""}`}>
-      <div className="near-me-card-top">
-        <div>
-          {featured && <p className="near-me-pick-label">Top pick nearby</p>}
-          <h2>{place.name}</h2>
-        </div>
-        <span className="near-me-tier">{place.trust_label}</span>
-      </div>
-      {place.why && <p className="near-me-why">{place.why}</p>}
-      {place.matches_need && place.allergy_safety_tier !== "unknown" && (
-        <p className="near-me-safety">{place.allergy_safety_label}</p>
-      )}
-      <p className="near-me-meta">
-        {place.distance_miles} mi
-        {place.cuisine_type?.length
-          ? ` · ${place.cuisine_type.slice(0, 3).join(", ")}`
-          : ""}
-      </p>
-      <p className={`near-me-hours ${openClass}`}>{place.hours_label}</p>
-      {place.address ? (
-        <p className="near-me-address">{place.address}</p>
-      ) : (
-        <p className="near-me-address mute">Address not listed yet</p>
-      )}
-      <div className="near-me-actions">
-        <Link className="btn" href={place.place_url}>
-          View place
-        </Link>
-        <a
-          className="btn btn-ghost"
-          href={place.maps_url}
-          target="_blank"
-          rel="noopener noreferrer"
+    <li>
+      <Link
+        href={place.place_url}
+        className={`near-me-card${featured ? " near-me-card-featured" : ""}`}
+      >
+        <div
+          className="near-me-card-media"
+          data-letter={letter}
+          style={{ ["--media-hue" as string]: hue }}
+          aria-hidden
         >
-          Maps
-        </a>
-        {place.phone_url && (
-          <a className="btn btn-ghost" href={place.phone_url}>
-            Call
-          </a>
-        )}
-        {place.website_url && (
-          <a
-            className="btn btn-ghost"
-            href={place.website_url}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Website
-          </a>
-        )}
-      </div>
+          {featured && <span className="near-me-pick-badge">Top pick</span>}
+        </div>
+        <div className="near-me-card-body">
+          <div className="near-me-card-top">
+            <h2>{place.name}</h2>
+            <span className="near-me-tier">{place.trust_label}</span>
+          </div>
+          {place.matches_need && place.allergy_safety_tier !== "unknown" && (
+            <p className="near-me-safety">{place.allergy_safety_label}</p>
+          )}
+          {place.why && <p className="near-me-why">{place.why}</p>}
+          <p className="near-me-meta">
+            <span>{place.distance_miles} mi</span>
+            {place.cuisine_type?.length ? (
+              <span> · {place.cuisine_type.slice(0, 2).join(", ")}</span>
+            ) : null}
+            <span className={`near-me-hours-inline ${openClass}`}>
+              {" · "}
+              {place.hours_label}
+            </span>
+          </p>
+        </div>
+      </Link>
     </li>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"
+        stroke="currentColor"
+        strokeWidth="2.2"
+      />
+      <path
+        d="M16.2 16.2 21 21"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function SkeletonCards() {
+  return (
+    <ul className="near-me-list" aria-hidden>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <li key={i} className="near-me-skeleton">
+          <div className="near-me-skeleton-media" />
+          <div className="near-me-skeleton-lines">
+            <span />
+            <span />
+            <span />
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -253,23 +279,14 @@ export function NearMeSearch() {
       if (q) setQuery(q);
       const hood = getFilterNeighborhood(params.get("neighborhood"), bh.id);
       if (hood) setNeighborhoodId(hood.id);
-      // Deep links: jump straight into beachhead search
-      if (
-        params.has("need") ||
-        params.has("browse") ||
-        params.has("city") ||
-        params.has("neighborhood") ||
-        params.has("query") ||
-        params.has("open_now")
-      ) {
-        setLoc({
-          status: "ready",
-          lat: bh.lat,
-          lng: bh.lng,
-          source: "fallback",
-          city: bh.city,
-        });
-      }
+      // Airbnb-style: land on listings immediately (beachhead, never blank)
+      setLoc({
+        status: "ready",
+        lat: bh.lat,
+        lng: bh.lng,
+        source: "fallback",
+        city: bh.city,
+      });
     } catch {
       /* ignore */
     }
@@ -456,176 +473,173 @@ export function NearMeSearch() {
   const topPick = results?.find((p) => p.is_top_pick) ?? results?.[0] ?? null;
   const alsoNearby = results?.filter((p) => p.id !== topPick?.id) ?? [];
 
+  const resultCount = results?.length ?? 0;
+  const placeLabel = activeHood?.name ?? beachhead.shortLabel;
+
   return (
     <section className="section" id="near-me">
-      <div className="section-head">
-        <p className="label">allergy-aware near me</p>
+      <div className="near-me-hero">
+        <p className="near-me-kicker">Allergy-aware dining</p>
         <h1 className="near-me-title">
-          Where can you <em>safely</em> eat?
+          foodnear<span className="brand-dot">.</span>me
         </h1>
-        <p className="lede">
-          Miami + Jacksonville — curated allergy notes with an honest kitchen mechanism,
-          plus nearby listed places. Not medical advice. Always verify with the restaurant.
+        <p className="near-me-lede">
+          Honest kitchen notes for Miami and Jacksonville — not medical advice.
+          Always verify with the restaurant.
         </p>
       </div>
 
-      <div className="section-body full">
-        <div className="near-me-panel">
-          <div className="near-me-loc">
-            {loc.status === "idle" && (
-              <>
-                <button type="button" className="btn" onClick={requestGeo}>
-                  Use my location
-                </button>
-                <button type="button" className="btn btn-ghost" onClick={useBeachhead}>
-                  Browse {beachhead.shortLabel}
-                </button>
-              </>
-            )}
-            {loc.status === "locating" && (
-              <p className="near-me-status">Getting your location…</p>
-            )}
-            {loc.status === "denied" && (
-              <div className="near-me-denied">
-                <p className="near-me-status">
-                  Location blocked — that’s fine. Browse the beachhead instead.
-                </p>
-                <button type="button" className="btn" onClick={useBeachhead}>
-                  Browse {beachhead.shortLabel}
-                </button>
-              </div>
-            )}
-            {loc.status === "ready" && (
-              <div className="near-me-status-row">
-                <p className="near-me-status">
-                  Searching <strong>{activeHood?.name ?? meta?.city ?? loc.city}</strong>
-                  {activeHood
-                    ? " (neighborhood)"
-                    : loc.source === "fallback"
-                      ? " (beachhead)"
-                      : ""}{" "}
-                  ·{" "}
-                  {meta?.radius_miles ??
-                    (activeHood
-                      ? activeHood.radiusMiles
-                      : need
-                        ? beachhead.allergyRadiusMiles
-                        : beachhead.radiusMiles)}{" "}
-                  mi
-                </p>
-                <button
-                  type="button"
-                  className="btn btn-ghost near-me-share"
-                  onClick={() => void onCopyShareLink()}
-                >
-                  {copied ? "Copied" : "Copy share link"}
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div className="near-me-cities" role="group" aria-label="City">
-            {BEACHHEADS.map((city) => (
-              <button
-                key={city.id}
-                type="button"
-                className={`near-me-chip${beachheadId === city.id ? " is-active" : ""}`}
-                onClick={() => onCityChange(city.id)}
-                aria-pressed={beachheadId === city.id}
-              >
-                {city.shortLabel}
-              </button>
-            ))}
-          </div>
-
-          <div className="near-me-needs" role="group" aria-label="Dietary need">
-            {NEED_OPTIONS.map((opt) => (
-              <button
-                key={opt.id || "any"}
-                type="button"
-                className={`near-me-chip${need === opt.id ? " is-active" : ""}`}
-                onClick={() => onNeedChange(opt.id)}
-                aria-pressed={need === opt.id}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="near-me-hoods" role="group" aria-label="Neighborhood">
-            <button
-              type="button"
-              className={`near-me-chip${neighborhoodId === "" ? " is-active" : ""}`}
-              onClick={() => onNeighborhoodChange("")}
-              aria-pressed={neighborhoodId === ""}
-            >
-              Any area
-            </button>
-            {hoodOptions.map((hood) => (
-              <button
-                key={hood.id}
-                type="button"
-                className={`near-me-chip${neighborhoodId === hood.id ? " is-active" : ""}`}
-                onClick={() => onNeighborhoodChange(hood.id)}
-                aria-pressed={neighborhoodId === hood.id}
-              >
-                {hood.name}
-              </button>
-            ))}
-          </div>
-
-          <label className="near-me-toggle">
-            <input
-              type="checkbox"
-              checked={openNow}
-              onChange={(e) => onOpenNowChange(e.target.checked)}
-            />
-            <span>Open now</span>
-          </label>
-
-          <form className="near-me-form" onSubmit={onSubmit}>
+      <div className="near-me-panel">
+        <div className="near-me-toolbar">
+          <form className="near-me-searchbar" onSubmit={onSubmit}>
             <label className="near-me-field">
               <span className="sr-only">Cuisine or dish</span>
               <input
                 name="query"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="pizza, sushi, coffee…"
+                placeholder="Search pizza, sushi, coffee…"
                 autoComplete="off"
               />
             </label>
-            <button type="submit" className="btn" disabled={loading || loc.status === "locating"}>
-              {loading ? "Searching…" : "Search"}
+            <button
+              type="submit"
+              className="near-me-search-submit"
+              disabled={loading || loc.status === "locating"}
+              aria-label={loading ? "Searching" : "Search"}
+            >
+              <SearchIcon />
             </button>
           </form>
 
-          {error && <p className="near-me-error">{error}</p>}
+          <div className="near-me-filters">
+            <div className="near-me-filter-row" role="group" aria-label="City">
+              <span className="near-me-filter-label">City</span>
+              {BEACHHEADS.map((city) => (
+                <button
+                  key={city.id}
+                  type="button"
+                  className={`near-me-chip near-me-chip-accent${beachheadId === city.id ? " is-active" : ""}`}
+                  onClick={() => onCityChange(city.id)}
+                  aria-pressed={beachheadId === city.id}
+                >
+                  {city.shortLabel}
+                </button>
+              ))}
+            </div>
 
-          {results && results.length === 0 && !error && (
+            <div className="near-me-filter-row" role="group" aria-label="Dietary need">
+              <span className="near-me-filter-label">Need</span>
+              {NEED_OPTIONS.map((opt) => (
+                <button
+                  key={opt.id || "any"}
+                  type="button"
+                  className={`near-me-chip${need === opt.id ? " is-active" : ""}`}
+                  onClick={() => onNeedChange(opt.id)}
+                  aria-pressed={need === opt.id}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="near-me-filter-row" role="group" aria-label="Neighborhood">
+              <span className="near-me-filter-label">Area</span>
+              <button
+                type="button"
+                className={`near-me-chip${neighborhoodId === "" ? " is-active" : ""}`}
+                onClick={() => onNeighborhoodChange("")}
+                aria-pressed={neighborhoodId === ""}
+              >
+                Any area
+              </button>
+              {hoodOptions.map((hood) => (
+                <button
+                  key={hood.id}
+                  type="button"
+                  className={`near-me-chip${neighborhoodId === hood.id ? " is-active" : ""}`}
+                  onClick={() => onNeighborhoodChange(hood.id)}
+                  aria-pressed={neighborhoodId === hood.id}
+                >
+                  {hood.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="near-me-loc">
+            {loc.status === "locating" && (
+              <p className="near-me-status">Getting your location…</p>
+            )}
+            {loc.status === "denied" && (
+              <div className="near-me-denied">
+                <p className="near-me-status">
+                  Location blocked — browsing {beachhead.shortLabel} instead.
+                </p>
+                <button type="button" className="near-me-text-btn" onClick={useBeachhead}>
+                  Continue browsing
+                </button>
+              </div>
+            )}
+            {loc.status === "ready" && (
+              <div className="near-me-status-row">
+                <p className="near-me-status">
+                  {loading ? "Updating" : resultCount ? `${resultCount} places` : "Places"} near{" "}
+                  <strong>{activeHood?.name ?? meta?.city ?? loc.city}</strong>
+                </p>
+                <div className="near-me-status-actions">
+                  <button type="button" className="near-me-text-btn" onClick={requestGeo}>
+                    Use my location
+                  </button>
+                  <label className="near-me-toggle">
+                    <input
+                      type="checkbox"
+                      checked={openNow}
+                      onChange={(e) => onOpenNowChange(e.target.checked)}
+                    />
+                    <span>Open now</span>
+                  </label>
+                  <button
+                    type="button"
+                    className="near-me-text-btn"
+                    onClick={() => void onCopyShareLink()}
+                  >
+                    {copied ? "Link copied" : "Share"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {error && <p className="near-me-error">{error}</p>}
+
+        <div className="near-me-results">
+          {loading && !results ? <SkeletonCards /> : null}
+
+          {!loading && results && results.length === 0 && !error && (
             <p className="near-me-empty">
-              No matches within {meta?.radius_miles ?? beachhead.radiusMiles} miles
+              No matches near {placeLabel}
               {query ? ` for “${query}”` : ""}
-              {need ? " with that need" : ""}
-              {activeHood ? ` in ${activeHood.name}` : ""}. Try Any area, Any need, or turn off
-              Open now.
+              {need ? " with that need" : ""}. Try Any area, Any need, or turn off Open now.
             </p>
           )}
 
           {topPick && (
-            <ul className="near-me-list near-me-list-featured">
-              <PlaceCard place={topPick} featured />
-            </ul>
-          )}
-
-          {alsoNearby.length > 0 && (
-            <div className="near-me-also">
-              <h3 className="near-me-also-heading">Also nearby</h3>
+            <>
+              <div className="near-me-results-head">
+                <h2 className="near-me-results-title">Places in {placeLabel}</h2>
+                <p className="near-me-results-sub">
+                  Curated allergy notes first — then nearby listed spots.
+                </p>
+              </div>
               <ul className="near-me-list">
+                <PlaceCard place={topPick} featured />
                 {alsoNearby.map((place) => (
                   <PlaceCard key={place.id} place={place} />
                 ))}
               </ul>
-            </div>
+            </>
           )}
 
           <p className="near-me-footnote">

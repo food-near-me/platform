@@ -1,27 +1,27 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import { Figtree, Outfit } from "next/font/google";
 import "./globals.css";
 
-const ibmSans = IBM_Plex_Sans({
+const outfit = Outfit({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: ["500", "600", "700", "800"],
+});
+
+const figtree = Figtree({
   variable: "--font-sans",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
 
-const ibmMono = IBM_Plex_Mono({
-  variable: "--font-mono",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
-
 export const metadata: Metadata = {
   title: "foodnear.me — food near you",
   description:
-    "Find allergy-aware places to eat in Miami — curated kitchen notes, hours when we have them, no ads.",
+    "Find allergy-aware places to eat in Miami and Jacksonville — curated kitchen notes, hours when we have them, no ads.",
   openGraph: {
     title: "foodnear.me — food near you",
     description:
-      "Find allergy-aware places to eat in Miami — curated kitchen notes, hours when we have them, no ads.",
+      "Find allergy-aware places to eat in Miami and Jacksonville — curated kitchen notes, hours when we have them, no ads.",
     url: "https://foodnear.me",
     siteName: "foodnear.me",
     type: "website",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "foodnear.me — food near you",
     description:
-      "Find allergy-aware places to eat in Miami — curated kitchen notes, hours when we have them, no ads.",
+      "Find allergy-aware places to eat in Miami and Jacksonville — curated kitchen notes, hours when we have them, no ads.",
   },
   alternates: {
     canonical: "https://foodnear.me",
@@ -122,7 +122,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${ibmSans.variable} ${ibmMono.variable} h-full`}
+      className={`${outfit.variable} ${figtree.variable} h-full`}
     >
       <head>
         <script
