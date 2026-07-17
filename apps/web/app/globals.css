@@ -1737,6 +1737,73 @@ main.page {
   color: var(--fg-mute);
 }
 
+.ops-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.ops-h2 {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+}
+
+.ops-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.ops-table th,
+.ops-table td {
+  text-align: left;
+  padding: 0.4rem 0.55rem;
+  border-bottom: 1px solid var(--line);
+  color: var(--fg-dim);
+}
+
+.ops-table th {
+  color: var(--fg-mute);
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ops-code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.85em;
+  color: var(--fg);
+}
+
+.ops-empty {
+  margin: 0;
+  color: var(--fg-mute);
+}
+
+.ops-day-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+  margin: var(--space-3) 0 0;
+  font-size: 0.9rem;
+}
+
+.ops-day-links a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.ops-sep {
+  color: var(--fg-faint);
+}
+
 .place-related {
   display: flex;
   flex-direction: column;
