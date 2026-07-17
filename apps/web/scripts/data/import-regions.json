@@ -602,7 +602,7 @@
     },
     "jacksonville": {
       "label": "Jacksonville",
-      "tier": 3,
+      "tier": 1,
       "status": "imported",
       "bbox": {
         "south": 30.2,
@@ -613,7 +613,8 @@
       "dataSources": [
         "osm"
       ],
-      "importedAt": "2026-05-21T00:00:00.000Z"
+      "importedAt": "2026-07-16T00:00:00.000Z",
+      "notes": "Allergy beachhead #2 — Riverside/Avondale, San Marco, Downtown, Beach Blvd corridor (~575 OSM venues)"
     },
     "memphis": {
       "label": "Memphis",

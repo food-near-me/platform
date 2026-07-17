@@ -1,10 +1,17 @@
+"use client";
+
 import Link from "next/link";
+import { useBeachheadCity } from "@/lib/near-me/beachhead-context";
 
 /**
  * Miami-specific tip: traditional Cuban bread is wheat — point to dedicated GF bakers.
  * One section, one job. Lives below the near-me search, not in the hero.
+ * Hidden when Jacksonville is selected.
  */
 export function GfCubanTip() {
+  const { cityId } = useBeachheadCity();
+  if (cityId === "jacksonville") return null;
+
   return (
     <section className="section" id="gf-cuban">
       <div className="section-head">

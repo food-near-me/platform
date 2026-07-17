@@ -4,15 +4,16 @@ import { GfCubanTip } from "@/components/gf-cuban-tip";
 import { NearMeSearch } from "@/components/near-me-search";
 import { SharePack } from "@/components/share-pack";
 import { SiteShell } from "@/components/site-shell";
+import { BeachheadProvider } from "@/lib/near-me/beachhead-context";
 
 export const metadata: Metadata = {
   title: "foodnear.me — food near you",
   description:
-    "Find allergy-aware places to eat in Miami — curated kitchen notes, hours when we have them, no ads.",
+    "Find allergy-aware places to eat in Miami and Jacksonville — curated kitchen notes, hours when we have them, no ads.",
   openGraph: {
     title: "foodnear.me — food near you",
     description:
-      "Find allergy-aware places to eat in Miami — curated kitchen notes, hours when we have them, no ads.",
+      "Find allergy-aware places to eat in Miami and Jacksonville — curated kitchen notes, hours when we have them, no ads.",
     url: "https://foodnear.me",
     siteName: "foodnear.me",
     type: "website",
@@ -21,7 +22,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "foodnear.me — food near you",
     description:
-      "Find allergy-aware places to eat in Miami — curated kitchen notes, hours when we have them, no ads.",
+      "Find allergy-aware places to eat in Miami and Jacksonville — curated kitchen notes, hours when we have them, no ads.",
   },
   alternates: {
     canonical: "https://foodnear.me",
@@ -31,9 +32,11 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <SiteShell variant="consumer">
-      <NearMeSearch />
-      <SharePack />
-      <GfCubanTip />
+      <BeachheadProvider>
+        <NearMeSearch />
+        <SharePack />
+        <GfCubanTip />
+      </BeachheadProvider>
       <section className="section">
         <div className="section-body full">
           <p className="near-me-secondary">

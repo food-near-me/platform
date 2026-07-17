@@ -1,27 +1,30 @@
+"use client";
+
 import Link from "next/link";
+import { useBeachheadCity } from "@/lib/near-me/beachhead-context";
 
 /**
  * Ready Path A deep links — one tap to a useful filter state.
  * Lives below search; not in the hero.
  */
-const PACK = [
+const PACK_MIAMI = [
   {
-    href: "/?browse=1&need=gluten_free",
+    href: "/?browse=1&city=miami&need=gluten_free",
     label: "Gluten / Celiac — Greater Miami",
     blurb: "Curated dedicated and protocol spots across the beachhead.",
   },
   {
-    href: "/?browse=1&need=gluten_free&neighborhood=brickell",
+    href: "/?browse=1&city=miami&need=gluten_free&neighborhood=brickell",
     label: "Gluten / Celiac — Brickell",
     blurb: "Tight radius: TAP, Stephanie’s, nearby protocol kitchens.",
   },
   {
-    href: "/?browse=1&need=nut_aware",
+    href: "/?browse=1&city=miami&need=nut_aware",
     label: "Nut-aware tips",
     blurb: "Peanut/tree-nut notes with named mechanisms — still verify.",
   },
   {
-    href: "/?browse=1&need=dairy_free",
+    href: "/?browse=1&city=miami&need=dairy_free",
     label: "Dairy-aware tips",
     blurb: "Curated dairy-aware places; ask about steamer and sauce contact.",
   },
@@ -32,7 +35,33 @@ const PACK = [
   },
 ] as const;
 
+const PACK_JAX = [
+  {
+    href: "/?browse=1&city=jacksonville&need=gluten_free",
+    label: "Gluten / Celiac — Jacksonville",
+    blurb: "Foo Dog, Kathy’s Table, dedicated bakeries, protocol kitchens.",
+  },
+  {
+    href: "/?browse=1&city=jacksonville&need=gluten_free&neighborhood=riverside",
+    label: "Gluten / Celiac — Riverside",
+    blurb: "Riverside / Avondale corridor: Foo Dog, Sweet Theory, Bartaco.",
+  },
+  {
+    href: "/?browse=1&city=jacksonville&need=nut_aware",
+    label: "Nut-aware — Jacksonville",
+    blurb: "Named kitchen mechanisms only — still verify on site.",
+  },
+  {
+    href: "/?browse=1&city=jacksonville&need=dairy_free",
+    label: "Dairy-aware — Jacksonville",
+    blurb: "Curated dairy-aware notes where we have a mechanism.",
+  },
+] as const;
+
 export function SharePack() {
+  const { cityId } = useBeachheadCity();
+  const pack = cityId === "jacksonville" ? PACK_JAX : PACK_MIAMI;
+
   return (
     <section className="section" id="share-pack">
       <div className="section-head">
@@ -47,7 +76,7 @@ export function SharePack() {
       </div>
       <div className="section-body full">
         <ul className="share-pack-list">
-          {PACK.map((item) => (
+          {pack.map((item) => (
             <li key={item.href}>
               <Link href={item.href}>{item.label}</Link>
               <span>{item.blurb}</span>
