@@ -201,18 +201,30 @@ export default async function PlacePage({
 
             <div className="place-verify">
               <h2 className="place-verify-title">Before you go</h2>
-              <p>
-                Protocols drift. Call ahead, name your allergy, and ask how they handle
-                cross-contact. For celiac, cross-check{" "}
-                <a
-                  href="https://www.findmeglutenfree.com/us/fl/miami"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Find Me Gluten Free
-                </a>
-                .
-              </p>
+              <ol className="place-verify-list">
+                <li>Call ahead and name your specific allergy or need.</li>
+                <li>
+                  Ask how they handle cross-contact (shared fryers, sauces, prep surfaces).
+                </li>
+                <li>Confirm this location is open and the hours still match.</li>
+                {tier === "dedicated" || place.allergy_needs?.includes("gluten_free") ? (
+                  <li>
+                    For celiac, cross-check{" "}
+                    <a
+                      href="https://www.findmeglutenfree.com/us/fl/miami"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Find Me Gluten Free
+                    </a>{" "}
+                    — curated notes are not a medical guarantee.
+                  </li>
+                ) : (
+                  <li>
+                    Protocols drift. Re-verify day-of even if a past visit went fine.
+                  </li>
+                )}
+              </ol>
               <div className="near-me-actions">
                 {phoneUrl ? (
                   <a className="btn" href={phoneUrl}>
