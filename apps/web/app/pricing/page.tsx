@@ -7,6 +7,14 @@ export const metadata: Metadata = {
   title: "Pricing | foodnear.me",
   description:
     "Free verified listings for single-location operators. Paid plans for visibility, analytics, multi-location management, and API access.",
+  alternates: { canonical: "/pricing" },
+  openGraph: {
+    title: "Pricing | foodnear.me",
+    description: "Free verified listings for single-location operators. Paid plans for visibility, analytics, multi-location management, and API access.",
+    url: "/pricing",
+    siteName: "foodnear.me",
+    type: "website",
+  }
 };
 
 const plans = [

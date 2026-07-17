@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "test": "tsx --test",
     "test:mcp-flows": "tsx scripts/mcp-flow-test.ts",
     "test:mcp-flows:http": "tsx scripts/mcp-flow-test.ts --url=${MCP_URL:-https://foodnear.me}",
     "smoke:mcp": "tsx scripts/mcp-smoke-probes.ts",

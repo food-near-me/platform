@@ -9,6 +9,14 @@ export const metadata: Metadata = {
   title: "For restaurants | foodnear.me",
   description:
     "Agent Discovery Optimization and Menu Protocol for restaurants — structured menus machines can trust.",
+  alternates: { canonical: "/for-restaurants" },
+  openGraph: {
+    title: "For restaurants | foodnear.me",
+    description: "Agent Discovery Optimization and Menu Protocol for restaurants — structured menus machines can trust.",
+    url: "/for-restaurants",
+    siteName: "foodnear.me",
+    type: "website",
+  }
 };
 
 export default function ForRestaurantsPage() {

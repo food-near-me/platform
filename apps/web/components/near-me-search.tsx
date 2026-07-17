@@ -16,9 +16,6 @@ import {
   type FilterNeighborhood,
 } from "@/lib/near-me/neighborhood";
 
-/** @deprecated Use getBeachhead("miami") — kept for any external imports. */
-export const BEACHHEAD = getBeachhead("miami");
-
 export const NEED_OPTIONS = [
   { id: "", label: "Any" },
   { id: "gluten_free", label: "Gluten / Celiac" },
@@ -603,6 +600,10 @@ export function NearMeSearch() {
                     type="button"
                     className="near-me-text-btn"
                     onClick={() => void onCopyShareLink()}
+                    aria-label={
+                      copied ? "Link copied to clipboard" : "Copy search link to clipboard"
+                    }
+                    aria-live="polite"
                   >
                     {copied ? "Link copied" : "Share"}
                   </button>

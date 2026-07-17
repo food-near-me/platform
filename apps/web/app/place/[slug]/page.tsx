@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { SiteShell } from "@/components/site-shell";
 import { getSql, isDatabaseConfigured } from "@/lib/db/neon";
 import { evaluateOpeningHours, telHref } from "@/lib/near-me/hours";
-import { formatNeedTags, tierBlurb } from "@/lib/near-me/labels";
+import { formatNeedTags, tierBlurb, trustLabel } from "@/lib/near-me/labels";
 import { inferNeighborhood } from "@/lib/near-me/neighborhood";
 import { safetyTierLabel } from "@/lib/near-me/rank";
 
@@ -37,12 +37,6 @@ function mapsUrl(name: string, address?: string | null) {
   return `https://www.google.com/maps/search/?api=1&query=${q}`;
 }
 
-function trustLabel(status: string): string {
-  if (status === "verified") return "verified";
-  if (status === "menu_indexed") return "menu indexed";
-  return "listed";
-}
-
 export async function generateMetadata({
   params,
 }: {
@@ -58,10 +52,21 @@ export async function generateMetadata({
     [slug],
   )) as { name: string; allergy_safety_note: string | null }[];
   const row = rows[0];
+  // Prefer a COMPLETE first sentence so a social preview never cuts a safety
+  // claim mid-assertion (e.g. dropping "shared kitchen — verify"). Same
+  // sentence split used by buildWhy().
+  const noteBlurb = (note: string): string => {
+    const first = note.trim().split(/(?<=\.)\s+/)[0] ?? note.trim();
+    if (first.length <= 140) return first;
+    // Cut at the last word boundary within the limit — never mid-word.
+    const cut = first.slice(0, 140);
+    const atWord = cut.slice(0, cut.lastIndexOf(" "));
+    return `${(atWord || cut).trimEnd()}…`;
+  };
   const desc = row?.allergy_safety_note
-    ? `${row.name} — ${row.allergy_safety_note.slice(0, 140)}`
+    ? `${row.name} — ${noteBlurb(row.allergy_safety_note)}`
     : row?.name
-      ? `${row.name} on foodnear.me — hours, contact, and curated allergy notes when available.`
+      ? `${row.name} on foodnear.me — hours, contact, and menu details.`
       : "Restaurant place page";
   return {
     title: row?.name ? `${row.name} — foodnear.me` : "Place — foodnear.me",
@@ -135,8 +140,56 @@ export default async function PlacePage({
 
   const searchHref = primaryNeed ? `/?need=${encodeURIComponent(primaryNeed)}` : "/";
 
+  // Restaurant structured data — factual business fields only. Allergy tokens are
+  // intentionally excluded: a machine-readable safety claim would overstate the
+  // curated, verify-with-the-restaurant nature of our notes.
+  const allergyTokens = new Set([
+    "gluten_free",
+    "dairy_free",
+    "nut_aware",
+    "vegetarian",
+    "vegan",
+  ]);
+  const structuredCuisines = (place.cuisine_type ?? []).filter(
+    (c) => !allergyTokens.has(c),
+  );
+  const placeJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Restaurant",
+    "@id": `https://foodnear.me/place/${place.slug}#restaurant`,
+    name: place.name,
+    url: `https://foodnear.me/place/${place.slug}`,
+    ...(place.website_url ? { sameAs: [place.website_url] } : {}),
+    ...(place.phone ? { telephone: place.phone } : {}),
+    ...(structuredCuisines.length ? { servesCuisine: structuredCuisines } : {}),
+    ...(place.address
+      ? {
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: place.address,
+            addressRegion: "FL",
+            addressCountry: "US",
+          },
+        }
+      : {}),
+    ...(place.lat != null && place.lng != null
+      ? {
+          geo: {
+            "@type": "GeoCoordinates",
+            latitude: place.lat,
+            longitude: place.lng,
+          },
+        }
+      : {}),
+    ...(place.opening_hours ? { openingHours: place.opening_hours } : {}),
+  };
+
   return (
     <SiteShell variant="consumer">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(placeJsonLd) }}
+      />
       <section className="section">
         <div className="section-head">
           <p className="label">

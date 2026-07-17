@@ -6,6 +6,14 @@ export const metadata: Metadata = {
   title: "Domain tokenization | foodnear.me",
   description:
     "How foodnear.me uses domain tokenization for aligned incentives and growth capital without changing core restaurant value.",
+  alternates: { canonical: "/tokenization" },
+  openGraph: {
+    title: "Domain tokenization | foodnear.me",
+    description: "How foodnear.me uses domain tokenization for aligned incentives and growth capital without changing core restaurant value.",
+    url: "/tokenization",
+    siteName: "foodnear.me",
+    type: "website",
+  }
 };
 
 export default function TokenizationPage() {

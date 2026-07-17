@@ -6,6 +6,14 @@ export const metadata: Metadata = {
   title: "Support | foodnear.me",
   description:
     "Get help with foodnear.me — ADO audits, Menu Protocol onboarding, API access, and MCP integration.",
+  alternates: { canonical: "/support" },
+  openGraph: {
+    title: "Support | foodnear.me",
+    description: "Get help with foodnear.me — ADO audits, Menu Protocol onboarding, API access, and MCP integration.",
+    url: "/support",
+    siteName: "foodnear.me",
+    type: "website",
+  }
 };
 
 export default function SupportPage() {

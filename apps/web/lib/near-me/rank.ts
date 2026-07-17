@@ -106,6 +106,26 @@ export function isAllergyNeed(value: string): value is AllergyNeed {
   return (ALLERGY_NEEDS as readonly string[]).includes(value);
 }
 
+const ALL_TIERS: readonly AllergySafetyTier[] = [
+  "dedicated",
+  "strong_protocol",
+  "shared_verify",
+  "unknown",
+];
+
+/** Runtime guard so a stray DB value can't masquerade as a valid tier. */
+export function isAllergySafetyTier(value: unknown): value is AllergySafetyTier {
+  return (ALL_TIERS as readonly string[]).includes(String(value));
+}
+
+/** Pickup-only / no-storefront spots are parked at the city centroid, so their
+ * distance is meaningless — a placeholder pin must not win on fake proximity. */
+const PICKUP_ONLY_RE = /pickup only|no walk-?in|order-ahead|order ahead/i;
+
+export function isPickupOnly(place: Pick<RankablePlace, "address">): boolean {
+  return PICKUP_ONLY_RE.test(place.address ?? "");
+}
+
 export function isMegaChain(name: string): boolean {
   const n = name
     .toLowerCase()
@@ -151,8 +171,27 @@ function cuisineMatchBonus(cuisine: string[], query: string): number {
 }
 
 function distanceScore(meters: number): number {
+  if (!Number.isFinite(meters)) return 0; // defensive: never let a bad distance poison the score
   const miles = meters / 1609.34;
   return Math.max(0, 40 - miles * 8);
+}
+
+/** Only explicitly curated tiers may match a dietary need — allergy safety is
+ * human judgment, never an OSM/scrape tag. An `unknown` tier never matches. */
+export const CURATED_TIERS: readonly AllergySafetyTier[] = [
+  "dedicated",
+  "strong_protocol",
+  "shared_verify",
+];
+
+/** Share-card / OG badge text. A listing earns a tier badge ONLY when it carries
+ * a real curated tier — the SAME whitelist that governs ranking. Unknown / null /
+ * unexpected values return undefined so the caller omits the pill entirely; a
+ * presentation surface must never fabricate curation for an uncurated listing. */
+export function ogTierBadge(tier: string | null | undefined): string | undefined {
+  return tier && (CURATED_TIERS as readonly string[]).includes(tier)
+    ? safetyTierLabel(tier)
+    : undefined;
 }
 
 function tierScore(status: string): number {
@@ -171,12 +210,15 @@ function allergyScore(
     if (place.allergy_safety_tier === "strong_protocol") return { points: 4, matches: false };
     return { points: 0, matches: false };
   }
-  const matches = (place.allergy_needs ?? []).includes(need);
+  // Must be tagged for the need AND carry a real curated tier — an `unknown`
+  // (or unexpected) tier never counts as a match, even if allergy_needs is set.
+  const matches =
+    (place.allergy_needs ?? []).includes(need) &&
+    (CURATED_TIERS as readonly string[]).includes(place.allergy_safety_tier);
   if (!matches) return { points: -55, matches: false };
   if (place.allergy_safety_tier === "dedicated") return { points: 55, matches: true };
   if (place.allergy_safety_tier === "strong_protocol") return { points: 38, matches: true };
-  if (place.allergy_safety_tier === "shared_verify") return { points: 18, matches: true };
-  return { points: 5, matches: true };
+  return { points: 18, matches: true }; // shared_verify (only remaining curated tier)
 }
 
 export function scorePlace(
@@ -214,7 +256,9 @@ export function scorePlace(
     };
   }
 
-  breakdown.distance = distanceScore(place.distance_meters);
+  breakdown.distance = isPickupOnly(place)
+    ? 10 // neutral: judge on curation/tier, not a placeholder centroid pin
+    : distanceScore(place.distance_meters);
   breakdown.tier = tierScore(place.verification_status);
   breakdown.phone = place.phone?.trim() ? 12 : 0;
   breakdown.website = place.website_url?.trim() ? 8 : 0;

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { checkX402Access } from "@/lib/x402";
+import { checkX402Access, getClientIp } from "@/lib/x402";
+import { checkRateLimit } from "@/lib/rate-limit";
 import {
   buildClaimInvitation,
   buildRestSearchLinks,
@@ -13,14 +14,26 @@ export async function GET(request: Request) {
   const paymentRequired = await checkX402Access(request, "search");
   if (paymentRequired) return paymentRequired;
 
+  const ip = getClientIp(request);
+  const rate = await checkRateLimit({ key: `search:${ip}`, limit: 120, windowMs: 60_000 });
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests — slow down a moment." },
+      { status: 429 },
+    );
+  }
+
   const { searchParams } = new URL(request.url);
   
-  const query = searchParams.get("query") || "";
+  const query = (searchParams.get("query") || "").slice(0, 256);
   const lat = parseFloat(searchParams.get("lat") || "0");
   const lng = parseFloat(searchParams.get("lng") || "0");
-  const radiusMiles = parseFloat(searchParams.get("radius") || "5");
+  const radiusMiles = Math.min(
+    Math.max(parseFloat(searchParams.get("radius") || "5"), 0.5),
+    20,
+  );
   const minAdo = parseFloat(searchParams.get("ado_min") || "0");
-  const dietary = searchParams.getAll("dietary");
+  const dietary = Array.from(new Set(searchParams.getAll("dietary"))).slice(0, 9);
 
   if (!lat || !lng) {
     return NextResponse.json(

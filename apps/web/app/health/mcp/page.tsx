@@ -132,16 +132,16 @@ function fmtTimestamp(iso: string | null): string {
 }
 
 function tierBadgeClasses(tier: string | null | undefined): string {
-  if (tier === "verified") return "bg-emerald-950/40 text-emerald-300 ring-emerald-500/30";
-  if (tier === "menu_indexed") return "bg-amber-950/40 text-amber-300 ring-amber-500/30";
-  if (tier === "discovered") return "bg-zinc-800/60 text-zinc-400 ring-zinc-600/30";
-  return "bg-zinc-900/60 text-zinc-500 ring-zinc-700/30";
+  if (tier === "verified") return "bg-[var(--bg-2)] text-[var(--ok)] ring-[var(--ok)]";
+  if (tier === "menu_indexed") return "bg-[var(--accent-soft)] text-[var(--accent)] ring-[var(--accent)]";
+  if (tier === "discovered") return "bg-[var(--bg-2)] text-[var(--fg-mute)] ring-[var(--line)]";
+  return "bg-[var(--bg-2)] text-[var(--fg-mute)] ring-[var(--line)]";
 }
 
 function statusBadgeClasses(status: string): string {
-  if (status === "success") return "bg-emerald-950/40 text-emerald-300 ring-emerald-500/30";
-  if (status === "error") return "bg-rose-950/40 text-rose-300 ring-rose-500/30";
-  return "bg-zinc-900/60 text-zinc-400 ring-zinc-700/30";
+  if (status === "success") return "bg-[var(--bg-2)] text-[var(--ok)] ring-[var(--ok)]";
+  if (status === "error") return "bg-[var(--bg-2)] text-[var(--err)] ring-[var(--err)]";
+  return "bg-[var(--bg-2)] text-[var(--fg-mute)] ring-[var(--line)]";
 }
 
 export default async function McpUsagePage() {
@@ -149,14 +149,14 @@ export default async function McpUsagePage() {
 
   if (!data.configured) {
     return (
-      <main className="min-h-screen bg-zinc-950 text-zinc-100">
+      <main className="min-h-screen bg-[var(--bg)] text-[var(--fg)]">
         <div className="mx-auto max-w-3xl px-6 py-16">
           <h1 className="text-3xl font-semibold tracking-tight mb-3">MCP Usage</h1>
-          <p className="text-zinc-400">
+          <p className="text-[var(--fg-mute)]">
             Stats unavailable: <span className="font-mono">{data.reason}</span>.
           </p>
-          <p className="mt-4 text-sm text-zinc-500">
-            Configure <span className="font-mono text-zinc-300">SUPABASE_SERVICE_ROLE_KEY</span>{" "}
+          <p className="mt-4 text-sm text-[var(--fg-mute)]">
+            Configure <span className="font-mono text-[var(--fg-dim)]">SUPABASE_SERVICE_ROLE_KEY</span>{" "}
             to enable this dashboard.
           </p>
         </div>
@@ -184,25 +184,25 @@ export default async function McpUsagePage() {
   const topTier = Object.entries(tierTotalsByTier).sort((a, b) => b[1] - a[1])[0];
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100">
+    <main className="min-h-screen bg-[var(--bg)] text-[var(--fg)]">
       <div className="mx-auto max-w-5xl px-6 py-12">
         <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-sm font-medium uppercase tracking-widest text-amber-400/90 mb-2">
+            <p className="text-sm font-medium uppercase tracking-widest text-[var(--accent)] mb-2">
               Public usage stats
             </p>
             <h1 className="text-3xl font-semibold tracking-tight">MCP Usage</h1>
-            <p className="text-sm text-zinc-400 mt-1">
+            <p className="text-sm text-[var(--fg-mute)] mt-1">
               Aggregates only; no PII. Refreshed every minute.{" "}
               <a
                 href="/api/health/mcp"
-                className="text-amber-400/90 hover:underline font-mono text-xs"
+                className="text-[var(--accent)] hover:underline font-mono text-xs"
               >
                 /api/health/mcp
               </a>
             </p>
           </div>
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-[var(--fg-mute)]">
             Collected: <span className="font-mono">{fmtTimestamp(collectedAt)}</span>
           </p>
         </div>
@@ -238,11 +238,11 @@ export default async function McpUsagePage() {
         <section className="mb-10">
           <h2 className="text-xl font-medium mb-3">Per-tool (last 24h)</h2>
           {perTool.length === 0 ? (
-            <p className="text-sm text-zinc-500">No invocations in the last 24 hours.</p>
+            <p className="text-sm text-[var(--fg-mute)]">No invocations in the last 24 hours.</p>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900/40">
+            <div className="overflow-x-auto rounded-xl border border-[var(--line)] bg-[var(--bg-1)]">
               <table className="min-w-full text-sm">
-                <thead className="bg-zinc-900/60 text-xs uppercase tracking-wider text-zinc-500">
+                <thead className="bg-[var(--bg-2)] text-xs uppercase tracking-wider text-[var(--fg-mute)]">
                   <tr>
                     <Th>Tool</Th>
                     <Th align="right">Total</Th>
@@ -257,7 +257,7 @@ export default async function McpUsagePage() {
                   {[...perTool]
                     .sort((a, b) => b.total_count - a.total_count)
                     .map((t) => (
-                      <tr key={t.tool_name} className="border-t border-zinc-800/60">
+                      <tr key={t.tool_name} className="border-t border-[var(--line)]">
                         <Td mono>{t.tool_name}</Td>
                         <Td align="right">{fmtNumber(t.total_count)}</Td>
                         <Td align="right" subtle>
@@ -280,11 +280,11 @@ export default async function McpUsagePage() {
         <section className="mb-10">
           <h2 className="text-xl font-medium mb-3">Tier distribution (last 24h)</h2>
           {perTier.length === 0 ? (
-            <p className="text-sm text-zinc-500">No tier-bearing invocations yet.</p>
+            <p className="text-sm text-[var(--fg-mute)]">No tier-bearing invocations yet.</p>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900/40">
+            <div className="overflow-x-auto rounded-xl border border-[var(--line)] bg-[var(--bg-1)]">
               <table className="min-w-full text-sm">
-                <thead className="bg-zinc-900/60 text-xs uppercase tracking-wider text-zinc-500">
+                <thead className="bg-[var(--bg-2)] text-xs uppercase tracking-wider text-[var(--fg-mute)]">
                   <tr>
                     <Th>Tool</Th>
                     <Th>Tier returned</Th>
@@ -297,7 +297,7 @@ export default async function McpUsagePage() {
                     .map((row) => (
                       <tr
                         key={`${row.tool_name}-${row.tier_returned}`}
-                        className="border-t border-zinc-800/60"
+                        className="border-t border-[var(--line)]"
                       >
                         <Td mono>{row.tool_name}</Td>
                         <Td>
@@ -312,9 +312,9 @@ export default async function McpUsagePage() {
                     ))}
                 </tbody>
               </table>
-              <p className="px-4 py-3 text-xs text-zinc-500 border-t border-zinc-800/60">
+              <p className="px-4 py-3 text-xs text-[var(--fg-mute)] border-t border-[var(--line)]">
                 Top tier this window:{" "}
-                <span className="font-mono text-zinc-300">{topTier?.[0] ?? "—"}</span>{" "}
+                <span className="font-mono text-[var(--fg-dim)]">{topTier?.[0] ?? "—"}</span>{" "}
                 ({fmtNumber(topTier?.[1] ?? 0)} invocations).
               </p>
             </div>
@@ -324,11 +324,11 @@ export default async function McpUsagePage() {
         <section className="mb-10">
           <h2 className="text-xl font-medium mb-3">Recent invocations</h2>
           {recent.length === 0 ? (
-            <p className="text-sm text-zinc-500">No rows yet.</p>
+            <p className="text-sm text-[var(--fg-mute)]">No rows yet.</p>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900/40">
+            <div className="overflow-x-auto rounded-xl border border-[var(--line)] bg-[var(--bg-1)]">
               <table className="min-w-full text-sm">
-                <thead className="bg-zinc-900/60 text-xs uppercase tracking-wider text-zinc-500">
+                <thead className="bg-[var(--bg-2)] text-xs uppercase tracking-wider text-[var(--fg-mute)]">
                   <tr>
                     <Th>Time</Th>
                     <Th>Tool</Th>
@@ -342,7 +342,7 @@ export default async function McpUsagePage() {
                   {recent.map((r, i) => (
                     <tr
                       key={`${r.occurred_at}-${i}`}
-                      className="border-t border-zinc-800/60"
+                      className="border-t border-[var(--line)]"
                     >
                       <Td subtle>{fmtTimestamp(r.occurred_at)}</Td>
                       <Td mono>{r.tool_name}</Td>
@@ -362,7 +362,7 @@ export default async function McpUsagePage() {
                             {r.tier_returned}
                           </span>
                         ) : (
-                          <span className="text-zinc-600">—</span>
+                          <span className="text-[var(--fg-dim)]">—</span>
                         )}
                       </Td>
                       <Td align="right" subtle>
@@ -380,11 +380,11 @@ export default async function McpUsagePage() {
         <section className="mb-10">
           <h2 className="text-xl font-medium mb-3">Daily rollup (last 30 days)</h2>
           {daily.length === 0 ? (
-            <p className="text-sm text-zinc-500">No daily data yet.</p>
+            <p className="text-sm text-[var(--fg-mute)]">No daily data yet.</p>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900/40">
+            <div className="overflow-x-auto rounded-xl border border-[var(--line)] bg-[var(--bg-1)]">
               <table className="min-w-full text-sm">
-                <thead className="bg-zinc-900/60 text-xs uppercase tracking-wider text-zinc-500">
+                <thead className="bg-[var(--bg-2)] text-xs uppercase tracking-wider text-[var(--fg-mute)]">
                   <tr>
                     <Th>Day</Th>
                     <Th>Tool</Th>
@@ -397,7 +397,7 @@ export default async function McpUsagePage() {
                 </thead>
                 <tbody>
                   {daily.map((d, i) => (
-                    <tr key={`${d.day}-${d.tool_name}-${i}`} className="border-t border-zinc-800/60">
+                    <tr key={`${d.day}-${d.tool_name}-${i}`} className="border-t border-[var(--line)]">
                       <Td subtle mono>{String(d.day).slice(0, 10)}</Td>
                       <Td mono>{d.tool_name}</Td>
                       <Td>
@@ -415,7 +415,7 @@ export default async function McpUsagePage() {
                             {d.tier_returned}
                           </span>
                         ) : (
-                          <span className="text-zinc-600">—</span>
+                          <span className="text-[var(--fg-dim)]">—</span>
                         )}
                       </Td>
                       <Td align="right">{fmtNumber(d.invocations)}</Td>
@@ -433,46 +433,46 @@ export default async function McpUsagePage() {
           )}
         </section>
 
-        <section className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5 mb-10">
+        <section className="rounded-xl border border-[var(--line)] bg-[var(--bg-1)] p-5 mb-10">
           <h2 className="text-base font-medium mb-2">Notes</h2>
-          <ul className="space-y-2 text-sm text-zinc-400 list-disc list-inside">
+          <ul className="space-y-2 text-sm text-[var(--fg-mute)] list-disc list-inside">
             <li>
               All counts are aggregates from{" "}
-              <span className="font-mono text-zinc-300">mcp_invocations</span> and its
+              <span className="font-mono text-[var(--fg-dim)]">mcp_invocations</span> and its
               rollup views. No per-call payloads, prompts, or PII are stored or shown.
             </li>
             <li>
-              <strong className="text-zinc-300">Claim invitations shipped</strong> is a
+              <strong className="text-[var(--fg-dim)]">Claim invitations shipped</strong> is a
               proxy: count of successful, non-verified-tier invocations (every such
               response carries a structured{" "}
-              <span className="font-mono text-zinc-300">claim_invitation</span>{" "}
+              <span className="font-mono text-[var(--fg-dim)]">claim_invitation</span>{" "}
               payload).
             </li>
             <li>
               Raw rows are retained for 90 days then GC&apos;d by{" "}
-              <span className="font-mono text-zinc-300">
+              <span className="font-mono text-[var(--fg-dim)]">
                 /api/cron/cleanup-mcp-invocations
               </span>
               ; rollup views and lifetime count remain unaffected.
             </li>
             <li>
               Errors with code{" "}
-              <span className="font-mono text-zinc-300">VALIDATION_ERROR</span> are
+              <span className="font-mono text-[var(--fg-dim)]">VALIDATION_ERROR</span> are
               expected from flow tests and bad agent input; treat the success-rate KPI
               with that context.
             </li>
           </ul>
         </section>
 
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-[var(--fg-mute)]">
           Connect your MCP host:{" "}
-          <Link href="/docs" className="text-amber-400/90 hover:underline">
+          <Link href="/docs" className="text-[var(--accent)] hover:underline">
             /docs
           </Link>{" "}
           · Agent skill bundle:{" "}
           <a
             href="/skills/foodnearme/SKILL.md"
-            className="text-amber-400/90 hover:underline"
+            className="text-[var(--accent)] hover:underline"
           >
             /skills/foodnearme/SKILL.md
           </a>
@@ -494,14 +494,14 @@ function KpiTile({
   mono?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
-      <p className="text-xs uppercase tracking-wider text-zinc-500 mb-2">{label}</p>
+    <div className="rounded-xl border border-[var(--line)] bg-[var(--bg-1)] p-4">
+      <p className="text-xs uppercase tracking-wider text-[var(--fg-mute)] mb-2">{label}</p>
       <p
-        className={`text-2xl font-semibold text-zinc-100 ${mono ? "font-mono text-base" : ""}`}
+        className={`text-2xl font-semibold text-[var(--fg)] ${mono ? "font-mono text-base" : ""}`}
       >
         {value}
       </p>
-      {sublabel ? <p className="text-xs text-zinc-500 mt-1">{sublabel}</p> : null}
+      {sublabel ? <p className="text-xs text-[var(--fg-mute)] mt-1">{sublabel}</p> : null}
     </div>
   );
 }
@@ -536,8 +536,8 @@ function Td({
   subtle?: boolean;
 }) {
   const alignClass = align === "right" ? "text-right" : "text-left";
-  const monoClass = mono ? "font-mono text-xs text-zinc-200" : "text-sm";
-  const subtleClass = subtle ? "text-zinc-500" : "text-zinc-300";
+  const monoClass = mono ? "font-mono text-xs text-[var(--fg)]" : "text-sm";
+  const subtleClass = subtle ? "text-[var(--fg-mute)]" : "text-[var(--fg-dim)]";
   return (
     <td className={`px-4 py-2 ${alignClass} ${monoClass} ${subtleClass}`}>{children}</td>
   );

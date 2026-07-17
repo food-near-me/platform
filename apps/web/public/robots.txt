@@ -1,6 +1,8 @@
 # foodnear.me robots.txt
 # AI-native restaurant discovery infrastructure
 
+Sitemap: https://foodnear.me/sitemap.xml
+
 User-agent: *
 Allow: /
 Disallow: /dashboard/

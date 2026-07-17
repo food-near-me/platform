@@ -6,6 +6,14 @@ export const metadata: Metadata = {
   title: "Data Attribution | foodnear.me",
   description:
     "Open data sources and licenses for discovered restaurant listings on foodnear.me — OpenStreetMap, NYC Open Data, and owner-verified Menu Protocol data.",
+  alternates: { canonical: "/attribution" },
+  openGraph: {
+    title: "Data Attribution | foodnear.me",
+    description: "Open data sources and licenses for discovered restaurant listings on foodnear.me — OpenStreetMap, NYC Open Data, and owner-verified Menu Protocol data.",
+    url: "/attribution",
+    siteName: "foodnear.me",
+    type: "website",
+  }
 };
 
 export default function AttributionPage() {

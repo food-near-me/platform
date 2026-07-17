@@ -5,6 +5,14 @@ export const metadata: Metadata = {
   title: "Privacy Policy | foodnear.me",
   description:
     "Privacy Policy for foodnear.me — how we collect, use, and protect data for our restaurant discovery platform and API.",
+  alternates: { canonical: "/privacy" },
+  openGraph: {
+    title: "Privacy Policy | foodnear.me",
+    description: "Privacy Policy for foodnear.me — how we collect, use, and protect data for our restaurant discovery platform and API.",
+    url: "/privacy",
+    siteName: "foodnear.me",
+    type: "website",
+  }
 };
 
 export default function PrivacyPage() {

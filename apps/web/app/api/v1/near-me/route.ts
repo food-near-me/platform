@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
-import { getSql, isDatabaseConfigured } from "@/lib/db/neon";
+import { getSql, isDatabaseConfigured, sqlQuery } from "@/lib/db/neon";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/x402";
 import { buildSearchTrustNotice } from "@/lib/discovery/verification-status";
 import { telHref } from "@/lib/near-me/hours";
+import { trustLabel } from "@/lib/near-me/labels";
 import { getFilterNeighborhood } from "@/lib/near-me/neighborhood";
 import {
   isAllergyNeed,
+  isAllergySafetyTier,
   rankPlaces,
   safetyTierLabel,
-  type AllergySafetyTier,
   type RankablePlace,
 } from "@/lib/near-me/rank";
 import { log } from "@/lib/log";
@@ -41,12 +44,6 @@ type ProfileRow = {
   allergy_safety_note: string | null;
 };
 
-function trustLabel(status: string): string {
-  if (status === "verified") return "verified";
-  if (status === "menu_indexed") return "menu indexed";
-  return "listed";
-}
-
 function mapsUrl(name: string, address?: string | null) {
   const q = encodeURIComponent([name, address].filter(Boolean).join(", "));
   return `https://www.google.com/maps/search/?api=1&query=${q}`;
@@ -64,8 +61,20 @@ export async function GET(request: Request) {
     );
   }
 
+  // Public endpoint — per-IP flood protection. Generous, since the UI fires a
+  // search on each filter change. Degrades to best-effort in-memory if Upstash
+  // is unconfigured, never blocking legitimate use.
+  const ip = getClientIp(request);
+  const rate = await checkRateLimit({ key: `near-me:${ip}`, limit: 120, windowMs: 60_000 });
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests — slow down a moment." },
+      { status: 429 },
+    );
+  }
+
   const { searchParams } = new URL(request.url);
-  const query = (searchParams.get("query") || "").trim();
+  const query = (searchParams.get("query") || "").trim().slice(0, 256);
   const lat = parseFloat(searchParams.get("lat") || "");
   const lng = parseFloat(searchParams.get("lng") || "");
   const needRaw = (searchParams.get("need") || "").trim().toLowerCase();
@@ -99,7 +108,7 @@ export async function GET(request: Request) {
   const sql = getSql();
 
   try {
-    const rows = (await sql.query(
+    const rows = await sqlQuery<SearchRow>(
       `SELECT * FROM search_restaurants_for_agents(
         search_query := $1,
         lat := $2,
@@ -109,12 +118,12 @@ export async function GET(request: Request) {
         dietary_filters := $6::text[]
       )`,
       [query, lat, lng, radiusMeters, 0, []],
-    )) as SearchRow[];
+    );
 
     // Always pull curated allergy places in radius when need is set (even with a
     // cuisine query) so Also nearby stays on-need instead of padding with chains.
     const curatedExtra = need
-      ? ((await sql.query(
+      ? await sqlQuery<SearchRow>(
             `SELECT
                id, name, slug,
                ST_Distance(location, ST_SetSRID(ST_MakePoint($2,$1), 4326)::geography) AS distance_meters,
@@ -122,6 +131,8 @@ export async function GET(request: Request) {
                false AS menu_available, source AS data_source
              FROM restaurants
              WHERE allergy_needs @> ARRAY[$3]::text[]
+               -- honesty guard: only curated tiers may surface for a need filter
+               AND allergy_safety_tier IN ('dedicated', 'strong_protocol', 'shared_verify')
                AND ST_DWithin(
                  location,
                  ST_SetSRID(ST_MakePoint($2,$1), 4326)::geography,
@@ -137,22 +148,24 @@ export async function GET(request: Request) {
                location <-> ST_SetSRID(ST_MakePoint($2,$1), 4326)::geography
              LIMIT 30`,
             [lat, lng, need, radiusMeters],
-          )) as SearchRow[])
+          )
       : [];
 
+    // Main-search rows carry the authoritative menu_available; let them win over
+    // the curatedExtra stub (which hardcodes false) when a place is in both.
     const byId = new Map<string, SearchRow>();
-    for (const r of [...rows, ...curatedExtra]) byId.set(r.id, r);
+    for (const r of [...curatedExtra, ...rows]) byId.set(r.id, r);
     const merged = [...byId.values()];
 
     const ids = merged.map((r) => r.id);
     const profileById = new Map<string, ProfileRow>();
     if (ids.length) {
-      const profiles = (await sql.query(
+      const profiles = await sqlQuery<ProfileRow>(
         `SELECT id, address, website_url, phone, opening_hours,
                 allergy_needs, allergy_safety_tier, allergy_safety_note
          FROM restaurants WHERE id = ANY($1::uuid[])`,
         [ids],
-      )) as ProfileRow[];
+      );
       for (const p of profiles) profileById.set(p.id, p);
     }
 
@@ -172,7 +185,9 @@ export async function GET(request: Request) {
         opening_hours: p?.opening_hours ?? null,
         data_source: r.data_source,
         allergy_needs: p?.allergy_needs ?? [],
-        allergy_safety_tier: (p?.allergy_safety_tier as AllergySafetyTier) || "unknown",
+        allergy_safety_tier: isAllergySafetyTier(p?.allergy_safety_tier)
+          ? p.allergy_safety_tier
+          : "unknown",
         allergy_safety_note: p?.allergy_safety_note ?? null,
       };
     });
@@ -197,10 +212,7 @@ export async function GET(request: Request) {
       cuisine_type: r.cuisine_type,
       verification_status: r.verification_status,
       trust_label: trustLabel(r.verification_status),
-      trust_notice: buildSearchTrustNotice(
-        r.verification_status as "discovered" | "menu_indexed" | "verified",
-        r.menu_available,
-      ),
+      trust_notice: buildSearchTrustNotice(r.verification_status, r.menu_available),
       menu_available: r.menu_available,
       address: r.address,
       website_url: r.website_url,

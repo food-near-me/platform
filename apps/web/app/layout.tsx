@@ -15,6 +15,7 @@ const figtree = Figtree({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://foodnear.me"),
   title: "foodnear.me — food near you",
   description:
     "Find allergy-aware places to eat in Miami and Jacksonville — curated kitchen notes, hours when we have them, no ads.",

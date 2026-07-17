@@ -63,9 +63,6 @@ export const FILTER_NEIGHBORHOODS_JAX: FilterNeighborhood[] = [
   { id: "southside", name: "Southside", lat: 30.25, lng: -81.55, radiusMiles: 4.0 },
 ];
 
-/** @deprecated Prefer getNeighborhoodsForCity — Miami list kept for imports. */
-export const FILTER_NEIGHBORHOODS = FILTER_NEIGHBORHOODS_MIAMI;
-
 export function getNeighborhoodsForCity(cityId: BeachheadId): FilterNeighborhood[] {
   return cityId === "jacksonville" ? FILTER_NEIGHBORHOODS_JAX : FILTER_NEIGHBORHOODS_MIAMI;
 }

@@ -5,6 +5,14 @@ export const metadata: Metadata = {
   title: "Terms of Service | foodnear.me",
   description:
     "Terms of Service for foodnear.me — Menu Protocol infrastructure, API access, and beta restaurant discovery services.",
+  alternates: { canonical: "/terms" },
+  openGraph: {
+    title: "Terms of Service | foodnear.me",
+    description: "Terms of Service for foodnear.me — Menu Protocol infrastructure, API access, and beta restaurant discovery services.",
+    url: "/terms",
+    siteName: "foodnear.me",
+    type: "website",
+  }
 };
 
 export default function TermsPage() {

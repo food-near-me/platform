@@ -29,3 +29,10 @@ export const TIER_BLURB: Record<string, string> = {
 export function tierBlurb(tier: string): string {
   return TIER_BLURB[tier] ?? TIER_BLURB.unknown;
 }
+
+/** Trust label for a listing's verification status (shared by API + place page). */
+export function trustLabel(status: string): string {
+  if (status === "verified") return "verified";
+  if (status === "menu_indexed") return "menu indexed";
+  return "listed";
+}

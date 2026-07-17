@@ -21,7 +21,7 @@ export default async function VerifyMenuPage({ searchParams }: PageProps) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-4 px-6 py-12">
         <h1 className="text-2xl font-semibold">Verify Menu</h1>
-        <p className="text-zinc-600">
+        <p className="text-[var(--fg-dim)]">
           Start from a{" "}
           <Link href="/" className="underline">
             claim page
@@ -64,7 +64,7 @@ export default async function VerifyMenuPage({ searchParams }: PageProps) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-4 px-6 py-12">
         <h1 className="text-2xl font-semibold">No menu to verify</h1>
-        <p className="text-zinc-600">
+        <p className="text-[var(--fg-dim)]">
           Return to{" "}
           <Link href={`/claim/${restaurantId}`} className="underline">
             claim {restaurant.name}
@@ -122,7 +122,7 @@ export default async function VerifyMenuPage({ searchParams }: PageProps) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-4 px-6 py-12">
         <h1 className="text-2xl font-semibold">Verification link required</h1>
-        <p className="text-zinc-600">
+        <p className="text-[var(--fg-dim)]">
           This review page requires a valid one-time claim link sent to an owner email address.
           Links expire after 24 hours.
         </p>
@@ -146,7 +146,7 @@ export default async function VerifyMenuPage({ searchParams }: PageProps) {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{restaurant.name}</h1>
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-[var(--fg-mute)]">
             Review menu data before agents treat it as owner-verified.
           </p>
         </div>
@@ -161,28 +161,28 @@ export default async function VerifyMenuPage({ searchParams }: PageProps) {
         </span>
       </div>
 
-      <section className="rounded-xl border border-zinc-200 bg-white overflow-hidden">
-        <div className="border-b border-zinc-200 px-4 py-3">
-          <h2 className="text-sm font-semibold text-zinc-700">Menu Protocol preview</h2>
+      <section className="rounded-xl border border-[var(--line)] bg-[var(--bg-1)] overflow-hidden">
+        <div className="border-b border-[var(--line)] px-4 py-3">
+          <h2 className="text-sm font-semibold text-[var(--fg)]">Menu Protocol preview</h2>
         </div>
 
         <div className="max-h-[60vh] overflow-y-auto p-4 space-y-6">
           {(categories ?? []).map((category: any) => (
             <div key={category.id} className="space-y-3">
-              <h3 className="text-lg font-medium border-b border-zinc-100 pb-2">
+              <h3 className="text-lg font-medium border-b border-[var(--line)] pb-2">
                 {category.name}
               </h3>
               {(itemsByCategory.get(category.id) ?? []).map((item) => (
                 <article
                   key={item.id}
-                  className="rounded-lg border border-zinc-200 p-4 space-y-2"
+                  className="rounded-lg border border-[var(--line)] p-4 space-y-2"
                 >
                   <div className="flex justify-between gap-4">
-                    <p className="font-medium text-zinc-900">{item.name}</p>
-                    <p className="text-zinc-700">${Number(item.price).toFixed(2)}</p>
+                    <p className="font-medium text-[var(--fg)]">{item.name}</p>
+                    <p className="text-[var(--fg)]">${Number(item.price).toFixed(2)}</p>
                   </div>
                   {item.description ? (
-                    <p className="text-sm text-zinc-600">{item.description}</p>
+                    <p className="text-sm text-[var(--fg-dim)]">{item.description}</p>
                   ) : null}
                   <div className="flex flex-wrap gap-2 text-xs">
                     {item.dietary_vegetarian ? (
@@ -201,7 +201,7 @@ export default async function VerifyMenuPage({ searchParams }: PageProps) {
                       </span>
                     ) : null}
                     {(item.allergens ?? []).length > 0 ? (
-                      <span className="text-zinc-500">
+                      <span className="text-[var(--fg-mute)]">
                         Allergens: {(item.allergens ?? []).join(", ")}
                       </span>
                     ) : null}
@@ -214,7 +214,7 @@ export default async function VerifyMenuPage({ searchParams }: PageProps) {
       </section>
 
       {!isVerified ? (
-        <section className="rounded-xl border border-zinc-200 bg-white p-4">
+        <section className="rounded-xl border border-[var(--line)] bg-[var(--bg-1)] p-4">
           <div className="rounded-md bg-blue-50 p-4 mb-4">
             <p className="text-sm text-blue-700">
               By approving, you cryptographically sign this payload and upgrade the listing to

@@ -592,6 +592,18 @@ main.page {
   box-shadow: var(--shadow-md);
 }
 
+/* Keyboard focus visibility — WCAG 2.4.7. Coral outline, no layout shift. */
+.btn:focus-visible,
+.btn-ghost:focus-visible,
+.topbar .nav-link:focus-visible,
+.topbar .nav-cta:focus-visible,
+.audience-toggle button:focus-visible,
+.plan-selector button:focus-visible,
+.near-me-search-submit:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* ── Status dot ─────────────────────────────────────────────── */
 .dot {
   width: 6px;
@@ -1636,6 +1648,21 @@ main.page {
   display: none;
 }
 
+/* Touch devices: reveal a thin scrollbar so overflow is discoverable. */
+@media (hover: none) {
+  .near-me-filter-row {
+    scrollbar-width: thin;
+  }
+  .near-me-filter-row::-webkit-scrollbar {
+    display: block;
+    height: 3px;
+  }
+  .near-me-filter-row::-webkit-scrollbar-thumb {
+    background: var(--fg-faint);
+    border-radius: 2px;
+  }
+}
+
 .near-me-filter-label {
   flex-shrink: 0;
   font-size: 0.7rem;
@@ -1648,6 +1675,9 @@ main.page {
 
 .near-me-chip {
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font: inherit;
   font-size: 0.88rem;
   font-weight: 600;
@@ -1666,6 +1696,19 @@ main.page {
 .near-me-chip:hover {
   background: var(--bg-2);
   color: var(--fg);
+}
+
+.near-me-chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Touch devices: meet the 44px tap-target minimum. */
+@media (hover: none) {
+  .near-me-chip {
+    min-height: 44px;
+    padding: 0.7rem 0.95rem;
+  }
 }
 
 .near-me-chip.is-active {
@@ -1708,7 +1751,7 @@ main.page {
   appearance: none;
   border: 0;
   background: transparent;
-  padding: 0.25rem 0;
+  padding: 0.4rem 0.35rem;
   font: inherit;
   font-size: 0.88rem;
   font-weight: 700;
@@ -1716,10 +1759,25 @@ main.page {
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
+  border-radius: 6px;
 }
 
 .near-me-text-btn:hover {
   color: var(--accent);
+}
+
+.near-me-text-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Touch devices: keep these primary actions at the 44px tap-target minimum. */
+@media (hover: none) {
+  .near-me-text-btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
 }
 
 .near-me-status {
@@ -1754,9 +1812,22 @@ main.page {
 }
 
 .near-me-toggle input {
-  width: 1rem;
-  height: 1rem;
+  width: 1.15rem;
+  height: 1.15rem;
   accent-color: var(--accent);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+/* Touch devices: larger checkbox + 44px row for reliable activation. */
+@media (hover: none) {
+  .near-me-toggle {
+    min-height: 44px;
+  }
+  .near-me-toggle input {
+    width: 1.4rem;
+    height: 1.4rem;
+  }
 }
 
 .near-me-error {
@@ -2382,12 +2453,26 @@ main.page {
   }
 
   .near-me-filter-label {
-    display: none;
+    font-size: 0.58rem;
+    min-width: 2rem;
+    white-space: nowrap;
   }
 
   .near-me-status-row {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  /* Tighter cards + gutters so listings breathe at 360px. */
+  .near-me-list {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1rem 0.75rem;
+  }
+
+  /* Fade the right edge as a scroll affordance for overflowing chip rows. */
+  .near-me-filter-row {
+    -webkit-mask-image: linear-gradient(to right, #000 90%, transparent);
+    mask-image: linear-gradient(to right, #000 90%, transparent);
   }
 }
 

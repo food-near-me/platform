@@ -32,59 +32,59 @@ vegan options. Use find_restaurants_along_route.`;
 
 export default function DocsPage() {
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100">
+    <main className="min-h-screen bg-[var(--bg)] text-[var(--fg)]">
       <div className="mx-auto max-w-3xl px-6 py-16">
-        <p className="text-sm font-medium uppercase tracking-widest text-amber-400/90 mb-3">
+        <p className="text-sm font-medium uppercase tracking-widest text-[var(--accent)] mb-3">
           Model Context Protocol
         </p>
         <h1 className="text-4xl font-semibold tracking-tight mb-4">
           Connect your AI agent
         </h1>
-        <p className="text-lg text-zinc-400 mb-8">
+        <p className="text-lg text-[var(--fg-dim)] mb-8">
           Plug foodnear.me into Claude Desktop, Cursor, or any MCP host —{" "}
-          <strong className="text-zinc-200">8 tools</strong> (5 atomic + 3 FNM-unique
+          <strong className="text-[var(--fg)]">8 tools</strong> (5 atomic + 3 FNM-unique
           composites),{" "}
-          <strong className="text-zinc-200">4 resources</strong>,{" "}
-          <strong className="text-zinc-200">3 prompts</strong>, no API key during beta.
+          <strong className="text-[var(--fg)]">4 resources</strong>,{" "}
+          <strong className="text-[var(--fg)]">3 prompts</strong>, no API key during beta.
         </p>
 
         <section
           id="quick-start"
-          className="scroll-mt-8 mb-10 rounded-xl border border-zinc-800 bg-zinc-900/50 p-6"
+          className="scroll-mt-8 mb-10 rounded-xl border border-[var(--line)] bg-[var(--bg-1)] p-6"
         >
           <h2 className="text-xl font-medium mb-4">Quick start</h2>
-          <ol className="list-decimal list-inside space-y-2 text-sm text-zinc-400 mb-6">
+          <ol className="list-decimal list-inside space-y-2 text-sm text-[var(--fg-dim)] mb-6">
             <li>
-              Open <span className="font-mono text-zinc-300">~/.cursor/mcp.json</span> or
+              Open <span className="font-mono text-[var(--fg-dim)]">~/.cursor/mcp.json</span> or
               Claude Desktop&apos;s{" "}
-              <span className="font-mono text-zinc-300">claude_desktop_config.json</span>
+              <span className="font-mono text-[var(--fg-dim)]">claude_desktop_config.json</span>
             </li>
             <li>Paste the config below</li>
             <li>Restart your MCP host</li>
           </ol>
-          <pre className="overflow-x-auto rounded-lg bg-zinc-950 p-4 text-sm text-zinc-300 border border-zinc-800">
+          <pre className="overflow-x-auto rounded-lg bg-[var(--bg)] p-4 text-sm text-[var(--fg-dim)] border border-[var(--line)]">
             {mcpConfig}
           </pre>
-          <p className="mt-4 text-xs text-zinc-500">
+          <p className="mt-4 text-xs text-[var(--fg-dim)]">
             Endpoint:{" "}
-            <span className="font-mono text-zinc-400">https://foodnear.me/mcp</span>
+            <span className="font-mono text-[var(--fg-dim)]">https://foodnear.me/mcp</span>
             {" · "}
-            <a href="/.well-known/mcp-server.json" className="text-amber-400/90 hover:underline">
+            <a href="/.well-known/mcp-server.json" className="text-[var(--accent)] hover:underline">
               mcp-server.json
             </a>
             {" · "}
-            <a href="/llms.txt" className="text-amber-400/90 hover:underline">
+            <a href="/llms.txt" className="text-[var(--accent)] hover:underline">
               llms.txt
             </a>
             {" · "}
             <a
               href="/skills/foodnearme/SKILL.md"
-              className="text-amber-400/90 hover:underline"
+              className="text-[var(--accent)] hover:underline"
             >
               SKILL.md
             </a>
             {" · "}
-            <Link href="/health/mcp" className="text-amber-400/90 hover:underline">
+            <Link href="/health/mcp" className="text-[var(--accent)] hover:underline">
               usage stats
             </Link>
           </p>
@@ -92,61 +92,61 @@ export default function DocsPage() {
 
         <section className="mb-10">
           <h2 className="text-xl font-medium mb-3">Atomic tools (5)</h2>
-          <ul className="space-y-2 text-sm text-zinc-400">
+          <ul className="space-y-2 text-sm text-[var(--fg-dim)]">
             <li>
-              <code className="text-amber-200/90">search_restaurants</code> — three-tier
+              <code className="text-[var(--accent)]">search_restaurants</code> — three-tier
               search (verified → menu_indexed → discovered). Accepts flat{" "}
-              <code className="text-zinc-300">lat</code>/
-              <code className="text-zinc-300">lng</code> or Google-style{" "}
-              <code className="text-zinc-300">locationBias.circle</code>. Check{" "}
-              <code className="text-zinc-300">menu_available</code> before{" "}
-              <code className="text-zinc-300">get_menu</code>.
+              <code className="text-[var(--fg-dim)]">lat</code>/
+              <code className="text-[var(--fg-dim)]">lng</code> or Google-style{" "}
+              <code className="text-[var(--fg-dim)]">locationBias.circle</code>. Check{" "}
+              <code className="text-[var(--fg-dim)]">menu_available</code> before{" "}
+              <code className="text-[var(--fg-dim)]">get_menu</code>.
             </li>
             <li>
-              <code className="text-amber-200/90">get_restaurant</code> — Schema.org
+              <code className="text-[var(--accent)]">get_restaurant</code> — Schema.org
               JSON-LD profile with Menu Protocol extensions.
             </li>
             <li>
-              <code className="text-amber-200/90">get_menu</code> — Menu Protocol v1.0
+              <code className="text-[var(--accent)]">get_menu</code> — Menu Protocol v1.0
               menu (dietary booleans, allergens, Ed25519 signature on verified tier).
             </li>
             <li>
-              <code className="text-amber-200/90">get_ado_score_breakdown</code> — ADO
+              <code className="text-[var(--accent)]">get_ado_score_breakdown</code> — ADO
               factors + improvement recommendations.
             </li>
             <li>
-              <code className="text-amber-200/90">validate_menu_protocol</code> —
+              <code className="text-[var(--accent)]">validate_menu_protocol</code> —
               validate Menu Protocol JSON before publish (strict mode available).
             </li>
           </ul>
         </section>
 
-        <section className="mb-10 rounded-xl border border-amber-900/40 bg-amber-950/10 p-6">
-          <p className="text-xs font-medium uppercase tracking-widest text-amber-400/80 mb-2">
+        <section className="mb-10 rounded-xl border border-[var(--accent)] bg-[var(--accent-soft)] p-6">
+          <p className="text-xs font-medium uppercase tracking-widest text-[var(--accent)] mb-2">
             FNM-unique
           </p>
           <h2 className="text-xl font-medium mb-3">Composite tools (3)</h2>
-          <p className="text-sm text-zinc-400 mb-4">
+          <p className="text-sm text-[var(--fg-dim)] mb-4">
             Higher-level tools that chain atomic calls. These exist because they leverage
             FNM&apos;s signed-menu data — a generic place-search MCP can&apos;t produce
             equivalent results.
           </p>
-          <ul className="space-y-2 text-sm text-zinc-400">
+          <ul className="space-y-2 text-sm text-[var(--fg-dim)]">
             <li>
-              <code className="text-amber-200/90">explore_area_for_diet</code> — bucketed
+              <code className="text-[var(--accent)]">explore_area_for_diet</code> — bucketed
               neighborhood overview (verified / menu_indexed / discovered) with{" "}
-              <code className="text-zinc-300">tier_counts</code> and{" "}
-              <code className="text-zinc-300">next_steps</code>.
+              <code className="text-[var(--fg-dim)]">tier_counts</code> and{" "}
+              <code className="text-[var(--fg-dim)]">next_steps</code>.
             </li>
             <li>
-              <code className="text-amber-200/90">compare_restaurants_for_diet</code> —
+              <code className="text-[var(--accent)]">compare_restaurants_for_diet</code> —
               side-by-side dietary comparison across 2-5 restaurants, ranked by item
               count then trust tier.
             </li>
             <li>
-              <code className="text-amber-200/90">find_restaurants_along_route</code> —
+              <code className="text-[var(--accent)]">find_restaurants_along_route</code> —
               route-adjacent discovery between two coordinates. Optional{" "}
-              <code className="text-zinc-300">route_polyline</code> from your routing
+              <code className="text-[var(--fg-dim)]">route_polyline</code> from your routing
               source; otherwise local great-circle approximation (no external routing
               service ever).
             </li>
@@ -155,35 +155,35 @@ export default function DocsPage() {
 
         <section className="mb-10">
           <h2 className="text-xl font-medium mb-3">Example interactions</h2>
-          <p className="text-sm text-zinc-400 mb-4">
+          <p className="text-sm text-[var(--fg-dim)] mb-4">
             Paste any of these prompts into Cursor or Claude Desktop after the quick
             start. They exercise different tools.
           </p>
           <div className="space-y-4">
             <details
               open
-              className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-4 [&_summary]:cursor-pointer"
+              className="rounded-lg border border-[var(--line)] bg-[var(--bg-1)] p-4 [&_summary]:cursor-pointer"
             >
-              <summary className="text-sm font-medium text-zinc-200">
+              <summary className="text-sm font-medium text-[var(--fg)]">
                 search → get_menu (verified dietary discovery)
               </summary>
-              <pre className="mt-3 overflow-x-auto rounded bg-zinc-950 p-3 text-xs text-zinc-300 border border-zinc-800 whitespace-pre-wrap">
+              <pre className="mt-3 overflow-x-auto rounded bg-[var(--bg)] p-3 text-xs text-[var(--fg-dim)] border border-[var(--line)] whitespace-pre-wrap">
                 {examplePromptSearch}
               </pre>
             </details>
-            <details className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-4 [&_summary]:cursor-pointer">
-              <summary className="text-sm font-medium text-zinc-200">
+            <details className="rounded-lg border border-[var(--line)] bg-[var(--bg-1)] p-4 [&_summary]:cursor-pointer">
+              <summary className="text-sm font-medium text-[var(--fg)]">
                 compare_restaurants_for_diet (FNM-unique)
               </summary>
-              <pre className="mt-3 overflow-x-auto rounded bg-zinc-950 p-3 text-xs text-zinc-300 border border-zinc-800 whitespace-pre-wrap">
+              <pre className="mt-3 overflow-x-auto rounded bg-[var(--bg)] p-3 text-xs text-[var(--fg-dim)] border border-[var(--line)] whitespace-pre-wrap">
                 {examplePromptCompare}
               </pre>
             </details>
-            <details className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-4 [&_summary]:cursor-pointer">
-              <summary className="text-sm font-medium text-zinc-200">
+            <details className="rounded-lg border border-[var(--line)] bg-[var(--bg-1)] p-4 [&_summary]:cursor-pointer">
+              <summary className="text-sm font-medium text-[var(--fg)]">
                 find_restaurants_along_route (FNM-unique)
               </summary>
-              <pre className="mt-3 overflow-x-auto rounded bg-zinc-950 p-3 text-xs text-zinc-300 border border-zinc-800 whitespace-pre-wrap">
+              <pre className="mt-3 overflow-x-auto rounded bg-[var(--bg)] p-3 text-xs text-[var(--fg-dim)] border border-[var(--line)] whitespace-pre-wrap">
                 {examplePromptRoute}
               </pre>
             </details>
@@ -192,7 +192,7 @@ export default function DocsPage() {
 
         <section className="mb-10">
           <h2 className="text-xl font-medium mb-3">Resources</h2>
-          <ul className="space-y-1 text-sm font-mono text-zinc-500">
+          <ul className="space-y-1 text-sm font-mono text-[var(--fg-dim)]">
             <li>foodnearme://spec/menu-protocol</li>
             <li>foodnearme://spec/openapi</li>
             <li>foodnearme://agent/skill</li>
@@ -202,87 +202,87 @@ export default function DocsPage() {
 
         <section className="mb-10">
           <h2 className="text-xl font-medium mb-3">Prompts</h2>
-          <ul className="space-y-2 text-sm text-zinc-400">
+          <ul className="space-y-2 text-sm text-[var(--fg-dim)]">
             <li>
-              <code className="text-amber-200/90">find_dinner_near_me</code> — location +
+              <code className="text-[var(--accent)]">find_dinner_near_me</code> — location +
               optional cuisine/dietary
             </li>
             <li>
-              <code className="text-amber-200/90">dietary_constrained_menu</code> —
+              <code className="text-[var(--accent)]">dietary_constrained_menu</code> —
               restaurant_id + restrictions
             </li>
             <li>
-              <code className="text-amber-200/90">validate_my_menu</code> — validate
+              <code className="text-[var(--accent)]">validate_my_menu</code> — validate
               Menu Protocol JSON before publish
             </li>
           </ul>
         </section>
 
-        <section className="mb-10 rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+        <section className="mb-10 rounded-xl border border-[var(--line)] bg-[var(--bg-1)] p-6">
           <h2 className="text-xl font-medium mb-3">Tool errors</h2>
-          <p className="text-sm text-zinc-400 mb-3">
-            Failed tool calls return <code className="text-zinc-300">_meta.error</code>{" "}
-            with <code className="text-zinc-300">code</code>,{" "}
-            <code className="text-zinc-300">hint</code>, and{" "}
-            <code className="text-zinc-300">retryable</code> so agents can self-correct.
+          <p className="text-sm text-[var(--fg-dim)] mb-3">
+            Failed tool calls return <code className="text-[var(--fg-dim)]">_meta.error</code>{" "}
+            with <code className="text-[var(--fg-dim)]">code</code>,{" "}
+            <code className="text-[var(--fg-dim)]">hint</code>, and{" "}
+            <code className="text-[var(--fg-dim)]">retryable</code> so agents can self-correct.
           </p>
-          <p className="text-xs font-mono text-zinc-500">
+          <p className="text-xs font-mono text-[var(--fg-dim)]">
             VALIDATION_ERROR · NOT_FOUND · UPSTREAM
           </p>
         </section>
 
-        <section className="mb-10 rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+        <section className="mb-10 rounded-xl border border-[var(--line)] bg-[var(--bg-1)] p-6">
           <h2 className="text-xl font-medium mb-3">Data trust (three-tier search)</h2>
-          <p className="text-sm text-zinc-400 mb-3">
-            <code className="text-zinc-300">search_restaurants</code> returns{" "}
-            <strong className="text-zinc-200">verified</strong> →{" "}
-            <strong className="text-zinc-200">menu_indexed</strong> →{" "}
-            <strong className="text-zinc-200">discovered</strong> (place only when no
+          <p className="text-sm text-[var(--fg-dim)] mb-3">
+            <code className="text-[var(--fg-dim)]">search_restaurants</code> returns{" "}
+            <strong className="text-[var(--fg)]">verified</strong> →{" "}
+            <strong className="text-[var(--fg)]">menu_indexed</strong> →{" "}
+            <strong className="text-[var(--fg)]">discovered</strong> (place only when no
             menu).
           </p>
-          <ul className="list-disc list-inside space-y-2 text-sm text-zinc-400">
+          <ul className="list-disc list-inside space-y-2 text-sm text-[var(--fg-dim)]">
             <li>
-              <code className="text-zinc-300">verified</code> +{" "}
-              <code className="text-zinc-300">menu_available: true</code> —
+              <code className="text-[var(--fg-dim)]">verified</code> +{" "}
+              <code className="text-[var(--fg-dim)]">menu_available: true</code> —
               owner-approved MP, Ed25519-signed (content-bound on{" "}
-              <code className="text-zinc-300">fnm-v1</code>); authoritative for
+              <code className="text-[var(--fg-dim)]">fnm-v1</code>); authoritative for
               dietary/allergen claims
             </li>
             <li>
-              <code className="text-zinc-300">menu_indexed</code> +{" "}
-              <code className="text-zinc-300">menu_available: true</code> — automated /
+              <code className="text-[var(--fg-dim)]">menu_indexed</code> +{" "}
+              <code className="text-[var(--fg-dim)]">menu_available: true</code> — automated /
               public menu; cite with caveat, do not treat dietary/allergens as
               authoritative
             </li>
             <li>
-              <code className="text-zinc-300">discovered</code> +{" "}
-              <code className="text-zinc-300">menu_available: false</code> — place data
+              <code className="text-[var(--fg-dim)]">discovered</code> +{" "}
+              <code className="text-[var(--fg-dim)]">menu_available: false</code> — place data
               only; do not cite menu items
             </li>
             <li>
-              Trust progression: <code className="text-zinc-300">discovered</code> →{" "}
-              <code className="text-zinc-300">menu_indexed</code> →{" "}
-              <code className="text-zinc-300">verified</code>
+              Trust progression: <code className="text-[var(--fg-dim)]">discovered</code> →{" "}
+              <code className="text-[var(--fg-dim)]">menu_indexed</code> →{" "}
+              <code className="text-[var(--fg-dim)]">verified</code>
             </li>
           </ul>
-          <p className="mt-4 text-xs text-zinc-500">
-            <a href="/attribution" className="text-amber-400/90 hover:underline">
+          <p className="mt-4 text-xs text-[var(--fg-dim)]">
+            <a href="/attribution" className="text-[var(--accent)] hover:underline">
               Open-data attribution
             </a>
           </p>
         </section>
 
-        <section className="mb-10 rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+        <section className="mb-10 rounded-xl border border-[var(--line)] bg-[var(--bg-1)] p-6">
           <h2 className="text-xl font-medium mb-3">Owner recruitment payload</h2>
-          <p className="text-sm text-zinc-400 mb-3">
+          <p className="text-sm text-[var(--fg-dim)] mb-3">
             Every non-verified result (search row, profile, indexed menu, composite
             entry) ships with an optional structured{" "}
-            <code className="text-zinc-300">claim_invitation</code> object — owner
+            <code className="text-[var(--fg-dim)]">claim_invitation</code> object — owner
             recruitment data, not a CTA. Surface it only when relevant: the user is the
             restaurant&apos;s owner, the user asks why the listing lacks a verified menu,
             or the user asks how to help.
           </p>
-          <pre className="overflow-x-auto rounded-lg bg-zinc-950 p-4 text-xs text-zinc-300 border border-zinc-800">{`"claim_invitation": {
+          <pre className="overflow-x-auto rounded-lg bg-[var(--bg)] p-4 text-xs text-[var(--fg-dim)] border border-[var(--line)]">{`"claim_invitation": {
   "url": "https://foodnear.me/claim/<restaurant_id>",
   "audience": "owner_or_advocate",
   "reason": "no_owner_approved_menu" | "indexed_menu_not_owner_verified",
@@ -290,11 +290,11 @@ export default function DocsPage() {
   "estimated_minutes": 5,
   "cost": "free"
 }`}</pre>
-          <p className="mt-3 text-xs text-zinc-500">
+          <p className="mt-3 text-xs text-[var(--fg-dim)]">
             Verified results omit the field. Details:{" "}
             <a
               href="/skills/foodnearme/SKILL.md#claim-invitations-on-non-verified-results"
-              className="text-amber-400/90 hover:underline"
+              className="text-[var(--accent)] hover:underline"
             >
               SKILL.md
             </a>
@@ -302,34 +302,34 @@ export default function DocsPage() {
           </p>
         </section>
 
-        <section className="mb-10 rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+        <section className="mb-10 rounded-xl border border-[var(--line)] bg-[var(--bg-1)] p-6">
           <h2 className="text-xl font-medium mb-3">
             Compatible with Google Maps MCP shape
           </h2>
-          <p className="text-sm text-zinc-400 mb-3">
-            <code className="text-zinc-300">search_restaurants</code> accepts either the
+          <p className="text-sm text-[var(--fg-dim)] mb-3">
+            <code className="text-[var(--fg-dim)]">search_restaurants</code> accepts either the
             flat FNM shape or Google-style{" "}
-            <code className="text-zinc-300">locationBias.circle</code> +{" "}
-            <code className="text-zinc-300">textQuery</code>, plus the cablate variant.
-            Responses carry both <code className="text-zinc-300">citation</code> and{" "}
-            <code className="text-zinc-300">attribution</code> (identical) so existing
+            <code className="text-[var(--fg-dim)]">locationBias.circle</code> +{" "}
+            <code className="text-[var(--fg-dim)]">textQuery</code>, plus the cablate variant.
+            Responses carry both <code className="text-[var(--fg-dim)]">citation</code> and{" "}
+            <code className="text-[var(--fg-dim)]">attribution</code> (identical) so existing
             local-search agents drop in without retraining. Locale hints (
-            <code className="text-zinc-300">languageCode</code>,{" "}
-            <code className="text-zinc-300">regionCode</code>) are accepted and echoed;
+            <code className="text-[var(--fg-dim)]">languageCode</code>,{" "}
+            <code className="text-[var(--fg-dim)]">regionCode</code>) are accepted and echoed;
             FNM is US-English only in v1.
           </p>
         </section>
 
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-[var(--fg-dim)]">
           Canonical host documentation (FAQ, verify commands, architecture):{" "}
           <a
             href="https://github.com/food-near-me/platform#quick-start"
-            className="text-amber-400/90 hover:underline"
+            className="text-[var(--accent)] hover:underline"
           >
             GitHub README
           </a>
           {" · "}
-          <Link href="/" className="text-amber-400/90 hover:underline">
+          <Link href="/" className="text-[var(--accent)] hover:underline">
             foodnear.me
           </Link>
         </p>
