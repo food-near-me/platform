@@ -59,10 +59,10 @@ jobs:
       - name: MCP tool filtering
         run: npm run test:mcp-tool-filtering
 
-      - name: Unit tests (menu-protocol crypto + parsers + approve race-safety)
+      - name: Unit tests (menu-protocol crypto + parsers + approve race-safety + honesty sentinel)
         run: |
           npm run test -w @foodnearme/menu-protocol
-          cd apps/web && npx tsx --test lib/menu-ingest/parse-wix.test.ts lib/menu-ingest/approve-menu-verification.test.ts
+          cd apps/web && npm test
 
   mcp-contract:
     name: MCP contract (PR)
