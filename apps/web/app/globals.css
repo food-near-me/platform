@@ -1543,6 +1543,10 @@ main.page {
 }
 
 .near-me-panel {
+  /* Query container for the toolbar: it compacts to the panel's width, not the
+   * viewport, so it stays correct if the panel is ever placed in a narrow column. */
+  container-type: inline-size;
+  container-name: near-me;
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
@@ -2444,7 +2448,10 @@ main.page {
   }
 }
 
-@media (max-width: 640px) {
+/* Toolbar compacts to its CONTAINER width, not the viewport. 608px ≈ the panel
+ * width at the former 640px viewport breakpoint, so the transition point is
+ * preserved on a normal full-width page but now also holds in a narrow column. */
+@container near-me (max-width: 608px) {
   .near-me-toolbar {
     top: 64px;
     width: 100%;
@@ -2458,6 +2465,14 @@ main.page {
     white-space: nowrap;
   }
 
+  /* Fade the right edge as a scroll affordance for overflowing chip rows. */
+  .near-me-filter-row {
+    -webkit-mask-image: linear-gradient(to right, #000 90%, transparent);
+    mask-image: linear-gradient(to right, #000 90%, transparent);
+  }
+}
+
+@media (max-width: 640px) {
   .near-me-status-row {
     flex-direction: column;
     align-items: flex-start;
@@ -2467,12 +2482,6 @@ main.page {
   .near-me-list {
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 1rem 0.75rem;
-  }
-
-  /* Fade the right edge as a scroll affordance for overflowing chip rows. */
-  .near-me-filter-row {
-    -webkit-mask-image: linear-gradient(to right, #000 90%, transparent);
-    mask-image: linear-gradient(to right, #000 90%, transparent);
   }
 }
 
