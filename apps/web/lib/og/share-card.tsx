@@ -19,13 +19,15 @@ const C = {
 
 export type ShareCardData = {
   name: string;
-  /** Omit for uncurated listings — no pill is rendered rather than a fabricated one. */
-  tier?: string;
   meta: string;
   letter: string;
 };
 
-export function ShareCard({ name, tier, meta, letter }: ShareCardData) {
+// Share cards carry NO allergy-safety grade/badge: this raster is the highest-
+// distribution, cache-baked, sentinel-unreadable surface and can carry no scope
+// disclaimer, so an affirmative safety badge here is a liability the invariant
+// forbids. Name + needs + brand only.
+export function ShareCard({ name, meta, letter }: ShareCardData) {
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", background: C.bg, fontFamily: "Figtree" }}>
       {/* Left — brand */}
@@ -110,23 +112,6 @@ export function ShareCard({ name, tier, meta, letter }: ShareCardData) {
           </div>
           <div style={{ display: "flex", flexDirection: "column", padding: "20px 22px 24px" }}>
             <div style={{ display: "flex", fontFamily: "Outfit", fontWeight: 800, fontSize: 27, color: C.fg }}>{name}</div>
-            {tier ? (
-              <div
-                style={{
-                  display: "flex",
-                  marginTop: 8,
-                  background: C.accentSoft,
-                  color: C.accentDim,
-                  fontWeight: 700,
-                  fontSize: 16,
-                  padding: "4px 12px",
-                  borderRadius: 999,
-                  alignSelf: "flex-start",
-                }}
-              >
-                {tier}
-              </div>
-            ) : null}
             <div style={{ display: "flex", marginTop: 12, color: C.fgMute, fontSize: 18, fontWeight: 600 }}>{meta}</div>
           </div>
         </div>

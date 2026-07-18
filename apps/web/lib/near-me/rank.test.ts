@@ -167,19 +167,35 @@ test("no per-place OG/metadata surface hardcodes a curated claim", () => {
 
   assert.ok(
     !/Curated · human-checked/.test(og),
-    "opengraph-image must not hardcode the 'Curated · human-checked' badge — route through ogTierBadge()",
+    "opengraph-image must not hardcode the 'Curated · human-checked' badge",
   );
   assert.ok(
     !/curated allergy-aware spot/i.test(og),
     "opengraph-image alt must stay tier-neutral, not claim 'curated allergy-aware'",
   );
+  // O20: the OG share-card is a cache-baked, sentinel-unreadable raster with no
+  // room for a scope disclaimer — so it must carry NO allergy tier at all. It
+  // must not even reach for ogTierBadge (the pill is gone, not merely gated).
   assert.ok(
-    /ogTierBadge/.test(og),
-    "opengraph-image must derive its badge from ogTierBadge() (shared curated whitelist)",
+    !/ogTierBadge|allergy_safety_tier/.test(og),
+    "opengraph-image must emit NO allergy tier — it must not read allergy_safety_tier or ogTierBadge",
   );
   assert.ok(
     !/curated allergy notes when available/i.test(page),
     "place metadata description must not claim curated notes for uncurated listings",
+  );
+});
+
+// O20: the ShareCard component itself must not be able to render a tier pill — the
+// guard is structural (no `tier` prop), not "callers happen not to pass it".
+test("the OG ShareCard has no tier surface at all", () => {
+  const card = readFileSync(
+    new URL("../og/share-card.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.ok(
+    !/\btier\b/.test(card),
+    "share-card must not reference a tier — no prop, no pill; safety tiers never ship in a share raster",
   );
 });
 

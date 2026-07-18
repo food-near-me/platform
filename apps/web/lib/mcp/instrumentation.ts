@@ -120,12 +120,11 @@ export function extractTierLabel(result: unknown): string | null {
     return obj.verification_status;
   }
 
-  // get_safety_attestation reports an allergy `safety_tier` (curated tier or
-  // "unknown") instead of a verification_status. Record it so the tier
-  // distribution reflects real agent demand for signed safety lookups.
-  if (typeof obj.safety_tier === "string") {
-    return obj.safety_tier;
-  }
+  // Deliberately NOT recording get_safety_attestation's `safety_tier`: the public
+  // /health/mcp dashboard aggregates tier_returned into a per-tier count, so
+  // emitting the curated allergy tier here would ship an aggregate public count
+  // of safety-tiered places — exactly the honesty invariant we forbid. This
+  // dimension carries verification_status only; safety attestations record null.
   return null;
 }
 

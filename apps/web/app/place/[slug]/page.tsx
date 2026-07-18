@@ -7,7 +7,7 @@ import { evaluateOpeningHours, telHref } from "@/lib/near-me/hours";
 import { formatNeedTags, tierBlurb, trustLabel } from "@/lib/near-me/labels";
 import { formatLastCheckedDate } from "@/lib/near-me/format-date";
 import { inferNeighborhood } from "@/lib/near-me/neighborhood";
-import { safetyTierLabel } from "@/lib/near-me/rank";
+import { curatedTierLabel, safetyTierLabel } from "@/lib/near-me/rank";
 import { buildSafetyDisclosure } from "@/lib/mcp/attestation";
 
 type PlaceRow = {
@@ -147,7 +147,10 @@ export default async function PlacePage({
               ) / 1609.344)::numeric, 1) AS distance_miles
        FROM restaurants
        WHERE id <> $3::uuid
-         AND allergy_safety_tier <> 'unknown'
+         -- Curated whitelist, NOT a denylist: a typo'd or fooled hand-edit tier
+         -- must never slip onto this affirmative curated-nearby surface. Only real
+         -- curated tiers qualify.
+         AND allergy_safety_tier IN ('dedicated', 'strong_protocol', 'shared_verify')
          AND allergy_needs && $4::text[]
          AND ST_DWithin(
            location,
@@ -399,7 +402,7 @@ export default async function PlacePage({
                         {r.name}
                       </Link>
                       <span>
-                        {r.distance_miles} mi · {safetyTierLabel(r.allergy_safety_tier)}
+                        {r.distance_miles} mi · {curatedTierLabel(r.allergy_safety_tier)}
                       </span>
                     </li>
                   ))}

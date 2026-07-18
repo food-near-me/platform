@@ -113,8 +113,24 @@ async function main() {
            allergy_needs = $10::text[],
            allergy_safety_tier = $11,
            allergy_safety_note = $12,
-           allergy_updated_at = NOW(),
-           last_external_update = NOW()
+           -- Compare-and-skip: a reseed with no real change (e.g. one prompted by a
+           -- freshness signal) must not manufacture a fresher date. The safety clock
+           -- advances only on a safety-field diff; the contact clock only on a
+           -- contact/render diff. RHS columns are the pre-update (old) values.
+           allergy_updated_at = CASE WHEN (
+               allergy_safety_tier IS DISTINCT FROM $11
+               OR allergy_safety_note IS DISTINCT FROM $12
+               OR allergy_needs IS DISTINCT FROM $10::text[]
+             ) THEN NOW() ELSE allergy_updated_at END,
+           last_external_update = CASE WHEN (
+               name IS DISTINCT FROM $2
+               OR slug IS DISTINCT FROM $3
+               OR address IS DISTINCT FROM COALESCE($4, address)
+               OR phone IS DISTINCT FROM COALESCE($5, phone)
+               OR website_url IS DISTINCT FROM COALESCE($6, website_url)
+               OR cuisine_type IS DISTINCT FROM $7::text[]
+               OR opening_hours IS DISTINCT FROM COALESCE($8, opening_hours)
+             ) THEN NOW() ELSE last_external_update END
          WHERE id = $1::uuid`,
         [
           existing[0].id,

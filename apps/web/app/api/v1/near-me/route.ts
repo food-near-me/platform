@@ -200,8 +200,6 @@ export async function GET(request: Request) {
       limit: MAX_RESULTS,
     });
 
-    const curatedCount = ranked.filter((r) => r.matches_need).length;
-
     const data = ranked.map((r) => ({
       id: r.id,
       name: r.name,
@@ -264,7 +262,6 @@ export async function GET(request: Request) {
         location: { lat, lng },
         radius_miles: radiusMiles,
         results_count: data.length,
-        curated_matches: curatedCount,
         ranking: "human_v1_allergy",
         time_zone: timeZone,
         top_pick_id: data[0]?.id ?? null,

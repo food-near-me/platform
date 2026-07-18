@@ -16,6 +16,7 @@ import {
   type NeighborhoodRow,
 } from "@/lib/near-me/neighborhood-listing";
 import { safetyTierLabel } from "@/lib/near-me/rank";
+import { buildSafetyDisclosure } from "@/lib/mcp/attestation";
 
 // ISR: prerender for SEO/citation speed, but refresh hourly so re-seeded
 // curation surfaces without a redeploy (matches the sitemap's cadence).
@@ -109,8 +110,10 @@ export default async function NeighborhoodPage({
     ? {
         "@context": "https://schema.org",
         "@type": "ItemList",
+        // No machine-readable item-count field here: a public COUNT of safety-graded
+        // places is an aggregate the honesty invariant forbids. The named items below
+        // are factual (each links to its own gated page); the human headline stays.
         name: `Curated allergy-safe restaurants in ${hood.name}, ${cityLabel}`,
-        numberOfItems: curatedCount,
         itemListElement: curated.map((r, i) => ({
           "@type": "ListItem",
           position: i + 1,
@@ -156,12 +159,18 @@ export default async function NeighborhoodPage({
                   {curated.map((r) => {
                     const tier = r.allergy_safety_tier ?? "unknown";
                     const needs = formatNeedTags(r.allergy_needs);
-                    // Prefer the per-listing "why" (first sentence of the curated
-                    // note) over the generic tier blurb — it's the citable reason
-                    // this specific place earned its tier.
+                    // Route the note through the SAME honesty gate as every other
+                    // surface — never render a raw DB note. The gate drops the note
+                    // for any non-curated tier, so this citable "why" line can only
+                    // ever carry a curated vetting note. First sentence of that
+                    // note, else the generic tier blurb.
+                    const gatedNote = buildSafetyDisclosure({
+                      restaurant_id: r.id,
+                      tier: r.allergy_safety_tier,
+                      allergy_safety_note: r.allergy_safety_note,
+                    }).allergy_safety_note;
                     const whyLine =
-                      r.allergy_safety_note?.trim().split(/(?<=\.)\s+/)[0] ||
-                      tierBlurb(tier);
+                      gatedNote?.trim().split(/(?<=\.)\s+/)[0] || tierBlurb(tier);
                     return (
                       <li key={r.slug} className={`hood-item hood-item-${tier}`}>
                         <Link href={`/place/${encodeURIComponent(r.slug)}`}>

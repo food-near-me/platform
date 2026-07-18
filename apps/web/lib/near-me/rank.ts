@@ -138,6 +138,21 @@ export function safetyTierLabel(tier: string): string {
   return TIER_LABEL[tier] ?? TIER_LABEL.unknown;
 }
 
+/**
+ * Label for a surface that renders ONLY curated tiers (e.g. "curated nearby").
+ * Fails loud instead of silently coercing an unexpected value to the "unknown"
+ * label — a typo'd/fooled tier ("strong_protcol") must never render as a curated
+ * safety pill. Callers on curated surfaces should use this, not safetyTierLabel.
+ */
+export function curatedTierLabel(tier: string): string {
+  if (!(CURATED_TIERS as readonly string[]).includes(tier)) {
+    throw new Error(
+      `curatedTierLabel: refusing to label non-curated tier "${tier}" on a curated surface`,
+    );
+  }
+  return safetyTierLabel(tier);
+}
+
 export function buildWhy(place: RankablePlace, need?: string | null): string | null {
   const note = place.allergy_safety_note?.trim();
   if (need && place.allergy_needs?.includes(need) && note) {
