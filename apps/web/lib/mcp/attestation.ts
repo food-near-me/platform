@@ -43,6 +43,20 @@ function isCuratedTier(tier: string | null | undefined): boolean {
   return Boolean(tier && (CURATED_TIERS as readonly string[]).includes(tier));
 }
 
+/**
+ * Normalize a data-refresh timestamp to ISO 8601 UTC for `as_of`.
+ *
+ * The DB driver returns timestamp columns as Date objects, and `as_of` is
+ * SIGNED into the attestation — so it must be a single, documented, verifier-
+ * reproducible string, never a locale-shaped `Date.toString()`. Returns null
+ * for absent or unparseable values (which sign as the empty string).
+ */
+export function toIsoAsOf(value: string | Date | null | undefined): string | null {
+  if (value == null) return null;
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
 export type SafetyDisclosureInput = {
   restaurant_id: string;
   tier: string | null | undefined;

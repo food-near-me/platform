@@ -13,7 +13,7 @@
  */
 
 import { getSql, isDatabaseConfigured } from "@/lib/db/neon";
-import { buildSafetyAttestation } from "@/lib/mcp/attestation";
+import { buildSafetyAttestation, toIsoAsOf } from "@/lib/mcp/attestation";
 import { buildRestaurantCitation, citationFields } from "@/lib/mcp/citations";
 import { ResourceNotFoundError } from "@/lib/mcp/errors";
 import type { GetSafetyAttestationInput } from "./inputs";
@@ -24,8 +24,9 @@ type SafetyRow = {
   slug: string;
   allergy_safety_tier: string | null;
   allergy_needs: string[] | null;
+  // The Neon driver returns timestamp columns as Date objects, not strings.
+  last_external_update: string | Date | null;
   allergy_safety_note: string | null;
-  last_external_update: string | null;
 };
 
 export async function getSafetyAttestation(input: GetSafetyAttestationInput) {
@@ -56,7 +57,11 @@ export async function getSafetyAttestation(input: GetSafetyAttestationInput) {
   // page shows it too. It is surfaced as `as_of`, never as a curation date, and
   // never falls back to `updated_at` (a generic row-touch that would overstate
   // freshness of the safety judgment).
-  const asOf = row.last_external_update ?? null;
+  //
+  // Normalize to ISO 8601 UTC: the raw driver value is a Date object, and this
+  // string is SIGNED into the attestation, so it must be a stable, documented
+  // format a verifier can reproduce — not a locale-shaped Date.toString().
+  const asOf = toIsoAsOf(row.last_external_update);
 
   const attestation = buildSafetyAttestation({
     restaurant_id: row.id,

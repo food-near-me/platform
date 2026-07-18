@@ -81,7 +81,7 @@ export async function GET() {
       signing_input: "fnm-safety-v1|${restaurant_id}|${tier}|${as_of}|${key_fingerprint}",
       signed_message: "sha256(signing_input)",
       note:
-        "Allergy-safety tier attestation returned by the get_safety_attestation MCP tool. Signs ONLY a curated tier (dedicated | strong_protocol | shared_verify); an uncurated place returns safety_tier=\"unknown\" with no signature. `as_of` is the listing's last DATA-refresh timestamp (empty string when absent) — NOT a date a human re-verified the tier; do not present it as a curation date. Distinct from the menu formats above — this binds a tier claim, not menu contents.",
+        "Allergy-safety tier attestation returned by the get_safety_attestation MCP tool. Signs ONLY a curated tier (dedicated | strong_protocol | shared_verify); an uncurated place returns safety_tier=\"unknown\" with no signature. `as_of` is the listing's last DATA-refresh timestamp as ISO 8601 UTC (empty string when absent) — NOT a date a human re-verified the tier; do not present it as a curation date. Distinct from the menu formats above — this binds a tier claim, not menu contents.",
       verifier_steps: [
         "Call get_safety_attestation with a restaurant_id.",
         "If safety_tier is \"unknown\" there is no signature to verify — do not imply curated safety.",

@@ -12,6 +12,7 @@ import {
   buildSafetyDisclosure,
   canonicalizeSafetyClaim,
   SAFETY_ATTESTATION_SCHEME,
+  toIsoAsOf,
   type SigningKey,
 } from "./attestation";
 
@@ -103,6 +104,23 @@ test("disclosure surfaces the explicit unknown advisory for an uncurated place",
   assert.equal(d.allergy_needs, undefined, "an unknown place must not surface needs");
   assert.equal(d.allergy_safety_note, undefined, "an unknown place must not surface a note");
   assert.match(d.advisory ?? "", /verify with the restaurant/i);
+});
+
+// --- Signed `as_of` must be stable ISO 8601, never a locale Date.toString() ---
+// Regression: the Neon driver returns timestamp columns as Date objects; a raw
+// Date stringified into the SIGNED canonical is not verifier-reproducible.
+
+test("toIsoAsOf normalizes a Date object to ISO 8601 UTC", () => {
+  const iso = toIsoAsOf(new Date("2026-07-17T16:09:50.000Z"));
+  assert.equal(iso, "2026-07-17T16:09:50.000Z");
+  assert.doesNotMatch(iso ?? "", /GMT|Coordinated Universal Time/, "must not be a Date.toString()");
+});
+
+test("toIsoAsOf passes through an ISO string and nulls the empty/unparseable", () => {
+  assert.equal(toIsoAsOf("2026-07-17T16:09:50.000Z"), "2026-07-17T16:09:50.000Z");
+  assert.equal(toIsoAsOf(null), null);
+  assert.equal(toIsoAsOf(undefined), null);
+  assert.equal(toIsoAsOf("not a date"), null);
 });
 
 // NEGATIVE CONTROL (manual): temporarily invert the gate in attestation.ts
