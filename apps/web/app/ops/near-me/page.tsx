@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteShell } from "@/components/site-shell";
 import { getSql, isDatabaseConfigured } from "@/lib/db/neon";
+import { isOpsAuthed } from "@/lib/ops-auth";
 
 export const metadata: Metadata = {
   title: "Near-me usage — ops",
@@ -28,12 +29,6 @@ type DayRow = {
 };
 
 type QueryRow = { q: string; n: number };
-
-function authorized(key: string | undefined): boolean {
-  const expected = process.env.OPS_SECRET?.trim();
-  if (!expected) return false;
-  return Boolean(key) && key === expected;
-}
 
 async function loadUsage(days: number): Promise<{
   totals: Totals;
@@ -125,14 +120,13 @@ function fmtDay(v: string): string {
 export default async function OpsNearMePage({
   searchParams,
 }: {
-  searchParams: Promise<{ key?: string; days?: string }>;
+  searchParams: Promise<{ days?: string }>;
 }) {
   const sp = await searchParams;
-  const key = sp.key;
   const daysRaw = parseInt(sp.days || "14", 10);
   const days = Number.isFinite(daysRaw) && daysRaw > 0 && daysRaw <= 90 ? daysRaw : 14;
 
-  if (!authorized(key)) {
+  if (!(await isOpsAuthed())) {
     return (
       <SiteShell variant="consumer" crumb="ops">
         <section className="section">
@@ -140,9 +134,10 @@ export default async function OpsNearMePage({
             <p className="label">ops</p>
             <h1 className="near-me-title">Near-me usage</h1>
             <p className="lede">
-              Founder-only. Open with{" "}
-              <code className="ops-code">?key=…</code> after setting{" "}
-              <code className="ops-code">OPS_SECRET</code> in the environment.
+              Founder-only. Sign in by POSTing{" "}
+              <code className="ops-code">OPS_SECRET</code> to{" "}
+              <code className="ops-code">/ops/login</code> (sets an httpOnly
+              session cookie).
             </p>
           </div>
         </section>
@@ -165,7 +160,6 @@ export default async function OpsNearMePage({
   }
 
   const { totals, byDay, topQueries } = await loadUsage(days);
-  const keyQ = encodeURIComponent(key || "");
 
   return (
     <SiteShell variant="consumer" crumb="ops">
@@ -179,7 +173,7 @@ export default async function OpsNearMePage({
           </p>
           <p className="ops-day-links">
             {[7, 14, 30].map((d) => (
-              <Link key={d} href={`/ops/near-me?key=${keyQ}&days=${d}`}>
+              <Link key={d} href={`/ops/near-me?days=${d}`}>
                 {d}d
               </Link>
             ))}
