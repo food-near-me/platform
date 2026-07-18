@@ -67,6 +67,16 @@ export function getNeighborhoodsForCity(cityId: BeachheadId): FilterNeighborhood
   return cityId === "jacksonville" ? FILTER_NEIGHBORHOODS_JAX : FILTER_NEIGHBORHOODS_MIAMI;
 }
 
+/** Every city/hood pair with a public /near-me/[city]/[neighborhood] page.
+ * Shared by the route (generateStaticParams) and the sitemap so the two never drift. */
+export const NEIGHBORHOOD_CITIES: {
+  city: BeachheadId;
+  neighborhoods: FilterNeighborhood[];
+}[] = [
+  { city: "miami", neighborhoods: FILTER_NEIGHBORHOODS_MIAMI },
+  { city: "jacksonville", neighborhoods: FILTER_NEIGHBORHOODS_JAX },
+];
+
 export function getFilterNeighborhood(
   idOrName: string | null | undefined,
   cityId: BeachheadId = "miami",

@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { isDatabaseConfigured, sqlQuery } from "@/lib/db/neon";
+import { NEIGHBORHOOD_CITIES } from "@/lib/near-me/neighborhood";
 
 const BASE = "https://foodnear.me";
 
@@ -27,7 +28,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: path === "" ? 1 : 0.6,
   }));
 
-  if (!isDatabaseConfigured()) return staticEntries;
+  // Neighborhood citation-SEO pages — statically known city/hood pairs.
+  const hoodEntries: MetadataRoute.Sitemap = NEIGHBORHOOD_CITIES.flatMap(
+    ({ city, neighborhoods }) =>
+      neighborhoods.map((h) => ({
+        url: `${BASE}/near-me/${city}/${h.id}`,
+        changeFrequency: "weekly" as const,
+        priority: 0.7,
+      })),
+  );
+
+  if (!isDatabaseConfigured()) return [...staticEntries, ...hoodEntries];
 
   try {
     const places = await sqlQuery<{ slug: string }>(
@@ -38,9 +49,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.5,
     }));
-    return [...staticEntries, ...placeEntries];
+    return [...staticEntries, ...hoodEntries, ...placeEntries];
   } catch {
-    // Never let a DB hiccup break the sitemap — ship the static routes.
-    return staticEntries;
+    // Never let a DB hiccup break the sitemap — ship the static + hood routes.
+    return [...staticEntries, ...hoodEntries];
   }
 }

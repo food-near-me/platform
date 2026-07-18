@@ -2325,6 +2325,77 @@ main.page {
   gap: var(--space-4);
 }
 
+/* Neighborhood citation-SEO pages */
+.hood-curated,
+.hood-other {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.hood-other {
+  margin-top: var(--space-5);
+}
+
+.hood-section-title {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.hood-other-note {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--fg-mute);
+}
+
+.hood-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.hood-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: color-mix(in oklch, var(--accent-soft) 45%, var(--bg-1));
+}
+
+.hood-item-neutral {
+  background: var(--bg-1);
+}
+
+.hood-item > a {
+  color: var(--fg);
+  font-weight: 700;
+}
+
+.hood-item-tier {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.hood-item-blurb {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--fg-mute);
+}
+
+.hood-item-dist {
+  font-size: 0.75rem;
+  color: var(--fg-mute);
+}
+
 .place-allergy {
   padding: var(--space-5);
   border: 1px solid var(--line);
