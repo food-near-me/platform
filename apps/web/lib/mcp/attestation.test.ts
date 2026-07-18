@@ -37,6 +37,22 @@ test("attestation emits NOTHING tier-related for an uncurated (unknown) place", 
   assert.match(att.advisory ?? "", /verify with the restaurant/i);
 });
 
+test("a scraped note passed for an uncurated tier is DROPPED, never surfaced as vetting", () => {
+  // The place page's "Why this rating" note renders from disclosure.allergy_safety_note.
+  // A scraped OSM note on an unknown-tier row must never reach that surface — else it
+  // reads as a human vetting finding for a place we never vetted (the 2026-07 mislabel).
+  const d = buildSafetyDisclosure({
+    restaurant_id: "x",
+    tier: "unknown",
+    allergy_needs: ["gluten_free"],
+    allergy_safety_note: "Menu says gluten-free options available",
+  });
+  assert.equal(d.curated, false);
+  assert.equal(d.allergy_safety_note, undefined, "an uncurated note must not surface");
+  assert.equal(d.allergy_needs, undefined, "uncurated needs must not surface");
+  assert.match(d.advisory ?? "", /verify with the restaurant/i);
+});
+
 test("a stray / bogus tier is treated as unknown (whitelist, not raw DB value)", () => {
   for (const tier of ["bogus", "", null, undefined, "curated"]) {
     const att = buildSafetyAttestation(

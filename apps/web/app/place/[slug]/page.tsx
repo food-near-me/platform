@@ -7,7 +7,8 @@ import { evaluateOpeningHours, telHref } from "@/lib/near-me/hours";
 import { formatNeedTags, tierBlurb, trustLabel } from "@/lib/near-me/labels";
 import { formatLastCheckedDate } from "@/lib/near-me/format-date";
 import { inferNeighborhood } from "@/lib/near-me/neighborhood";
-import { CURATED_TIERS, safetyTierLabel } from "@/lib/near-me/rank";
+import { safetyTierLabel } from "@/lib/near-me/rank";
+import { buildSafetyDisclosure } from "@/lib/mcp/attestation";
 
 type PlaceRow = {
   id: string;
@@ -50,10 +51,26 @@ export async function generateMetadata({
   }
   const sql = getSql();
   const rows = (await sql.query(
-    `SELECT name, allergy_safety_note FROM restaurants WHERE slug = $1 LIMIT 1`,
+    `SELECT id, name, allergy_safety_tier, allergy_safety_note
+     FROM restaurants WHERE slug = $1 LIMIT 1`,
     [slug],
-  )) as { name: string; allergy_safety_note: string | null }[];
+  )) as {
+    id: string;
+    name: string;
+    allergy_safety_tier: string | null;
+    allergy_safety_note: string | null;
+  }[];
   const row = rows[0];
+  // Route the note through the honesty gate: a social/meta description may quote
+  // a vetting note ONLY for a curated tier. An uncurated place's scraped note is
+  // dropped here just as it is on the visible page — never leaked into the preview.
+  const metaNote = row
+    ? buildSafetyDisclosure({
+        restaurant_id: row.id,
+        tier: row.allergy_safety_tier,
+        allergy_safety_note: row.allergy_safety_note,
+      }).allergy_safety_note ?? null
+    : null;
   // Prefer a COMPLETE first sentence so a social preview never cuts a safety
   // claim mid-assertion (e.g. dropping "shared kitchen — verify"). Same
   // sentence split used by buildWhy().
@@ -65,8 +82,8 @@ export async function generateMetadata({
     const atWord = cut.slice(0, cut.lastIndexOf(" "));
     return `${(atWord || cut).trimEnd()}…`;
   };
-  const desc = row?.allergy_safety_note
-    ? `${row.name} — ${noteBlurb(row.allergy_safety_note)}`
+  const desc = metaNote
+    ? `${row.name} — ${noteBlurb(metaNote)}`
     : row?.name
       ? `${row.name} on foodnear.me — hours, contact, and menu details.`
       : "Restaurant place page";
@@ -101,8 +118,17 @@ export default async function PlacePage({
     timeZone: "America/New_York",
   });
   const phoneUrl = telHref(place.phone);
-  const tier = place.allergy_safety_tier || "unknown";
-  const hasAllergy = tier !== "unknown" && Boolean(place.allergy_safety_note);
+  // Route the tier through the same honesty gate as the agent/MCP surface: an
+  // uncurated place collapses to "unknown" with no note, so a scraped note can
+  // never render as if it were a vetting finding. `tier` here is whitelist-safe.
+  const disclosure = buildSafetyDisclosure({
+    restaurant_id: place.id,
+    tier: place.allergy_safety_tier,
+    allergy_needs: place.allergy_needs,
+    allergy_safety_note: place.allergy_safety_note,
+  });
+  const tier = disclosure.safety_tier;
+  const vettingNote = disclosure.allergy_safety_note ?? null;
   const neighborhood = inferNeighborhood({
     address: place.address,
     lat: place.lat,
@@ -158,10 +184,11 @@ export default async function PlacePage({
   const structuredCuisines = (place.cuisine_type ?? []).filter(
     (c) => !allergyTokens.has(c),
   );
-  // A machine-readable tier is honest ONLY for a curated listing. Gate on the
-  // same whitelist that governs the badge/ranking so an "unknown" tier emits
-  // nothing tier-related — never a fabricated safety claim for an uncurated spot.
-  const isCurated = (CURATED_TIERS as readonly string[]).includes(tier);
+  // A machine-readable tier is honest ONLY for a curated listing. The disclosure
+  // gate (shared with the agent/MCP surface) already resolved this so an "unknown"
+  // tier emits nothing tier-related — never a fabricated safety claim for an
+  // uncurated spot.
+  const isCurated = disclosure.curated;
   // Freshness marker: last_external_update is bumped by automated external-source
   // refreshes (OSM/import), so the copy says "last updated", not "last checked" —
   // it never implies a human re-verified the listing or its allergy tier.
@@ -269,12 +296,17 @@ export default async function PlacePage({
               <p className="near-me-address mute">Address not listed yet</p>
             )}
 
-            {hasAllergy ? (
+            {disclosure.curated ? (
               <div className={`place-allergy place-allergy-${tier}`}>
-                <h2 className="place-allergy-title">Allergy / dietary note</h2>
+                <h2 className="place-allergy-title">Why this rating</h2>
                 <p className="near-me-safety">{safetyTierLabel(tier)}</p>
                 <p className="place-allergy-blurb">{tierBlurb(tier)}</p>
-                <p className="place-allergy-note">{place.allergy_safety_note}</p>
+                {vettingNote && (
+                  <div className="place-why-note">
+                    <p className="place-why-label">What we found at this location</p>
+                    <p className="place-allergy-note">{vettingNote}</p>
+                  </div>
+                )}
                 {needTags.length > 0 && (
                   <ul className="place-need-chips">
                     {needTags.map((t) => (

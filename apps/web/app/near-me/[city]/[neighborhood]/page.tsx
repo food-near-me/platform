@@ -156,13 +156,19 @@ export default async function NeighborhoodPage({
                   {curated.map((r) => {
                     const tier = r.allergy_safety_tier ?? "unknown";
                     const needs = formatNeedTags(r.allergy_needs);
+                    // Prefer the per-listing "why" (first sentence of the curated
+                    // note) over the generic tier blurb — it's the citable reason
+                    // this specific place earned its tier.
+                    const whyLine =
+                      r.allergy_safety_note?.trim().split(/(?<=\.)\s+/)[0] ||
+                      tierBlurb(tier);
                     return (
                       <li key={r.slug} className={`hood-item hood-item-${tier}`}>
                         <Link href={`/place/${encodeURIComponent(r.slug)}`}>
                           {r.name}
                         </Link>
                         <p className="hood-item-tier">{safetyTierLabel(tier)}</p>
-                        <p className="hood-item-blurb">{tierBlurb(tier)}</p>
+                        <p className="hood-item-blurb">{whyLine}</p>
                         {needs.length > 0 && (
                           <ul className="place-need-chips">
                             {needs.map((t) => (
