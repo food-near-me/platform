@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SiteShell } from "@/components/site-shell";
+import { FreshnessControl } from "@/components/freshness-control";
 import { getSql, isDatabaseConfigured } from "@/lib/db/neon";
 import { evaluateOpeningHours, telHref } from "@/lib/near-me/hours";
 import { formatNeedTags, tierBlurb, trustLabel } from "@/lib/near-me/labels";
@@ -391,6 +392,11 @@ export default async function PlacePage({
                 )}
               </div>
             </div>
+
+            {/* Freshness signal — physically separated from the "Why this rating"
+                tier block. A tap moves a curator's attention only; it changes no
+                tier, note, or count on this page. */}
+            <FreshnessControl restaurantId={place.id} />
 
             {related.length > 0 && (
               <div className="place-related">

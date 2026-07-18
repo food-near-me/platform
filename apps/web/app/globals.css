@@ -2279,6 +2279,27 @@ main.page {
   text-underline-offset: 2px;
 }
 
+.place-freshness-control {
+  padding: var(--space-5);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--bg-1);
+}
+
+.place-freshness-hint {
+  margin: 0 0 var(--space-3);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--fg-mute);
+}
+
+.place-freshness-toast {
+  margin: var(--space-3) 0 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--fg-dim);
+}
+
 .place-related {
   display: flex;
   flex-direction: column;
