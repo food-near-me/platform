@@ -119,6 +119,13 @@ export function extractTierLabel(result: unknown): string | null {
   if (typeof obj.verification_status === "string") {
     return obj.verification_status;
   }
+
+  // get_safety_attestation reports an allergy `safety_tier` (curated tier or
+  // "unknown") instead of a verification_status. Record it so the tier
+  // distribution reflects real agent demand for signed safety lookups.
+  if (typeof obj.safety_tier === "string") {
+    return obj.safety_tier;
+  }
   return null;
 }
 

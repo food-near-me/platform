@@ -105,7 +105,7 @@ curl "https://registry.modelcontextprotocol.io/v0.1/servers?search=me.foodnear/f
    - **Server URL**: https://foodnear.me/mcp
    - **Name**: foodnear.me
    - **Description**: Restaurant discovery API with Menu Protocol data
-   - **Tools**: search_restaurants, get_restaurant, get_menu, get_ado_score_breakdown
+   - **Tools** (not exhaustive; `tools/list` is authoritative): search_restaurants, get_restaurant, get_menu, get_ado_score_breakdown, get_safety_attestation
    - **Documentation**: https://foodnear.me/SKILL.md
 4. Include OpenAPI spec link for additional context
 

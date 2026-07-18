@@ -3,7 +3,7 @@
   "name": "me.foodnear/foodnear-me",
   "title": "Food Near Me",
   "description": "AI-native restaurant discovery with three-tier search — verified, menu_indexed, and discovered listings in Menu Protocol format.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "websiteUrl": "https://foodnear.me",
   "repository": {
     "url": "https://github.com/food-near-me/platform",

@@ -6,7 +6,7 @@
  */
 
 export const MCP_VERSION = "2024-11-05";
-export const SERVER_VERSION = "1.0.0";
+export const SERVER_VERSION = "1.1.0";
 export const MAX_SEARCH_RADIUS_MILES = 50;
 export const MAX_RESULTS = 50;
 

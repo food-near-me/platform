@@ -43,6 +43,7 @@ import { compareRestaurantsForDiet } from "./tools/compare-for-diet";
 import { exploreAreaForDiet } from "./tools/explore-area";
 import { getMenu } from "./tools/menu";
 import { getRestaurant } from "./tools/restaurant";
+import { getSafetyAttestation } from "./tools/safety-attestation";
 import { searchRestaurants } from "./tools/search";
 import { validateMenuProtocol } from "./tools/validate";
 import { TOOL_INPUT_SCHEMAS, type ToolName } from "./tools/inputs";
@@ -67,6 +68,10 @@ const TOOL_DISPATCH: Record<ToolName, (input: never) => Promise<unknown>> = {
   get_menu: ((input: any) => getMenu(input)) as (input: never) => Promise<unknown>,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   get_ado_score_breakdown: ((input: any) => getAdoScoreBreakdown(input)) as (
+    input: never,
+  ) => Promise<unknown>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get_safety_attestation: ((input: any) => getSafetyAttestation(input)) as (
     input: never,
   ) => Promise<unknown>,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

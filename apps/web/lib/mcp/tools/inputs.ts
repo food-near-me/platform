@@ -296,6 +296,12 @@ export const getAdoScoreBreakdownInputSchema = z
   })
   .strict();
 
+export const getSafetyAttestationInputSchema = z
+  .object({
+    restaurant_id: restaurantIdSchema.describe("Restaurant UUID"),
+  })
+  .strict();
+
 export const validateMenuProtocolInputSchema = z
   .object({
     payload: z
@@ -426,6 +432,7 @@ export type SearchRestaurantsInput = z.infer<typeof searchRestaurantsInputSchema
 export type GetRestaurantInput = z.infer<typeof getRestaurantInputSchema>;
 export type GetMenuInput = z.infer<typeof getMenuInputSchema>;
 export type GetAdoScoreBreakdownInput = z.infer<typeof getAdoScoreBreakdownInputSchema>;
+export type GetSafetyAttestationInput = z.infer<typeof getSafetyAttestationInputSchema>;
 export type ValidateMenuProtocolInput = z.infer<typeof validateMenuProtocolInputSchema>;
 export type ExploreAreaForDietInput = z.infer<typeof exploreAreaForDietInputSchema>;
 export type CompareRestaurantsForDietInput = z.infer<typeof compareRestaurantsForDietInputSchema>;
@@ -446,6 +453,7 @@ export const TOOL_INPUT_SCHEMAS = {
   get_restaurant: getRestaurantInputSchema,
   get_menu: getMenuInputSchema,
   get_ado_score_breakdown: getAdoScoreBreakdownInputSchema,
+  get_safety_attestation: getSafetyAttestationInputSchema,
   validate_menu_protocol: validateMenuProtocolInputSchema,
   explore_area_for_diet: exploreAreaForDietInputSchema,
   compare_restaurants_for_diet: compareRestaurantsForDietInputSchema,

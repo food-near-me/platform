@@ -76,6 +76,20 @@ export async function GET() {
       note:
         "Legacy format. Proves owner approval at signing_timestamp but does NOT bind to current menu contents. Treat content changes since signature_timestamp with caution.",
     },
+    "fnm-safety-v1": {
+      content_bound: true,
+      signing_input: "fnm-safety-v1|${restaurant_id}|${tier}|${as_of}|${key_fingerprint}",
+      signed_message: "sha256(signing_input)",
+      note:
+        "Allergy-safety tier attestation returned by the get_safety_attestation MCP tool. Signs ONLY a curated tier (dedicated | strong_protocol | shared_verify); an uncurated place returns safety_tier=\"unknown\" with no signature. `as_of` is the listing's last DATA-refresh timestamp (empty string when absent) — NOT a date a human re-verified the tier; do not present it as a curation date. Distinct from the menu formats above — this binds a tier claim, not menu contents.",
+      verifier_steps: [
+        "Call get_safety_attestation with a restaurant_id.",
+        "If safety_tier is \"unknown\" there is no signature to verify — do not imply curated safety.",
+        "Otherwise reconstruct attestation.canonical = the signing_input above from the returned fields.",
+        "Compute sha256(canonical); assert it equals attestation.hash.",
+        "Ed25519 verify attestation.signature against that sha256 using the active_key.public_key_pem whose fingerprint matches attestation.key_fingerprint.",
+      ],
+    },
   };
 
   if (!signing) {
@@ -106,7 +120,7 @@ export async function GET() {
         fingerprint: signing.publicKeyFingerprint,
         public_key_pem: signing.publicKeyPem,
         usage: "menu-protocol-v1-signature",
-        supported_formats: ["fnm-v0", "fnm-v1"],
+        supported_formats: ["fnm-v0", "fnm-v1", "fnm-safety-v1"],
       },
       rotated_keys: rotated,
       configured: true,
