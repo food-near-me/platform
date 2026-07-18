@@ -37,6 +37,7 @@
     "smoke:cron-mcp-cleanup": "node scripts/cron-mcp-cleanup-smoke.mjs",
     "smoke:site-health-cache": "node scripts/site-health-cache-smoke.mjs",
     "db:verify:rls": "node scripts/verify-rls.mjs",
+    "db:apply:neon": "node --env-file=apps/web/.env.local scripts/apply-neon-schema.mjs",
     "db:import:discovered": "npm run db:import:discovered -w web",
     "db:import:discovered:brooklyn": "npm run db:import:discovered:brooklyn -w web"
   },
