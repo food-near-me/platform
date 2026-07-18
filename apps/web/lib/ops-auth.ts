@@ -49,3 +49,17 @@ export async function isOpsAuthed(): Promise<boolean> {
   const store = await cookies();
   return isValidOpsToken(store.get(OPS_COOKIE)?.value);
 }
+
+export const OPS_DEFAULT_NEXT = "/ops/curator-queue";
+
+/** Sanitize a post-login redirect target to a same-origin path under /ops/,
+ * defeating open-redirect (protocol-relative //host, schemes, backslash/CRLF
+ * tricks). Anything suspicious falls back to the default ops landing. */
+export function safeOpsNext(next: string | null | undefined): string {
+  if (!next) return OPS_DEFAULT_NEXT;
+  if (!next.startsWith("/ops/")) return OPS_DEFAULT_NEXT;
+  if (next.startsWith("//") || next.includes("\\") || /[\r\n]/.test(next)) {
+    return OPS_DEFAULT_NEXT;
+  }
+  return next;
+}

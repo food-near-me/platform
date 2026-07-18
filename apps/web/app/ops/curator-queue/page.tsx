@@ -4,6 +4,7 @@ import { SiteShell } from "@/components/site-shell";
 import { getSql, isDatabaseConfigured } from "@/lib/db/neon";
 import { isOpsAuthed } from "@/lib/ops-auth";
 import { loadCuratorQueue, stalenessLabel } from "@/lib/curator-queue";
+import { OpsLoginForm } from "@/components/ops-login-form";
 import { muteRestaurant, flagCampaign } from "./actions";
 
 export const metadata: Metadata = {
@@ -19,21 +20,23 @@ export const dynamic = "force-dynamic";
  * by signal volume, never showing a count. Controls mute / flag a campaign and
  * touch NO public surface.
  */
-export default async function CuratorQueuePage() {
+export default async function CuratorQueuePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ autherror?: string }>;
+}) {
   if (!(await isOpsAuthed())) {
     // Fail closed — no cookie, no queue. Never leak rows to an anon caller.
+    const { autherror } = await searchParams;
     return (
       <SiteShell variant="consumer" crumb="ops">
         <section className="section">
           <div className="section-head">
             <p className="label">ops</p>
             <h1 className="near-me-title">Curator queue</h1>
-            <p className="lede">
-              Founder-only. Sign in by POSTing <code className="ops-code">OPS_SECRET</code>{" "}
-              to <code className="ops-code">/ops/login</code> (sets an httpOnly
-              session cookie).
-            </p>
+            <p className="lede">Founder-only. Sign in to continue.</p>
           </div>
+          <OpsLoginForm next="/ops/curator-queue" error={Boolean(autherror)} />
         </section>
       </SiteShell>
     );

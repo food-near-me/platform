@@ -3,6 +3,7 @@ import Link from "next/link";
 import { SiteShell } from "@/components/site-shell";
 import { getSql, isDatabaseConfigured } from "@/lib/db/neon";
 import { isOpsAuthed } from "@/lib/ops-auth";
+import { OpsLoginForm } from "@/components/ops-login-form";
 
 export const metadata: Metadata = {
   title: "Near-me usage — ops",
@@ -120,7 +121,7 @@ function fmtDay(v: string): string {
 export default async function OpsNearMePage({
   searchParams,
 }: {
-  searchParams: Promise<{ days?: string }>;
+  searchParams: Promise<{ days?: string; autherror?: string }>;
 }) {
   const sp = await searchParams;
   const daysRaw = parseInt(sp.days || "14", 10);
@@ -133,13 +134,9 @@ export default async function OpsNearMePage({
           <div className="section-head">
             <p className="label">ops</p>
             <h1 className="near-me-title">Near-me usage</h1>
-            <p className="lede">
-              Founder-only. Sign in by POSTing{" "}
-              <code className="ops-code">OPS_SECRET</code> to{" "}
-              <code className="ops-code">/ops/login</code> (sets an httpOnly
-              session cookie).
-            </p>
+            <p className="lede">Founder-only. Sign in to continue.</p>
           </div>
+          <OpsLoginForm next="/ops/near-me" error={Boolean(sp.autherror)} />
         </section>
       </SiteShell>
     );
