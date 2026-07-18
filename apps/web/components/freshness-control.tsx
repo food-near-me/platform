@@ -22,11 +22,12 @@ type ControlButton = {
   signalType: SignalType;
 };
 
-// "confirm" only for "still looks right"; both stale variants map to "outdated".
+// Two clear choices — a stale report vs. an all-good ping. (An earlier third
+// "Report this listing" wrote the same signal as "Looks out of date", so it was
+// redundant.) No "Confirm" wording: that would read as a site-endorsed check.
 export const BUTTONS: readonly ControlButton[] = [
-  { label: "Report this listing", signalType: "outdated" },
   { label: "Looks out of date", signalType: "outdated" },
-  { label: "Still looks right to me", signalType: "confirm" },
+  { label: "Still looks right", signalType: "confirm" },
 ];
 
 export function FreshnessControl({ restaurantId }: { restaurantId: string }) {
@@ -55,29 +56,32 @@ export function FreshnessControl({ restaurantId }: { restaurantId: string }) {
 
   return (
     <div className="place-freshness-control">
-      <h2 className="place-verify-title">Does this listing still look right?</h2>
+      <p className="place-freshness-title">See something off?</p>
       <p className="place-freshness-hint">
-        This flags the listing for a curator to look at. It does not change the
-        rating and is not a safety confirmation.
+        Flagging it just points a curator at this listing — it doesn&rsquo;t
+        change the rating and isn&rsquo;t a safety confirmation.
       </p>
-      <div className="near-me-actions">
-        {BUTTONS.map((b) => (
-          <button
-            key={b.label}
-            type="button"
-            className="btn btn-ghost"
-            onClick={() => onSignal(b.signalType)}
-            disabled={pending}
-          >
-            {b.label}
-          </button>
-        ))}
-      </div>
       {sent ? (
         <p className="place-freshness-toast" role="status">
           {TOAST_TEXT}
         </p>
-      ) : null}
+      ) : (
+        <div className="place-freshness-actions">
+          {BUTTONS.map((b) => (
+            <button
+              key={b.label}
+              type="button"
+              className={
+                b.signalType === "outdated" ? "btn place-flag-stale" : "btn btn-ghost"
+              }
+              onClick={() => onSignal(b.signalType)}
+              disabled={pending}
+            >
+              {b.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

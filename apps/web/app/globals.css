@@ -199,6 +199,17 @@ a {
   align-items: center;
 }
 
+/* Action button rows (place page: Call / Maps / Website, etc.). Without an
+ * explicit flex gap these inline-flex pills fall back to collapsed whitespace,
+ * which reads as cramped/uneven. */
+.near-me-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
 .topbar .crumb {
   color: var(--fg-mute);
   font-size: 0.9rem;
@@ -2279,23 +2290,75 @@ main.page {
   text-underline-offset: 2px;
 }
 
+/* Freshness control — "Signal Card": a branded card with a coral accent bar.
+ * The stale-report action is tinted coral; "still right" stays neutral, so the
+ * two read as distinct choices without either implying a safety verification. */
 .place-freshness-control {
-  padding: var(--space-5);
-  border: 1px dashed var(--line);
+  position: relative;
+  margin-top: var(--space-4);
+  padding: var(--space-4) var(--space-5) var(--space-5)
+    calc(var(--space-5) + 4px);
+  border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   background: var(--bg-1);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.place-freshness-control::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(var(--accent), var(--accent-dim));
+}
+
+.place-freshness-title {
+  margin: 0 0 var(--space-1);
+  font-family: var(--display);
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--fg);
 }
 
 .place-freshness-hint {
-  margin: 0 0 var(--space-3);
-  font-size: 0.9rem;
+  margin: 0 0 var(--space-4);
+  font-size: 0.85rem;
   line-height: 1.5;
   color: var(--fg-mute);
+  max-width: 54ch;
+}
+
+.place-freshness-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.place-freshness-actions .btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+}
+
+/* Coral-tinted "Looks out of date" — overrides the solid-accent .btn base. */
+.place-flag-stale {
+  background: var(--accent-soft);
+  color: var(--accent-dim);
+  border: 1px solid var(--accent);
+  box-shadow: var(--shadow-sm);
+}
+
+.place-flag-stale:hover {
+  background: color-mix(in oklch, var(--accent-soft) 82%, var(--accent));
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 .place-freshness-toast {
   margin: var(--space-3) 0 0;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   line-height: 1.5;
   color: var(--fg-dim);
 }
