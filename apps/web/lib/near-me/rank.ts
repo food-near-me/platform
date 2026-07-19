@@ -209,12 +209,6 @@ export function ogTierBadge(tier: string | null | undefined): string | undefined
     : undefined;
 }
 
-function tierScore(status: string): number {
-  if (status === "verified") return 28;
-  if (status === "menu_indexed") return 16;
-  return 0;
-}
-
 function allergyScore(
   place: RankablePlace,
   need?: string | null,
@@ -274,7 +268,10 @@ export function scorePlace(
   breakdown.distance = isPickupOnly(place)
     ? 10 // neutral: judge on curation/tier, not a placeholder centroid pin
     : distanceScore(place.distance_meters);
-  breakdown.tier = tierScore(place.verification_status);
+  // C8: owner-driven verification_status ('verified'/'menu_indexed') earns NO
+  // rank advantage — it means the owner put a menu on file, not that the kitchen
+  // is allergy-safe. Only curated allergy tiers (allergyScore) and objective
+  // signals (phone/site/hours/open) move rank. No `breakdown.tier`.
   breakdown.phone = place.phone?.trim() ? 12 : 0;
   breakdown.website = place.website_url?.trim() ? 8 : 0;
   breakdown.address = place.address?.trim() ? 6 : 0;

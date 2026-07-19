@@ -141,6 +141,29 @@ test("isPickupOnly detects no-storefront markers, not normal addresses", () => {
   assert.equal(isPickupOnly({ address: null }), false);
 });
 
+// C8: owner-driven verification_status ('verified'/'menu_indexed') is NOT a
+// curated allergy judgment and must give ZERO rank advantage. Two places identical
+// but for verification_status must score identically — else an owner-submitted
+// state buys placement it never earned on safety.
+test("owner verification_status gives no rank advantage (C8)", () => {
+  const ranked = rankPlaces([
+    place({ name: "Owner Verified", verification_status: "verified" }),
+    place({ name: "Menu Indexed", verification_status: "menu_indexed" }),
+    place({ name: "Just Listed", verification_status: "listed" }),
+  ]);
+  const score = (n: string) => ranked.find((p) => p.name === n)?.score;
+  assert.equal(
+    score("Owner Verified"),
+    score("Just Listed"),
+    "owner 'verified' must not outrank a plain listing",
+  );
+  assert.equal(
+    score("Menu Indexed"),
+    score("Just Listed"),
+    "'menu_indexed' must not outrank a plain listing",
+  );
+});
+
 // --- OG / share-card honesty: uncurated listings never earn a curated badge ---
 
 test("ogTierBadge returns no pill for uncurated / unknown / stray tiers", () => {
