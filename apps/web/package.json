@@ -15,6 +15,7 @@
     "check:discovery-copy": "tsx scripts/discovery-copy-parity.ts",
     "check:mcp-descriptions": "tsx scripts/check-mcp-descriptions.ts",
     "check:enums": "tsx scripts/check-enums.ts",
+    "check:allergy-seeds": "tsx scripts/check-allergy-seeds.ts",
     "test:mcp-tool-filtering": "tsx scripts/mcp-tool-filter-test.ts",
     "test:x402-flows": "tsx scripts/x402-flow-test.ts",
     "test:rate-limit": "tsx scripts/rate-limit-test.ts",

@@ -64,8 +64,11 @@ export function newestFreshSource(
 ): string | null {
   const now = Date.parse(nowIso);
   if (!Number.isFinite(now)) return null;
+  // Defensive: this runs over untrusted seed JSON in CI — a non-array `sources`
+  // must degrade to "no source", never throw.
+  const list = Array.isArray(sources) ? sources : [];
   let newest: number | null = null;
-  for (const s of sources ?? []) {
+  for (const s of list) {
     if (!isWellFormed(s)) continue;
     const t = Date.parse(s.checked_at);
     if (!Number.isFinite(t)) continue;
