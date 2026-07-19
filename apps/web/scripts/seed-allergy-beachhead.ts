@@ -14,6 +14,10 @@ import * as dotenv from "dotenv";
 import * as fs from "fs";
 import * as path from "path";
 import { getSql, isDatabaseConfigured } from "../lib/db/neon";
+import {
+  type CuratorSource,
+  evaluateTierProvenance,
+} from "../lib/allergy/source-provenance";
 
 dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
 
@@ -39,6 +43,10 @@ type SeedPlace = {
   allergy_needs: string[];
   allergy_safety_tier: "dedicated" | "strong_protocol" | "shared_verify" | "unknown";
   allergy_safety_note: string;
+  // C4: provenance for a curated tier. Required (fresh) for any curated tier;
+  // omitted/empty only for 'unknown'. The loader aborts on a curated place with
+  // no fresh source — a safety claim ships only with a source behind it.
+  sources?: CuratorSource[];
 };
 
 type SeedFile = {
@@ -73,6 +81,29 @@ async function main() {
   const seed = JSON.parse(fs.readFileSync(filePath, "utf8")) as SeedFile;
   console.log(`\n🌱 ${region} allergy seed (${seed.places.length} places)`);
   if (dryRun) console.log("   DRY RUN\n");
+
+  // C4 provenance gate — validate EVERY place before any write. A curated tier
+  // with no fresh source aborts the whole seed (fail-closed): no partial write
+  // that ships an unsourced safety claim. tier_verified_at = newest fresh
+  // source's checked_at (null for 'unknown'). Runs in dry-run too, so a dry run
+  // surfaces provenance gaps without touching the DB.
+  const nowIso = new Date().toISOString();
+  const tierVerifiedAt = new Map<string, string | null>();
+  const failures: string[] = [];
+  for (const p of seed.places) {
+    const verdict = evaluateTierProvenance(p, nowIso);
+    if (!verdict.ok) {
+      failures.push(`  ✗ ${p.name}: ${verdict.reason}`);
+      continue;
+    }
+    tierVerifiedAt.set(p.slug, verdict.tierVerifiedAt);
+  }
+  if (failures.length > 0) {
+    console.error(
+      `\nFAIL: ${failures.length} curated place(s) lack a fresh curator source — refusing to seed:\n${failures.join("\n")}\n`,
+    );
+    process.exit(1);
+  }
 
   const sql = getSql();
   let inserted = 0;
@@ -130,7 +161,20 @@ async function main() {
                OR website_url IS DISTINCT FROM COALESCE($6, website_url)
                OR cuisine_type IS DISTINCT FROM $7::text[]
                OR opening_hours IS DISTINCT FROM COALESCE($8, opening_hours)
-             ) THEN NOW() ELSE last_external_update END
+             ) THEN NOW() ELSE last_external_update END,
+           -- C4 provenance clock. $13 is the newest fresh source (null when the
+           -- tier became 'unknown'). When the TIER itself changes, rebind to the
+           -- new verification date (the old date verified a different claim).
+           -- When the tier is unchanged, advance only forward — a legitimate
+           -- re-verification refreshes the clock; a no-evidence reseed cannot.
+           -- RHS columns are pre-update (old) values, same as the clauses above.
+           tier_verified_at = CASE
+               WHEN $13::timestamptz IS NULL THEN NULL
+               WHEN allergy_safety_tier IS DISTINCT FROM $11 THEN $13::timestamptz
+               WHEN tier_verified_at IS NULL OR $13::timestamptz > tier_verified_at
+                 THEN $13::timestamptz
+               ELSE tier_verified_at
+             END
          WHERE id = $1::uuid`,
         [
           existing[0].id,
@@ -145,6 +189,7 @@ async function main() {
           p.allergy_needs,
           p.allergy_safety_tier,
           p.allergy_safety_note,
+          tierVerifiedAt.get(p.slug) ?? null,
         ],
       );
       updated++;
@@ -161,12 +206,14 @@ async function main() {
            agent_score, source, source_record_id, import_confidence,
            website_url, phone, opening_hours,
            allergy_needs, allergy_safety_tier, allergy_safety_note, allergy_updated_at,
+           tier_verified_at,
            discovered_at, last_external_update
          ) VALUES (
            $1, $2, ST_GeogFromText($3), $4, $5::text[], 'discovered',
            0, 'allergy_curated', $6, 0.95,
            $7, $8, $9,
            $10::text[], $11, $12, NOW(),
+           $13::timestamptz,
            NOW(), NOW()
          )`,
         [
@@ -182,6 +229,7 @@ async function main() {
           p.allergy_needs,
           p.allergy_safety_tier,
           p.allergy_safety_note,
+          tierVerifiedAt.get(p.slug) ?? null,
         ],
       );
       inserted++;
