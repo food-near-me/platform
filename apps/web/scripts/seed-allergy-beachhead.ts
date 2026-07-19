@@ -18,10 +18,12 @@ import {
   type CuratorSource,
   evaluateTierProvenance,
 } from "../lib/allergy/source-provenance";
+import { NEIGHBORHOOD_CITIES } from "../lib/near-me/neighborhood";
 
 dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
 
 const dryRun = process.argv.includes("--dry-run");
+const noRevalidate = process.argv.includes("--no-revalidate");
 const regionArg = process.argv.find((a) => a.startsWith("--region="));
 const region = (regionArg?.split("=")[1] || "miami").toLowerCase();
 
@@ -56,6 +58,60 @@ type SeedFile = {
 
 function createPoint(lng: number, lat: number): string {
   return `SRID=4326;POINT(${lng} ${lat})`;
+}
+
+/**
+ * C7 — purge the caches a reseed can make stale. The place page + OG are dynamic
+ * (always fresh), but the neighborhood (hood) pages are SSG + 1h ISR: a
+ * curated→unknown DROP would linger up to an hour. This script has no Next
+ * runtime, so it POSTs the affected paths to the internal revalidate route (which
+ * does). Fail-closed: a purge we can't confirm exits non-zero, so a dropped tier
+ * never silently stays cached. Pass --no-revalidate for a local seed with no
+ * running site to purge against.
+ */
+async function revalidateAfterSeed(places: SeedPlace[]): Promise<void> {
+  if (noRevalidate) {
+    console.log("\n⏭  Skipping cache purge (--no-revalidate). Hood pages may be stale up to 1h.");
+    return;
+  }
+  const baseUrl = process.env.REVALIDATE_BASE_URL?.trim();
+  const secret = process.env.OPS_SECRET?.trim();
+  if (!baseUrl || !secret) {
+    console.error(
+      "\nFAIL: set REVALIDATE_BASE_URL + OPS_SECRET to purge caches after a reseed " +
+        "(else a dropped tier stays cached up to 1h), or pass --no-revalidate to skip deliberately.",
+    );
+    process.exit(1);
+  }
+
+  const hoodPaths = NEIGHBORHOOD_CITIES.filter((c) => c.city === region).flatMap((c) =>
+    c.neighborhoods.map((h) => `/near-me/${c.city}/${h.id}`),
+  );
+  const placePaths = places.map((p) => `/place/${p.slug}`);
+  const paths = [...hoodPaths, ...placePaths];
+
+  const endpoint = `${baseUrl.replace(/\/+$/, "")}/api/internal/revalidate`;
+  let res: Response;
+  try {
+    res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${secret}` },
+      body: JSON.stringify({ paths }),
+    });
+  } catch (e) {
+    console.error(`\nFAIL: cache purge POST to ${endpoint} errored: ${e}. Aborting non-zero.`);
+    process.exit(1);
+  }
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    console.error(
+      `\nFAIL: cache purge returned ${res.status}. ${detail}\n` +
+        "A dropped tier may stay cached — aborting non-zero.",
+    );
+    process.exit(1);
+  }
+  const out = (await res.json().catch(() => ({}))) as { revalidated?: number };
+  console.log(`\n♻  Cache purge OK — revalidated ${out.revalidated ?? paths.length} path(s).`);
 }
 
 async function main() {
@@ -238,6 +294,7 @@ async function main() {
   }
 
   console.log(`\nDone. inserted=${inserted} updated=${updated}`);
+  if (!dryRun) await revalidateAfterSeed(seed.places);
   console.log(`Note: ${seed.disclaimer.slice(0, 120)}…\n`);
 }
 
