@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { checkX402Access } from "@/lib/x402";
+import { checkX402Access, withPaymentSettlement } from "@/lib/x402";
 import { buildMenuTrustNotice } from "@/lib/discovery/verification-status";
 import {
   GET_MENU_NESTED_QUERY,
@@ -39,8 +39,8 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const paymentRequired = await checkX402Access(request, "menu");
-  if (paymentRequired) return paymentRequired;
+  const access = await checkX402Access(request, "menu");
+  if (access.status === "deny") return access.response;
 
   const { id } = await params;
 
@@ -181,12 +181,15 @@ export async function GET(
       },
     };
 
-    return NextResponse.json(menuProtocol, {
-      headers: {
-        "Cache-Control": MENU_CACHE_CONTROL,
-        "Content-Type": "application/json",
-      },
-    });
+    return withPaymentSettlement(
+      NextResponse.json(menuProtocol, {
+        headers: {
+          "Cache-Control": MENU_CACHE_CONTROL,
+          "Content-Type": "application/json",
+        },
+      }),
+      access.settlement,
+    );
   } catch (error) {
     log.error("menu_mp.handler_failed", {
       restaurant_id: id,

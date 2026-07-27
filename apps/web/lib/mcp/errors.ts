@@ -39,10 +39,12 @@ export type RpcError = {
 export function makeRpcError(
   base: (typeof RPC_ERRORS)[keyof typeof RPC_ERRORS],
   details?: string,
+  data?: unknown,
 ): RpcError {
   return {
     code: base.code,
     message: details ? `${base.message}: ${details}` : base.message,
+    ...(data !== undefined ? { data } : {}),
   };
 }
 

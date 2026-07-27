@@ -283,9 +283,11 @@ Rate limit headers are included in responses.
 
 **Current (beta):** Public read access is free. No authentication required.
 
+**x402 demonstrator (opt-in, local mock only):** When `FNM_X402_ENABLED=1`, paid resources listed in `FNM_X402_PAID_RESOURCES` (default `get_safety_attestation`) return a canonical x402 v1 challenge (`accepts[]` with scheme `exact`, Base/USDC) after the free quota. Clients retry with `X-PAYMENT`; the mock facilitator verifies shape + amount and returns `X-PAYMENT-RESPONSE`. This is **not** live mainnet settlement — keep disabled in production until a real facilitator ships.
+
 **Future:**
 - API keys via Stripe for higher rate limits
-- x402 micropayments (USDC on Base) for machine-to-machine access
+- Live x402 settlement (Base/USDC via a real facilitator)
 
 ---
 

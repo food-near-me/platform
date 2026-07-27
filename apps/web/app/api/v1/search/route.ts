@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { checkX402Access, getClientIp } from "@/lib/x402";
+import { checkX402Access, getClientIp, withPaymentSettlement } from "@/lib/x402";
 import { checkRateLimit } from "@/lib/rate-limit";
 import {
   buildClaimInvitation,
@@ -11,8 +11,8 @@ import { SEARCH_CACHE_CONTROL } from "@/lib/http/cache-headers";
 import { log } from "@/lib/log";
 
 export async function GET(request: Request) {
-  const paymentRequired = await checkX402Access(request, "search");
-  if (paymentRequired) return paymentRequired;
+  const access = await checkX402Access(request, "search");
+  if (access.status === "deny") return access.response;
 
   const ip = getClientIp(request);
   const rate = await checkRateLimit({ key: `search:${ip}`, limit: 120, windowMs: 60_000 });
@@ -79,24 +79,27 @@ export async function GET(request: Request) {
       };
     });
 
-    return NextResponse.json(
-      {
-        metadata: {
-          query,
-          location: { lat, lng },
-          radius_miles: radiusMiles,
-          radius_meters: radiusMeters,
-          min_ado_score: minAdo,
-          dietary_filters: dietary,
-          results_count: results.length,
+    return withPaymentSettlement(
+      NextResponse.json(
+        {
+          metadata: {
+            query,
+            location: { lat, lng },
+            radius_miles: radiusMiles,
+            radius_meters: radiusMeters,
+            min_ado_score: minAdo,
+            dietary_filters: dietary,
+            results_count: results.length,
+          },
+          data: results,
         },
-        data: results,
-      },
-      {
-        headers: {
-          "Cache-Control": SEARCH_CACHE_CONTROL,
+        {
+          headers: {
+            "Cache-Control": SEARCH_CACHE_CONTROL,
+          },
         },
-      },
+      ),
+      access.settlement,
     );
   } catch (error) {
     log.error("search.handler_failed", {

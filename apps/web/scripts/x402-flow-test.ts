@@ -1,6 +1,6 @@
 #!/usr/bin/env npx tsx
 /**
- * Run Phase A x402 guard flow tests (unit + optional HTTP against live server).
+ * Run Phase B x402 flow tests (unit + optional HTTP against live server).
  *
  * Usage:
  *   npm run test:x402-flows
@@ -8,7 +8,8 @@
  *
  * HTTP integration requires the dev server running with:
  *   FNM_X402_ENABLED=1
- *   FNM_X402_FREE_QUOTA_PER_DAY=2   (optional, lower for faster test)
+ *   FNM_X402_PAID_RESOURCES=search
+ *   FNM_X402_FREE_QUOTA_PER_DAY=2
  */
 
 import {
@@ -41,7 +42,7 @@ function parseArgs(argv: string[]) {
 async function main() {
   const { url, http } = parseArgs(process.argv.slice(2));
 
-  console.log("[x402-flow-test] Phase A guard tests");
+  console.log("[x402-flow-test] Phase B settlement (mock facilitator) tests");
 
   const results: FlowResult[] = await runX402Flows();
 

@@ -1,9 +1,16 @@
 /**
- * Phase A x402 flow tests — guard + 402 response shape (no settlement).
+ * Phase B x402 flow tests — free quota, canonical 402 challenge, mock
+ * verify+settle loop, paywall dial, API-key bypass.
  */
 
-import { checkX402Access } from "./guard";
-import type { PaymentRequiredBody } from "./types";
+import { buildPaymentChallenge } from "./challenge";
+import { checkX402Access, evaluatePaidAccess } from "./guard";
+import {
+  buildMockPaymentPayload,
+  decodePaymentResponseHeader,
+  encodePaymentHeader,
+} from "./payment";
+import type { PaymentRequirementsResponse } from "./types";
 
 export type FlowStatus = "pass" | "fail" | "skip";
 
@@ -22,7 +29,7 @@ function assert(condition: unknown, message: string): void {
 async function runFlow(
   id: string,
   name: string,
-  fn: () => void | Promise<void>
+  fn: () => void | Promise<void>,
 ): Promise<FlowResult> {
   const start = performance.now();
   try {
@@ -41,7 +48,7 @@ async function runFlow(
 
 function withEnv(
   overrides: Record<string, string | undefined>,
-  fn: () => void | Promise<void>
+  fn: () => void | Promise<void>,
 ): void | Promise<void> {
   const previous: Record<string, string | undefined> = {};
   for (const key of Object.keys(overrides)) {
@@ -68,23 +75,24 @@ function withEnv(
 function makeRequest(options: {
   ip?: string;
   authorization?: string;
-  siwx?: string;
+  payment?: string;
   url?: string;
 }): Request {
   const headers = new Headers();
   if (options.ip) headers.set("x-forwarded-for", options.ip);
   if (options.authorization) headers.set("authorization", options.authorization);
-  if (options.siwx) headers.set("x-sign-in-with-x", options.siwx);
+  if (options.payment) headers.set("X-PAYMENT", options.payment);
 
   return new Request(options.url ?? "http://localhost/api/v1/search?lat=40.7&lng=-74", {
     headers,
   });
 }
 
-async function parse402(response: Response): Promise<PaymentRequiredBody> {
+async function parse402(response: Response): Promise<PaymentRequirementsResponse> {
   assert(response.status === 402, `expected 402, got ${response.status}`);
-  const body = (await response.json()) as PaymentRequiredBody;
-  assert(body.error === "payment_required", "body.error must be payment_required");
+  const body = (await response.json()) as PaymentRequirementsResponse;
+  assert(body.x402Version === 1, "x402Version must be 1");
+  assert(Array.isArray(body.accepts) && body.accepts.length > 0, "accepts[] required");
   return body;
 }
 
@@ -94,155 +102,256 @@ export async function runX402Flows(): Promise<FlowResult[]> {
   results.push(
     await runFlow("x402-disabled", "x402 disabled passes through", async () => {
       await withEnv({ FNM_X402_ENABLED: undefined }, async () => {
-        const response = await checkX402Access(
+        const access = await checkX402Access(
           makeRequest({ ip: `disabled-${Date.now()}` }),
-          "search"
+          "get_safety_attestation",
         );
-        assert(response === null, "expected null when x402 disabled");
+        assert(access.status === "allow", "expected allow when x402 disabled");
+        if (access.status === "allow") {
+          assert(!access.settlement, "no settlement when disabled");
+        }
       });
-    })
+    }),
   );
 
   results.push(
-    await runFlow("x402-under-quota", "under free quota allowed", async () => {
+    await runFlow("x402-unpaid-resource-free", "non-paid resource free when enabled", async () => {
       await withEnv(
         {
           FNM_X402_ENABLED: "1",
+          FNM_X402_PAID_RESOURCES: "get_safety_attestation",
+          FNM_X402_FREE_QUOTA_PER_DAY: "1",
+        },
+        async () => {
+          const ip = `unpaid-${Date.now()}`;
+          // Exhaust a quota key that would matter if search were paid — still free.
+          const first = await checkX402Access(makeRequest({ ip }), "search");
+          const second = await checkX402Access(makeRequest({ ip }), "search");
+          assert(first.status === "allow" && second.status === "allow", "search stays free");
+        },
+      );
+    }),
+  );
+
+  results.push(
+    await runFlow("x402-under-quota", "under free quota allowed for paid resource", async () => {
+      await withEnv(
+        {
+          FNM_X402_ENABLED: "1",
+          FNM_X402_PAID_RESOURCES: "get_safety_attestation",
           FNM_X402_FREE_QUOTA_PER_DAY: "5",
         },
         async () => {
-          const ip = `under-quota-${Date.now()}`;
-          const response = await checkX402Access(makeRequest({ ip }), "search");
-          assert(response === null, "first request under quota should pass");
-        }
+          const outcome = await evaluatePaidAccess({
+            resource: "get_safety_attestation",
+            clientIp: `under-quota-${Date.now()}`,
+          });
+          assert(outcome.kind === "allow", "first request under quota should pass");
+        },
       );
-    })
+    }),
   );
 
   results.push(
-    await runFlow("x402-over-quota-402", "over quota returns structured 402", async () => {
+    await runFlow("x402-over-quota-402", "over quota returns canonical accepts[]", async () => {
       await withEnv(
         {
           FNM_X402_ENABLED: "1",
+          FNM_X402_PAID_RESOURCES: "get_safety_attestation",
           FNM_X402_FREE_QUOTA_PER_DAY: "1",
+          FNM_X402_FACILITATOR: "mock",
         },
         async () => {
           const ip = `over-quota-${Date.now()}`;
 
-          const first = await checkX402Access(makeRequest({ ip }), "search");
-          assert(first === null, "first request should pass");
+          const first = await evaluatePaidAccess({
+            resource: "get_safety_attestation",
+            clientIp: ip,
+          });
+          assert(first.kind === "allow", "first request should pass");
 
-          const second = await checkX402Access(makeRequest({ ip }), "search");
-          assert(second !== null, "second request should be blocked");
+          const second = await checkX402Access(
+            makeRequest({ ip }),
+            "get_safety_attestation",
+          );
+          assert(second.status === "deny", "second request should be blocked");
+          if (second.status !== "deny") throw new Error("unreachable");
 
-          const body = await parse402(second as Response);
-          assert(body.payment_options.length > 0, "payment_options required");
-          assert(body.auth_options.api_key.header.includes("Bearer"), "api_key header");
+          const body = await parse402(second.response);
+          const req = body.accepts[0]!;
+          assert(req.scheme === "exact", "scheme exact");
+          assert(typeof req.maxAmountRequired === "string", "maxAmountRequired");
+          assert(req.asset.startsWith("0x"), "USDC asset address");
+          assert(req.payTo.startsWith("0x"), "payTo address");
+          assert(req.extra?.status === "mock_facilitator", "mock status");
+          assert(req.extra?.facilitator === "mock", "mock facilitator");
           assert(
-            body.auth_options.x402_wallet.header === "X-Sign-In-With-X",
-            "x402_wallet header"
+            second.response.headers.get("X-Payment-Required") === "x402",
+            "X-Payment-Required header",
           );
           assert(
-            body.auth_options.x402_wallet.status === "phase_a_guard_only",
-            "x402_wallet.status should be phase_a_guard_only without FNM_X402_TOPUP_ENDPOINT"
+            body.error.toLowerCase().includes("mock"),
+            "error text must disclose mock facilitator",
           );
-          assert(
-            body.auth_options.x402_wallet.top_up_endpoint === undefined,
-            "top_up_endpoint must be omitted until Phase B route is shipped"
-          );
-          assert(second!.headers.get("X-Payment-Required") === "x402", "X-Payment-Required header");
-        }
+        },
       );
-    })
+    }),
   );
 
   results.push(
-    await runFlow("x402-bearer-bypass", "Bearer auth bypasses quota", async () => {
+    await runFlow("x402-pay-settle-loop", "mock X-PAYMENT verify+settle unlocks", async () => {
       await withEnv(
         {
           FNM_X402_ENABLED: "1",
+          FNM_X402_PAID_RESOURCES: "get_safety_attestation",
           FNM_X402_FREE_QUOTA_PER_DAY: "1",
+          FNM_X402_FACILITATOR: "mock",
         },
         async () => {
-          const ip = `bearer-${Date.now()}`;
+          const ip = `pay-loop-${Date.now()}`;
 
-          await checkX402Access(makeRequest({ ip }), "search");
-          await checkX402Access(makeRequest({ ip }), "search");
+          await evaluatePaidAccess({ resource: "get_safety_attestation", clientIp: ip });
 
-          const withAuth = await checkX402Access(
-            makeRequest({ ip, authorization: "Bearer test-key-phase-a" }),
-            "search"
+          const challenge = buildPaymentChallenge({ resource: "get_safety_attestation" });
+          const payment = buildMockPaymentPayload(challenge.accepts[0]!);
+          const header = encodePaymentHeader(payment);
+
+          const paid = await evaluatePaidAccess({
+            resource: "get_safety_attestation",
+            clientIp: ip,
+            paymentHeader: header,
+          });
+          assert(paid.kind === "allow", "paid request should allow");
+          if (paid.kind !== "allow") throw new Error("unreachable");
+          assert(paid.settlement?.success === true, "settlement success");
+          assert(
+            paid.settlement?.transaction.startsWith("mock:"),
+            "mock tx hash",
           );
-          assert(withAuth === null, "Bearer auth should bypass quota");
-        }
+          assert(
+            Boolean(paid.settlement?.settlement_id?.startsWith("mock_")),
+            "settlement_id",
+          );
+          assert(paid.settlement?.facilitator === "mock", "facilitator label");
+        },
       );
-    })
+    }),
   );
 
   results.push(
-    await runFlow("x402-siwx-bypass", "SIWX header bypasses quota", async () => {
+    await runFlow("x402-bad-payment-challenged", "bad X-PAYMENT stays challenged", async () => {
       await withEnv(
         {
           FNM_X402_ENABLED: "1",
+          FNM_X402_PAID_RESOURCES: "get_safety_attestation",
           FNM_X402_FREE_QUOTA_PER_DAY: "1",
         },
         async () => {
-          const ip = `siwx-${Date.now()}`;
+          const ip = `bad-pay-${Date.now()}`;
+          await evaluatePaidAccess({ resource: "get_safety_attestation", clientIp: ip });
 
-          await checkX402Access(makeRequest({ ip }), "restaurant");
-          await checkX402Access(makeRequest({ ip }), "restaurant");
-
-          const withSiwx = await checkX402Access(
-            makeRequest({ ip, siwx: "phase-a-stub-token" }),
-            "restaurant"
-          );
-          assert(withSiwx === null, "SIWX auth should bypass quota");
-        }
+          const outcome = await evaluatePaidAccess({
+            resource: "get_safety_attestation",
+            clientIp: ip,
+            paymentHeader: "not-a-valid-payment",
+          });
+          assert(outcome.kind === "challenge", "bad payment must challenge");
+        },
       );
-    })
+    }),
   );
 
   results.push(
-    await runFlow(
-      "x402-topup-when-configured",
-      "top_up_endpoint surfaces when FNM_X402_TOPUP_ENDPOINT is set",
-      async () => {
-        await withEnv(
-          {
-            FNM_X402_ENABLED: "1",
-            FNM_X402_FREE_QUOTA_PER_DAY: "1",
-            FNM_X402_TOPUP_ENDPOINT: "/api/v1/x402/top-up",
-          },
-          async () => {
-            const ip = `topup-${Date.now()}`;
-            await checkX402Access(makeRequest({ ip }), "search");
-            const blocked = await checkX402Access(makeRequest({ ip }), "search");
-            assert(blocked !== null, "second request should be blocked");
-            const body = await parse402(blocked as Response);
-            assert(
-              body.auth_options.x402_wallet.top_up_endpoint === "/api/v1/x402/top-up",
-              "top_up_endpoint should advertise configured value"
-            );
-            assert(
-              body.auth_options.x402_wallet.status === "phase_b_settlement",
-              "status should flip to phase_b_settlement when route is configured"
-            );
-          }
-        );
-      }
-    )
+    await runFlow("x402-api-key-bypass", "configured API key bypasses quota", async () => {
+      await withEnv(
+        {
+          FNM_X402_ENABLED: "1",
+          FNM_X402_PAID_RESOURCES: "get_safety_attestation",
+          FNM_X402_FREE_QUOTA_PER_DAY: "1",
+          FNM_X402_API_KEY: "phase-b-internal-key",
+        },
+        async () => {
+          const ip = `apikey-${Date.now()}`;
+          await evaluatePaidAccess({ resource: "get_safety_attestation", clientIp: ip });
+
+          const blocked = await evaluatePaidAccess({
+            resource: "get_safety_attestation",
+            clientIp: ip,
+          });
+          assert(blocked.kind === "challenge", "over quota without key");
+
+          const bypass = await evaluatePaidAccess({
+            resource: "get_safety_attestation",
+            clientIp: ip,
+            authorizationHeader: "Bearer phase-b-internal-key",
+          });
+          assert(bypass.kind === "allow", "matching API key bypasses");
+
+          const wrong = await evaluatePaidAccess({
+            resource: "get_safety_attestation",
+            clientIp: ip,
+            authorizationHeader: "Bearer wrong-key",
+          });
+          assert(wrong.kind === "challenge", "wrong key does not bypass");
+        },
+      );
+    }),
+  );
+
+  results.push(
+    await runFlow("x402-presence-bearer-no-bypass", "presence-only Bearer no longer bypasses", async () => {
+      await withEnv(
+        {
+          FNM_X402_ENABLED: "1",
+          FNM_X402_PAID_RESOURCES: "get_safety_attestation",
+          FNM_X402_FREE_QUOTA_PER_DAY: "1",
+          FNM_X402_API_KEY: undefined,
+        },
+        async () => {
+          const ip = `presence-${Date.now()}`;
+          await evaluatePaidAccess({ resource: "get_safety_attestation", clientIp: ip });
+          const outcome = await evaluatePaidAccess({
+            resource: "get_safety_attestation",
+            clientIp: ip,
+            authorizationHeader: "Bearer anything-nonempty",
+          });
+          assert(outcome.kind === "challenge", "presence-only Bearer must not bypass");
+        },
+      );
+    }),
+  );
+
+  results.push(
+    await runFlow("x402-rest-response-header", "REST deny encodes canonical challenge", async () => {
+      await withEnv(
+        {
+          FNM_X402_ENABLED: "1",
+          FNM_X402_PAID_RESOURCES: "search",
+          FNM_X402_FREE_QUOTA_PER_DAY: "1",
+        },
+        async () => {
+          const ip = `rest-${Date.now()}`;
+          await checkX402Access(makeRequest({ ip }), "search");
+          const denied = await checkX402Access(makeRequest({ ip }), "search");
+          assert(denied.status === "deny", "search paid when dialed in");
+          if (denied.status !== "deny") throw new Error("unreachable");
+          const body = await parse402(denied.response);
+          assert(body.accepts[0]?.resource.includes("/api/v1/search"), "resource URI");
+        },
+      );
+    }),
   );
 
   return results;
 }
 
 export async function runX402HttpFlow(baseUrl: string): Promise<FlowResult> {
-  return runFlow("x402-http-over-quota", "HTTP search returns 402 when enabled", async () => {
+  return runFlow("x402-http-over-quota", "HTTP paid resource returns 402 when enabled", async () => {
     const ip = `http-test-${Date.now()}`;
+    // Attestation is MCP-only; use search with dial override via server env.
     const searchUrl = `${baseUrl.replace(/\/$/, "")}/api/v1/search?lat=40.7128&lng=-74.006&radius=5`;
     const headers = { "x-forwarded-for": ip };
 
-    // Start dev server with FNM_X402_ENABLED=1 and FNM_X402_FREE_QUOTA_PER_DAY=2
     for (let attempt = 0; attempt < 3; attempt++) {
       const res = await fetch(searchUrl, { headers });
       if (res.status === 402) {
@@ -255,7 +364,7 @@ export async function runX402HttpFlow(baseUrl: string): Promise<FlowResult> {
     }
 
     throw new Error(
-      "SKIP: no 402 after 3 requests — start server with FNM_X402_ENABLED=1 FNM_X402_FREE_QUOTA_PER_DAY=2"
+      "SKIP: no 402 after 3 requests — start server with FNM_X402_ENABLED=1 FNM_X402_PAID_RESOURCES=search FNM_X402_FREE_QUOTA_PER_DAY=2",
     );
   });
 }
@@ -283,3 +392,6 @@ export function formatFlowReport(results: FlowResult[]): string {
 export function exitCodeFromResults(results: FlowResult[]): number {
   return results.some((r) => r.status === "fail") ? 1 : 0;
 }
+
+/** Re-export for demo scripts that decode receipts. */
+export { decodePaymentResponseHeader };

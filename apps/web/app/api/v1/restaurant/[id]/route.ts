@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { checkX402Access } from "@/lib/x402";
+import { checkX402Access, withPaymentSettlement } from "@/lib/x402";
 import {
   buildClaimInvitation,
   buildProfileTrustNotice,
@@ -24,8 +24,8 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const paymentRequired = await checkX402Access(request, "restaurant");
-  if (paymentRequired) return paymentRequired;
+  const access = await checkX402Access(request, "restaurant");
+  if (access.status === "deny") return access.response;
 
   const { id } = await params;
 
@@ -95,11 +95,14 @@ export async function GET(
       ...(claimInvitation ? { claim_invitation: claimInvitation } : {}),
     };
 
-    return NextResponse.json(restaurantProfile, {
-      headers: {
-        "Cache-Control": RESTAURANT_PROFILE_CACHE_CONTROL,
-      },
-    });
+    return withPaymentSettlement(
+      NextResponse.json(restaurantProfile, {
+        headers: {
+          "Cache-Control": RESTAURANT_PROFILE_CACHE_CONTROL,
+        },
+      }),
+      access.settlement,
+    );
   } catch (error) {
     log.error("restaurant.handler_failed", {
       restaurant_id: id,

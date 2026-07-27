@@ -21,6 +21,8 @@ export const RPC_ERRORS = {
   RESOURCE_NOT_FOUND: { code: -32001, message: "Resource not found" },
   VALIDATION_ERROR: { code: -32002, message: "Validation error" },
   DATABASE_ERROR: { code: -32003, message: "Database error" },
+  /** x402 payment required — `data` carries PaymentRequirementsResponse. */
+  PAYMENT_REQUIRED: { code: -32040, message: "Payment required" },
 } as const;
 
 export const VALID_DIETARY_FILTERS = [
@@ -40,9 +42,11 @@ export type DietaryFilter = (typeof VALID_DIETARY_FILTERS)[number];
 export const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Request-ID",
-  // Let browser-side agents read X-Request-ID / X-Response-Time off
-  // the response so they can echo the id into their own log lines.
-  "Access-Control-Expose-Headers": "X-Request-ID, X-Response-Time",
+  "Access-Control-Allow-Headers":
+    "Content-Type, Authorization, X-Request-ID, X-PAYMENT, X-Payment",
+  // Let browser-side agents read X-Request-ID / X-Response-Time / payment receipt
+  // off the response so they can echo the id into their own log lines.
+  "Access-Control-Expose-Headers":
+    "X-Request-ID, X-Response-Time, X-PAYMENT-RESPONSE, X-Payment-Settled",
   "Access-Control-Max-Age": "86400",
 } as const;

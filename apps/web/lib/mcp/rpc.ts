@@ -23,6 +23,8 @@ import {
 } from "@/lib/mcp/instrumentation";
 import { toolErrorResult } from "@/lib/mcp/tool-errors";
 import { log } from "@/lib/log";
+import { evaluatePaidAccess } from "@/lib/x402/guard";
+import type { SettlementResponse } from "@/lib/x402/types";
 
 import { RPC_ERRORS } from "./constants";
 import {
@@ -47,6 +49,15 @@ import { getSafetyAttestation } from "./tools/safety-attestation";
 import { searchRestaurants } from "./tools/search";
 import { validateMenuProtocol } from "./tools/validate";
 import { TOOL_INPUT_SCHEMAS, type ToolName } from "./tools/inputs";
+
+/** Optional transport context — payment header in, settlement out. */
+export type RpcCallContext = {
+  paymentHeader?: string | null;
+  authorizationHeader?: string | null;
+  clientIp?: string;
+  /** Filled when a paid tool settles successfully. */
+  settlement?: SettlementResponse;
+};
 
 /**
  * Dispatch table for `tools/call`. Each entry takes the Zod-parsed,
@@ -125,7 +136,7 @@ function parseToolInput<S extends ZodTypeAny>(
   return result.data as ReturnType<S["parse"]>;
 }
 
-async function handleToolCall(params: unknown): Promise<unknown> {
+async function handleToolCall(params: unknown, ctx: RpcCallContext): Promise<unknown> {
   if (!params || typeof params !== "object") {
     throw makeRpcError(RPC_ERRORS.INVALID_PARAMS, "params required for tools/call");
   }
@@ -149,6 +160,32 @@ async function handleToolCall(params: unknown): Promise<unknown> {
 
   const toolStart = Date.now();
 
+  const access = await evaluatePaidAccess({
+    resource: name,
+    clientIp: ctx.clientIp ?? "unknown",
+    paymentHeader: ctx.paymentHeader,
+    authorizationHeader: ctx.authorizationHeader,
+  });
+
+  if (access.kind === "challenge") {
+    scheduleRecordMcpInvocation({
+      toolName: name,
+      status: "error",
+      errorCode: "PAYMENT_REQUIRED",
+      durationMs: Date.now() - toolStart,
+    });
+    throw makeRpcError(
+      RPC_ERRORS.PAYMENT_REQUIRED,
+      access.challenge.error,
+      access.challenge,
+    );
+  }
+
+  const settled = access.kind === "allow" ? access.settlement : undefined;
+  if (settled) {
+    ctx.settlement = settled;
+  }
+
   try {
     const parsed = parseToolInput(TOOL_INPUT_SCHEMAS[name], toolArgs, name);
     const dispatcher = TOOL_DISPATCH[name];
@@ -160,6 +197,8 @@ async function handleToolCall(params: unknown): Promise<unknown> {
       tierReturned: extractTierLabel(result),
       resultsCount: extractResultsCount(result),
       durationMs: Date.now() - toolStart,
+      paid: Boolean(settled),
+      settlementId: settled?.settlement_id,
     });
 
     return {
@@ -179,6 +218,8 @@ async function handleToolCall(params: unknown): Promise<unknown> {
         status: "error",
         errorCode: "VALIDATION_ERROR",
         durationMs,
+        paid: Boolean(settled),
+        settlementId: settled?.settlement_id,
       });
       return toolErrorResult({
         code: "VALIDATION_ERROR",
@@ -193,6 +234,8 @@ async function handleToolCall(params: unknown): Promise<unknown> {
         status: "error",
         errorCode: "NOT_FOUND",
         durationMs,
+        paid: Boolean(settled),
+        settlementId: settled?.settlement_id,
       });
       return toolErrorResult({
         code: "NOT_FOUND",
@@ -210,6 +253,8 @@ async function handleToolCall(params: unknown): Promise<unknown> {
       status: "error",
       errorCode: "UPSTREAM",
       durationMs,
+      paid: Boolean(settled),
+      settlementId: settled?.settlement_id,
     });
     return toolErrorResult({
       code: "UPSTREAM",
@@ -274,7 +319,11 @@ function handlePromptsGet(params: unknown): unknown {
   }
 }
 
-export async function handleRpcRequest(method: string, params?: unknown): Promise<unknown> {
+export async function handleRpcRequest(
+  method: string,
+  params?: unknown,
+  ctx: RpcCallContext = {},
+): Promise<unknown> {
   switch (method) {
     case "initialize":
       return SERVER_INFO;
@@ -287,7 +336,7 @@ export async function handleRpcRequest(method: string, params?: unknown): Promis
       return { tools: getEnabledTools() };
 
     case "tools/call":
-      return handleToolCall(params);
+      return handleToolCall(params, ctx);
 
     case "resources/list":
       return { resources: RESOURCES };

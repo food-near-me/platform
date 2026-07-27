@@ -24,6 +24,10 @@ export type McpInvocationRecord = {
   durationMs: number;
   /** Optional override; defaults to the current AsyncLocalStorage request id. */
   requestId?: string | null;
+  /** True when this invocation settled an x402 payment. */
+  paid?: boolean;
+  /** Mock/real settlement id when `paid` is true. */
+  settlementId?: string;
 };
 
 function adminClientOrNull() {
@@ -59,6 +63,17 @@ export async function recordMcpInvocation(record: McpInvocationRecord): Promise<
   const requestId = record.requestId ?? getCurrentRequestId() ?? null;
 
   try {
+    // paid / settlement_id are Phase B receipt dims. Logged always; DB columns
+    // land with a real settlement ledger (no mock migration required).
+    if (record.paid || record.settlementId) {
+      log.info("mcp_instrumentation.paid_invocation", {
+        tool_name: record.toolName,
+        paid: Boolean(record.paid),
+        settlement_id: record.settlementId ?? null,
+        request_id: requestId,
+      });
+    }
+
     const { error } = await supabase.from("mcp_invocations").insert({
       tool_name: record.toolName,
       status: record.status,

@@ -18,6 +18,7 @@
     "check:allergy-seeds": "tsx scripts/check-allergy-seeds.ts",
     "test:mcp-tool-filtering": "tsx scripts/mcp-tool-filter-test.ts",
     "test:x402-flows": "tsx scripts/x402-flow-test.ts",
+    "demo:x402-attestation": "tsx scripts/x402-attestation-demo.ts",
     "test:rate-limit": "tsx scripts/rate-limit-test.ts",
     "gen:signing-key": "tsx scripts/generate-signing-key.ts",
     "backfill:signatures": "tsx scripts/backfill-verified-signatures.ts",

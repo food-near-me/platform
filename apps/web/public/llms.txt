@@ -112,7 +112,7 @@ Trust progression: `discovered` → `menu_indexed` → `verified`
 
 ## Authentication
 
-Public read access is free during beta. Future paid tiers will use API keys (Stripe) and x402 micropayments (USDC on Base) for machine-to-machine access.
+Public read access is free during beta. An optional x402 demonstrator (local mock facilitator) can gate `get_safety_attestation` behind a canonical HTTP 402 / MCP payment_required challenge with Base/USDC `accepts[]` — settlement is mock-only, not live mainnet. Real USDC settlement and Stripe API keys are later. Keep `FNM_X402_ENABLED` unset in production until live rails ship.
 
 ## Contact
 

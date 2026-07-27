@@ -15,8 +15,10 @@ import { NextResponse } from "next/server";
 import { CORS_HEADERS, RPC_ERRORS } from "@/lib/mcp/constants";
 import { buildMcpDiscoveryPayload } from "@/lib/mcp/discovery";
 import { isRpcError, makeRpcError, type RpcError } from "@/lib/mcp/errors";
-import { handleRpcRequest } from "@/lib/mcp/rpc";
+import { handleRpcRequest, type RpcCallContext } from "@/lib/mcp/rpc";
 import { log, runWithRequest } from "@/lib/log";
+import { getClientIp } from "@/lib/x402/guard";
+import { encodePaymentResponseHeader } from "@/lib/x402/payment";
 
 /**
  * Generate a request id for the inbound POST. We prefer an
@@ -31,8 +33,29 @@ function resolveRequestId(request: Request): string {
   return crypto.randomUUID();
 }
 
-function headersWithRequestId(extra: Record<string, string>, requestId: string) {
-  return { ...CORS_HEADERS, ...extra, "X-Request-ID": requestId };
+function headersWithRequestId(
+  extra: Record<string, string>,
+  requestId: string,
+  ctx?: RpcCallContext,
+) {
+  const headers: Record<string, string> = {
+    ...CORS_HEADERS,
+    ...extra,
+    "X-Request-ID": requestId,
+  };
+  if (ctx?.settlement) {
+    headers["X-PAYMENT-RESPONSE"] = encodePaymentResponseHeader(ctx.settlement);
+    headers["X-Payment-Settled"] = ctx.settlement.facilitator;
+  }
+  return headers;
+}
+
+function buildRpcContext(request: Request): RpcCallContext {
+  return {
+    paymentHeader: request.headers.get("x-payment") ?? request.headers.get("X-PAYMENT"),
+    authorizationHeader: request.headers.get("authorization"),
+    clientIp: getClientIp(request),
+  };
 }
 
 export async function OPTIONS() {
@@ -54,6 +77,12 @@ function toEnvelope(err: unknown): RpcError {
   return isRpcError(err) ? err : makeRpcError(RPC_ERRORS.INTERNAL_ERROR, String(err));
 }
 
+function httpStatusForRpcError(error: RpcError): number {
+  if (error.code === RPC_ERRORS.PAYMENT_REQUIRED.code) return 402;
+  if (error.code === RPC_ERRORS.METHOD_NOT_FOUND.code) return 404;
+  return 500;
+}
+
 export async function POST(request: Request) {
   const requestId = resolveRequestId(request);
   return runWithRequest({ requestId }, () => handlePost(request, requestId));
@@ -61,6 +90,7 @@ export async function POST(request: Request) {
 
 async function handlePost(request: Request, requestId: string): Promise<Response> {
   const startTime = Date.now();
+  const ctx = buildRpcContext(request);
 
   let body: unknown;
   try {
@@ -83,8 +113,12 @@ async function handlePost(request: Request, requestId: string): Promise<Response
             error: RPC_ERRORS.INVALID_REQUEST,
           };
         }
+        const itemCtx: RpcCallContext = { ...ctx };
         try {
-          const result = await handleRpcRequest(req.method as string, req.params);
+          const result = await handleRpcRequest(req.method as string, req.params, itemCtx);
+          if (itemCtx.settlement) {
+            ctx.settlement = itemCtx.settlement;
+          }
           if (result === null) return null;
           return { jsonrpc: "2.0", id: req.id ?? null, result };
         } catch (err) {
@@ -101,6 +135,7 @@ async function handlePost(request: Request, requestId: string): Promise<Response
       headers: headersWithRequestId(
         { "X-Response-Time": `${Date.now() - startTime}ms` },
         requestId,
+        ctx,
       ),
     });
   }
@@ -114,11 +149,11 @@ async function handlePost(request: Request, requestId: string): Promise<Response
 
   const typed = body as { method: string; params?: unknown; id?: string | number | null };
   try {
-    const result = await handleRpcRequest(typed.method, typed.params);
+    const result = await handleRpcRequest(typed.method, typed.params, ctx);
     if (result === null && typed.id === undefined) {
       return new NextResponse(null, {
         status: 204,
-        headers: headersWithRequestId({}, requestId),
+        headers: headersWithRequestId({}, requestId, ctx),
       });
     }
     return NextResponse.json(
@@ -127,21 +162,28 @@ async function handlePost(request: Request, requestId: string): Promise<Response
         headers: headersWithRequestId(
           { "X-Response-Time": `${Date.now() - startTime}ms` },
           requestId,
+          ctx,
         ),
       },
     );
   } catch (err) {
     const error = toEnvelope(err);
-    log.error("mcp.request_failed", {
-      method: typed.method,
-      error_code: error.code,
-      error_message: error.message,
-    });
+    if (error.code !== RPC_ERRORS.PAYMENT_REQUIRED.code) {
+      log.error("mcp.request_failed", {
+        method: typed.method,
+        error_code: error.code,
+        error_message: error.message,
+      });
+    }
     return NextResponse.json(
       { jsonrpc: "2.0", id: typed.id ?? null, error },
       {
-        status: error.code === RPC_ERRORS.METHOD_NOT_FOUND.code ? 404 : 500,
-        headers: headersWithRequestId({}, requestId),
+        status: httpStatusForRpcError(error),
+        headers: headersWithRequestId(
+          { "X-Response-Time": `${Date.now() - startTime}ms` },
+          requestId,
+          ctx,
+        ),
       },
     );
   }
