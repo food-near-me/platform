@@ -21,6 +21,18 @@ const DEFAULT_RADIUS_MILES = 3;
 const ALLERGY_RADIUS_MILES = 12;
 const DEFAULT_TZ = "America/New_York";
 
+/** Parse need= from query: repeated params and/or comma-separated values. */
+function parseNeedsParam(searchParams: URLSearchParams): string[] {
+  const collected: string[] = [];
+  for (const raw of searchParams.getAll("need")) {
+    for (const part of raw.split(/[,+]/)) {
+      const v = part.trim().toLowerCase();
+      if (v && isAllergyNeed(v) && !collected.includes(v)) collected.push(v);
+    }
+  }
+  return collected;
+}
+
 type SearchRow = {
   id: string;
   name: string;
@@ -77,15 +89,15 @@ export async function GET(request: Request) {
   const query = (searchParams.get("query") || "").trim().slice(0, 256);
   const lat = parseFloat(searchParams.get("lat") || "");
   const lng = parseFloat(searchParams.get("lng") || "");
-  const needRaw = (searchParams.get("need") || "").trim().toLowerCase();
-  const need = needRaw && isAllergyNeed(needRaw) ? needRaw : null;
+  const needs = parseNeedsParam(searchParams);
+  const need = needs.length === 1 ? needs[0]! : needs.length > 1 ? needs.join(",") : null;
   const openNowOnly =
     searchParams.get("open_now") === "1" || searchParams.get("open_now") === "true";
   const neighborhoodRaw = (searchParams.get("neighborhood") || "").trim();
   const neighborhood = getFilterNeighborhood(neighborhoodRaw);
   const defaultRadius = neighborhood
     ? neighborhood.radiusMiles
-    : need
+    : needs.length > 0
       ? ALLERGY_RADIUS_MILES
       : DEFAULT_RADIUS_MILES;
   const radiusMiles = Math.min(
@@ -120,17 +132,19 @@ export async function GET(request: Request) {
       [query, lat, lng, radiusMeters, 0, []],
     );
 
-    // Always pull curated allergy places in radius when need is set (even with a
+    // Always pull curated allergy places in radius when needs are set (even with a
     // cuisine query) so Also nearby stays on-need instead of padding with chains.
-    const curatedExtra = need
-      ? await sqlQuery<SearchRow>(
+    // AND semantics: allergy_needs must contain every selected need.
+    const curatedExtra =
+      needs.length > 0
+        ? await sqlQuery<SearchRow>(
             `SELECT
                id, name, slug,
                ST_Distance(location, ST_SetSRID(ST_MakePoint($2,$1), 4326)::geography) AS distance_meters,
                agent_score, cuisine_type, verification_status,
                false AS menu_available, source AS data_source
              FROM restaurants
-             WHERE allergy_needs @> ARRAY[$3]::text[]
+             WHERE allergy_needs @> $3::text[]
                -- honesty guard: only curated tiers may surface for a need filter
                AND allergy_safety_tier IN ('dedicated', 'strong_protocol', 'shared_verify')
                AND ST_DWithin(
@@ -147,9 +161,9 @@ export async function GET(request: Request) {
                END,
                location <-> ST_SetSRID(ST_MakePoint($2,$1), 4326)::geography
              LIMIT 30`,
-            [lat, lng, need, radiusMeters],
+            [lat, lng, needs, radiusMeters],
           )
-      : [];
+        : [];
 
     // Main-search rows carry the authoritative menu_available; let them win over
     // the curatedExtra stub (which hardcodes false) when a place is in both.
@@ -195,7 +209,7 @@ export async function GET(request: Request) {
     const ranked = rankPlaces(candidates, {
       query,
       timeZone,
-      need,
+      need: needs,
       openNowOnly,
       limit: MAX_RESULTS,
     });
@@ -238,7 +252,12 @@ export async function GET(request: Request) {
         [
           city,
           source,
-          [need ? `need:${need}` : "", openNowOnly ? "open_now" : "", neighborhood ? `hood:${neighborhood.id}` : "", query]
+          [
+            needs.length ? `need:${needs.join("+")}` : "",
+            openNowOnly ? "open_now" : "",
+            neighborhood ? `hood:${neighborhood.id}` : "",
+            query,
+          ]
             .filter(Boolean)
             .join(" ")
             .slice(0, 80),
@@ -255,6 +274,7 @@ export async function GET(request: Request) {
       metadata: {
         query,
         need,
+        needs,
         open_now: openNowOnly,
         neighborhood: neighborhood?.name ?? null,
         city,

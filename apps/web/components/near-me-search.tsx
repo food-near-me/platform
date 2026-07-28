@@ -57,6 +57,7 @@ type NearMeResponse = {
     results_count: number;
     radius_miles: number;
     need?: string | null;
+    needs?: string[];
     open_now?: boolean;
     neighborhood?: string | null;
     curated_matches?: number;
@@ -85,7 +86,7 @@ function clientTimeZone(): string {
 /** Beachhead share URL — never embeds personal geo. */
 function buildShareSearchParams(opts: {
   cityId: BeachheadId;
-  need: string;
+  needs: string[];
   neighborhoodId: string;
   openNow: boolean;
   query: string;
@@ -93,7 +94,11 @@ function buildShareSearchParams(opts: {
   const params = new URLSearchParams();
   params.set("browse", "1");
   params.set("city", opts.cityId);
-  if (opts.need) params.set("need", opts.need);
+  if (opts.needs.length === 1) {
+    params.set("need", opts.needs[0]!);
+  } else if (opts.needs.length > 1) {
+    params.set("need", opts.needs.join(","));
+  }
   if (opts.neighborhoodId) params.set("neighborhood", opts.neighborhoodId);
   if (opts.openNow) params.set("open_now", "1");
   const q = opts.query.trim();
@@ -103,7 +108,7 @@ function buildShareSearchParams(opts: {
 
 function shareUrlFromFilters(opts: {
   cityId: BeachheadId;
-  need: string;
+  needs: string[];
   neighborhoodId: string;
   openNow: boolean;
   query: string;
@@ -117,7 +122,7 @@ function shareUrlFromFilters(opts: {
 
 function syncShareUrl(opts: {
   cityId: BeachheadId;
-  need: string;
+  needs: string[];
   neighborhoodId: string;
   openNow: boolean;
   query: string;
@@ -136,7 +141,7 @@ function syncShareUrl(opts: {
 function searchPoint(
   loc: Extract<LocState, { status: "ready" }>,
   hood: FilterNeighborhood | null,
-  needKey: string,
+  needs: string[],
   beachhead: Beachhead,
 ): { lat: number; lng: number; city: string; radius: number; source: "geo" | "fallback" } {
   if (hood) {
@@ -152,9 +157,28 @@ function searchPoint(
     lat: loc.lat,
     lng: loc.lng,
     city: loc.city,
-    radius: needKey ? beachhead.allergyRadiusMiles : beachhead.radiusMiles,
+    radius: needs.length > 0 ? beachhead.allergyRadiusMiles : beachhead.radiusMiles,
     source: loc.source,
   };
+}
+
+function parseNeedsFromSearchParams(params: URLSearchParams): string[] {
+  const out: string[] = [];
+  for (const raw of params.getAll("need")) {
+    for (const part of raw.split(/[,+]/)) {
+      const v = part.trim().toLowerCase();
+      if (
+        (v === "gluten_free" ||
+          v === "dairy_free" ||
+          v === "nut_aware" ||
+          v === "vegetarian") &&
+        !out.includes(v)
+      ) {
+        out.push(v);
+      }
+    }
+  }
+  return out;
 }
 
 function mediaHue(name: string): number {
@@ -254,7 +278,8 @@ export function NearMeSearch() {
   const hoodOptions = getNeighborhoodsForCity(beachheadId);
   const [loc, setLoc] = useState<LocState>({ status: "idle" });
   const [query, setQuery] = useState("");
-  const [need, setNeed] = useState("gluten_free");
+  // Multi-select needs (AND). Default gluten_free — same as the prior single-select default.
+  const [needs, setNeeds] = useState<string[]>(["gluten_free"]);
   const [neighborhoodId, setNeighborhoodId] = useState("");
   const [openNow, setOpenNow] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -269,8 +294,8 @@ export function NearMeSearch() {
       const cityParam = params.get("city");
       const bh = getBeachhead(cityParam);
       setBeachheadId(bh.id);
-      const n = params.get("need");
-      if (n && NEED_OPTIONS.some((o) => o.id === n)) setNeed(n);
+      const parsedNeeds = parseNeedsFromSearchParams(params);
+      if (params.has("need")) setNeeds(parsedNeeds);
       if (params.get("open_now") === "1") setOpenNow(true);
       const q = params.get("query");
       if (q) setQuery(q);
@@ -292,8 +317,8 @@ export function NearMeSearch() {
   // Keep the address bar shareable once a search is active (no personal geo).
   useEffect(() => {
     if (loc.status !== "ready") return;
-    syncShareUrl({ cityId: beachheadId, need, neighborhoodId, openNow, query });
-  }, [loc.status, beachheadId, need, neighborhoodId, openNow, query]);
+    syncShareUrl({ cityId: beachheadId, needs, neighborhoodId, openNow, query });
+  }, [loc.status, beachheadId, needs, neighborhoodId, openNow, query]);
 
   const useBeachhead = useCallback(() => {
     const bh = getBeachhead(beachheadId);
@@ -333,7 +358,7 @@ export function NearMeSearch() {
     async (
       base: Extract<LocState, { status: "ready" }>,
       q: string,
-      needKey: string,
+      needKeys: string[],
       openNowOnly: boolean,
       hoodId: string,
     ) => {
@@ -342,7 +367,7 @@ export function NearMeSearch() {
       try {
         const hood = getFilterNeighborhood(hoodId, beachheadId);
         const bh = getBeachhead(beachheadId);
-        const point = searchPoint(base, hood, needKey, bh);
+        const point = searchPoint(base, hood, needKeys, bh);
         const params = new URLSearchParams({
           lat: String(point.lat),
           lng: String(point.lng),
@@ -353,7 +378,8 @@ export function NearMeSearch() {
           query: q,
           tz: clientTimeZone(),
         });
-        if (needKey) params.set("need", needKey);
+        if (needKeys.length === 1) params.set("need", needKeys[0]!);
+        else if (needKeys.length > 1) params.set("need", needKeys.join(","));
         if (openNowOnly) params.set("open_now", "1");
         if (hood) params.set("neighborhood", hood.id);
         const res = await fetch(`/api/v1/near-me?${params}`);
@@ -379,7 +405,7 @@ export function NearMeSearch() {
 
   useEffect(() => {
     if (loc.status !== "ready") return;
-    void runSearch(loc, query, need, openNow, neighborhoodId);
+    void runSearch(loc, query, needs, openNow, neighborhoodId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loc.status === "ready" ? `${loc.lat},${loc.lng},${loc.source},${beachheadId}` : ""]);
 
@@ -405,12 +431,23 @@ export function NearMeSearch() {
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     ensureReadyThen((base) => {
-      void runSearch(base, query, need, openNow, neighborhoodId);
+      void runSearch(base, query, needs, openNow, neighborhoodId);
     });
   }
 
-  function onNeedChange(next: string) {
-    setNeed(next);
+  function onNeedToggle(id: string) {
+    // "Any" clears the selection.
+    if (id === "") {
+      setNeeds([]);
+      if (loc.status === "ready") {
+        void runSearch(loc, query, [], openNow, neighborhoodId);
+      }
+      return;
+    }
+    const next = needs.includes(id)
+      ? needs.filter((n) => n !== id)
+      : [...needs, id];
+    setNeeds(next);
     if (loc.status === "ready") {
       void runSearch(loc, query, next, openNow, neighborhoodId);
     }
@@ -419,14 +456,14 @@ export function NearMeSearch() {
   function onNeighborhoodChange(nextId: string) {
     setNeighborhoodId(nextId);
     ensureReadyThen((base) => {
-      void runSearch(base, query, need, openNow, nextId);
+      void runSearch(base, query, needs, openNow, nextId);
     });
   }
 
   function onOpenNowChange(next: boolean) {
     setOpenNow(next);
     if (loc.status === "ready") {
-      void runSearch(loc, query, need, next, neighborhoodId);
+      void runSearch(loc, query, needs, next, neighborhoodId);
     }
   }
 
@@ -443,13 +480,13 @@ export function NearMeSearch() {
       city: bh.city,
     };
     setLoc(base);
-    void runSearch(base, query, need, openNow, "");
+    void runSearch(base, query, needs, openNow, "");
   }
 
   async function onCopyShareLink() {
     const url = shareUrlFromFilters({
       cityId: beachheadId,
-      need,
+      needs,
       neighborhoodId,
       openNow,
       query,
@@ -460,7 +497,7 @@ export function NearMeSearch() {
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
       // Fallback: still sync URL so user can copy from the bar
-      syncShareUrl({ cityId: beachheadId, need, neighborhoodId, openNow, query });
+      syncShareUrl({ cityId: beachheadId, needs, neighborhoodId, openNow, query });
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     }
@@ -525,19 +562,22 @@ export function NearMeSearch() {
               ))}
             </div>
 
-            <div className="near-me-filter-row" role="group" aria-label="Dietary need">
+            <div className="near-me-filter-row" role="group" aria-label="Dietary needs">
               <span className="near-me-filter-label">Need</span>
-              {NEED_OPTIONS.map((opt) => (
-                <button
-                  key={opt.id || "any"}
-                  type="button"
-                  className={`near-me-chip${need === opt.id ? " is-active" : ""}`}
-                  onClick={() => onNeedChange(opt.id)}
-                  aria-pressed={need === opt.id}
-                >
-                  {opt.label}
-                </button>
-              ))}
+              {NEED_OPTIONS.map((opt) => {
+                const active = opt.id === "" ? needs.length === 0 : needs.includes(opt.id);
+                return (
+                  <button
+                    key={opt.id || "any"}
+                    type="button"
+                    className={`near-me-chip${active ? " is-active" : ""}`}
+                    onClick={() => onNeedToggle(opt.id)}
+                    aria-pressed={active}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
             </div>
 
             <div className="near-me-filter-row" role="group" aria-label="Neighborhood">
@@ -622,7 +662,7 @@ export function NearMeSearch() {
             <p className="near-me-empty">
               No matches near {placeLabel}
               {query ? ` for “${query}”` : ""}
-              {need ? " with that need" : ""}. Try Any area, Any need, or turn off Open now.
+              {needs.length ? " with those needs" : ""}. Try Any area, Any need, or turn off Open now.
             </p>
           )}
 

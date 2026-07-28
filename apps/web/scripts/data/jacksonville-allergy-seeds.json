@@ -11,11 +11,19 @@
       "address": "869 Stockton St #6, Jacksonville, FL 32204",
       "phone": "+19045510327",
       "website_url": "https://www.foodogjax.com/",
-      "cuisine_type": ["asian", "curry", "gluten_free", "vegan"],
+      "cuisine_type": [
+        "asian",
+        "curry",
+        "gluten_free",
+        "vegan"
+      ],
       "opening_hours": "Mo-Sa 11:00-22:00; Su 11:00-20:00",
-      "allergy_needs": ["gluten_free", "vegetarian", "dairy_free"],
-      "allergy_safety_tier": "dedicated",
-      "allergy_safety_note": "Dedicated gluten-free Asian fusion — entire menu is GF (from-scratch curries). Strong Riverside pick for celiac. Confirm dairy/nut needs with staff."
+      "allergy_needs": [
+        "gluten_free",
+        "vegetarian",
+        "dairy_free"
+      ],
+      "allergy_safety_tier": "unknown"
     },
     {
       "name": "Kathy's Table",
@@ -25,11 +33,28 @@
       "address": "826 Lomax St, Jacksonville, FL 32204",
       "phone": "+19042400437",
       "website_url": "https://kathystable.com/",
-      "cuisine_type": ["healthy", "meal_prep", "gluten_free", "juice"],
+      "cuisine_type": [
+        "healthy",
+        "meal_prep",
+        "gluten_free",
+        "juice"
+      ],
       "opening_hours": "Mo-Fr 09:00-19:00",
-      "allergy_needs": ["gluten_free", "dairy_free", "vegetarian"],
+      "allergy_needs": [
+        "gluten_free",
+        "dairy_free",
+        "vegetarian"
+      ],
       "allergy_safety_tier": "dedicated",
-      "allergy_safety_note": "Gluten-free meal prep / retail in Five Points — dedicated GF kitchen ethos for prepared meals and juices. Confirm other allergens on the rotating menu."
+      "allergy_safety_note": "Gluten-free meal prep / retail in Five Points — dedicated GF kitchen ethos for prepared meals and juices. Confirm other allergens on the rotating menu.",
+      "sources": [
+        {
+          "method": "site",
+          "url": "https://kathystable.com/",
+          "checked_at": "2026-07-27T23:25:48.854Z",
+          "curator_id": "curator:qbf"
+        }
+      ]
     },
     {
       "name": "Sassy Kat Goods",
@@ -39,11 +64,27 @@
       "address": "12020 Hood Landing Rd, Jacksonville, FL 32258",
       "phone": "+19048462228",
       "website_url": "https://sassykatgoods.com/",
-      "cuisine_type": ["bakery", "gluten_free", "dessert"],
+      "cuisine_type": [
+        "bakery",
+        "gluten_free",
+        "dessert"
+      ],
       "opening_hours": "Fr-Su 08:00-20:00",
-      "allergy_needs": ["gluten_free", "dairy_free", "vegetarian"],
+      "allergy_needs": [
+        "gluten_free",
+        "dairy_free",
+        "vegetarian"
+      ],
       "allergy_safety_tier": "dedicated",
-      "allergy_safety_note": "Dedicated gluten-free cottage bakery (Mandarin bake stand, honor-system Fri–Sun). Pre-order recommended. Ask about dairy/nut products day-of."
+      "allergy_safety_note": "Dedicated gluten-free cottage bakery (Mandarin bake stand, honor-system Fri–Sun). Pre-order recommended. Ask about dairy/nut products day-of.",
+      "sources": [
+        {
+          "method": "site",
+          "url": "https://sassykatgoods.com/",
+          "checked_at": "2026-07-27T23:25:48.854Z",
+          "curator_id": "curator:qbf"
+        }
+      ]
     },
     {
       "name": "Everything But The Gluten",
@@ -53,11 +94,26 @@
       "address": "Order-ahead pickup only, no walk-in storefront — verify current address before you go. Jacksonville, FL",
       "phone": "+19044479283",
       "website_url": "https://ebtg.net/",
-      "cuisine_type": ["bakery", "gluten_free", "dessert"],
+      "cuisine_type": [
+        "bakery",
+        "gluten_free",
+        "dessert"
+      ],
       "opening_hours": null,
-      "allergy_needs": ["gluten_free", "vegetarian"],
+      "allergy_needs": [
+        "gluten_free",
+        "vegetarian"
+      ],
       "allergy_safety_tier": "dedicated",
-      "allergy_safety_note": "100% gluten-free small-batch bakery (order/pickup model — not a walk-in café). Confirm pickup logistics and dairy/nut handling when ordering."
+      "allergy_safety_note": "100% gluten-free small-batch bakery (order/pickup model — not a walk-in café). Confirm pickup logistics and dairy/nut handling when ordering.",
+      "sources": [
+        {
+          "method": "site",
+          "url": "https://ebtg.net/",
+          "checked_at": "2026-07-27T23:25:48.854Z",
+          "curator_id": "curator:qbf"
+        }
+      ]
     },
     {
       "name": "Sweet Theory Baking Co.",
@@ -67,11 +123,28 @@
       "address": "1243 King St, Jacksonville, FL 32204",
       "phone": "+19043871001",
       "website_url": "https://www.sweettheorybakingco.com/",
-      "cuisine_type": ["bakery", "cafe", "dessert", "vegan"],
+      "cuisine_type": [
+        "bakery",
+        "cafe",
+        "dessert",
+        "vegan"
+      ],
       "opening_hours": "Tu-Fr 08:30-16:00; Sa 09:00-16:00",
-      "allergy_needs": ["gluten_free", "dairy_free", "vegetarian"],
+      "allergy_needs": [
+        "gluten_free",
+        "dairy_free",
+        "vegetarian"
+      ],
       "allergy_safety_tier": "strong_protocol",
-      "allergy_safety_note": "Popular GF/vegan-friendly bakery with strong celiac community praise — NOT a fully dedicated wheat-free facility. Confirm prep and cross-contact for hyper-sensitive celiac."
+      "allergy_safety_note": "Popular GF/vegan-friendly bakery with strong celiac community praise — NOT a fully dedicated wheat-free facility. Confirm prep and cross-contact for hyper-sensitive celiac.",
+      "sources": [
+        {
+          "method": "site",
+          "url": "https://www.sweettheorybakingco.com/",
+          "checked_at": "2026-07-27T23:25:48.854Z",
+          "curator_id": "curator:qbf"
+        }
+      ]
     },
     {
       "name": "Bartaco",
@@ -81,11 +154,27 @@
       "address": "1534 Oak St Suite 101, Jacksonville, FL 32204",
       "phone": "+19048098226",
       "website_url": "https://bartaco.com/location/jacksonville/",
-      "cuisine_type": ["mexican", "tacos"],
+      "cuisine_type": [
+        "mexican",
+        "tacos"
+      ],
       "opening_hours": "Mo-Su 11:00-23:00",
-      "allergy_needs": ["gluten_free", "vegetarian", "dairy_free", "nut_aware"],
+      "allergy_needs": [
+        "gluten_free",
+        "vegetarian",
+        "dairy_free",
+        "nut_aware"
+      ],
       "allergy_safety_tier": "strong_protocol",
-      "allergy_safety_note": "Corn-tortilla taco concept with allergy-aware national protocols. Shared kitchen — not dedicated. Disclose peanut/tree-nut and gluten needs."
+      "allergy_safety_note": "Corn-tortilla taco concept with allergy-aware national protocols. Shared kitchen — not dedicated. Disclose peanut/tree-nut and gluten needs.",
+      "sources": [
+        {
+          "method": "site",
+          "url": "https://bartaco.com/location/jacksonville/",
+          "checked_at": "2026-07-27T23:25:48.854Z",
+          "curator_id": "curator:qbf"
+        }
+      ]
     },
     {
       "name": "Chipotle Mexican Grill",
@@ -95,11 +184,28 @@
       "address": "50 Riverside Ave, Unit 705, Jacksonville, FL 32202",
       "phone": "+19045496143",
       "website_url": "https://www.chipotle.com/",
-      "cuisine_type": ["mexican", "fast_casual", "bowls"],
+      "cuisine_type": [
+        "mexican",
+        "fast_casual",
+        "bowls"
+      ],
       "opening_hours": "Mo-Su 10:45-23:00",
-      "allergy_needs": ["nut_aware", "dairy_free", "vegetarian", "gluten_free"],
+      "allergy_needs": [
+        "nut_aware",
+        "dairy_free",
+        "vegetarian",
+        "gluten_free"
+      ],
       "allergy_safety_tier": "strong_protocol",
-      "allergy_safety_note": "Corporate allergen statement: peanuts and tree nuts are not used as ingredients. Shared line / cross-contact still possible — tell the crew. Not a medical guarantee."
+      "allergy_safety_note": "Corporate allergen statement: peanuts and tree nuts are not used as ingredients. Shared line / cross-contact still possible — tell the crew. Not a medical guarantee.",
+      "sources": [
+        {
+          "method": "site",
+          "url": "https://www.chipotle.com/",
+          "checked_at": "2026-07-27T23:25:48.854Z",
+          "curator_id": "curator:qbf"
+        }
+      ]
     },
     {
       "name": "Rodrigo's Craft Pizza",
@@ -109,11 +215,16 @@
       "address": "1029 Park St, Jacksonville, FL 32204",
       "phone": "+19043673112",
       "website_url": "https://rodrigoscraftpizza.com/",
-      "cuisine_type": ["pizza", "italian"],
+      "cuisine_type": [
+        "pizza",
+        "italian"
+      ],
       "opening_hours": "Mo-We 11:30-20:30; Th-Sa 11:30-21:00",
-      "allergy_needs": ["gluten_free", "vegetarian"],
-      "allergy_safety_tier": "shared_verify",
-      "allergy_safety_note": "Frequently cited for GF pizza options in Jax. Shared kitchen — confirm dedicated prep protocols and flour handling if highly sensitive."
+      "allergy_needs": [
+        "gluten_free",
+        "vegetarian"
+      ],
+      "allergy_safety_tier": "unknown"
     },
     {
       "name": "V Pizza & Sidecar",
@@ -123,11 +234,25 @@
       "address": "1406 Hendricks Ave, Jacksonville, FL 32207",
       "phone": "+19045271511",
       "website_url": "https://vpizza.com/",
-      "cuisine_type": ["pizza", "italian"],
+      "cuisine_type": [
+        "pizza",
+        "italian"
+      ],
       "opening_hours": "Mo-Th 11:00-22:00; Fr-Sa 11:00-23:00; Su 11:00-21:00",
-      "allergy_needs": ["gluten_free", "vegetarian"],
+      "allergy_needs": [
+        "gluten_free",
+        "vegetarian"
+      ],
       "allergy_safety_tier": "shared_verify",
-      "allergy_safety_note": "San Marco location often noted for GF crust options. Shared kitchen — verify prep and toppings for celiac."
+      "allergy_safety_note": "San Marco location often noted for GF crust options. Shared kitchen — verify prep and toppings for celiac.",
+      "sources": [
+        {
+          "method": "site",
+          "url": "https://www.vpizza.com/",
+          "checked_at": "2026-07-27T23:25:48.854Z",
+          "curator_id": "curator:qbf"
+        }
+      ]
     },
     {
       "name": "Arepa Please",
@@ -137,11 +262,17 @@
       "address": "474 Riverside Ave, Jacksonville, FL 32202",
       "phone": "+19043568055",
       "website_url": null,
-      "cuisine_type": ["venezuelan", "arepas", "latin_american"],
+      "cuisine_type": [
+        "venezuelan",
+        "arepas",
+        "latin_american"
+      ],
       "opening_hours": null,
-      "allergy_needs": ["gluten_free", "vegetarian"],
-      "allergy_safety_tier": "shared_verify",
-      "allergy_safety_note": "Corn arepas are naturally wheat-light for many GF diners. Shared prep — confirm fillings, fryers, and sauces. Not dedicated."
+      "allergy_needs": [
+        "gluten_free",
+        "vegetarian"
+      ],
+      "allergy_safety_tier": "unknown"
     },
     {
       "name": "Indochine",
@@ -151,11 +282,16 @@
       "address": "21 E Adams St #200, Jacksonville, FL 32202",
       "phone": "+19045985303",
       "website_url": "https://www.indochinefl.com/",
-      "cuisine_type": ["vietnamese", "asian"],
+      "cuisine_type": [
+        "vietnamese",
+        "asian"
+      ],
       "opening_hours": "Mo-Th 11:00-21:30; Fr 11:00-22:00; Sa 17:00-22:00; Su 17:00-21:00",
-      "allergy_needs": ["gluten_free", "nut_aware"],
-      "allergy_safety_tier": "shared_verify",
-      "allergy_safety_note": "Vietnamese menu with GF-friendly rice-noodle options when staff are told. Peanut sauces are common — disclose nut allergies. Shared kitchen."
+      "allergy_needs": [
+        "gluten_free",
+        "nut_aware"
+      ],
+      "allergy_safety_tier": "unknown"
     },
     {
       "name": "Blueberry Artisan Bakery & Cafe",
@@ -165,11 +301,17 @@
       "address": "3247 Beach Blvd, Jacksonville, FL 32207",
       "phone": "+19043672957",
       "website_url": "https://www.theblueberrybakery.com/",
-      "cuisine_type": ["bakery", "cafe", "breakfast"],
+      "cuisine_type": [
+        "bakery",
+        "cafe",
+        "breakfast"
+      ],
       "opening_hours": "Mo-Su 06:30-15:00",
-      "allergy_needs": ["gluten_free", "vegetarian"],
-      "allergy_safety_tier": "shared_verify",
-      "allergy_safety_note": "Offers GF bakery/café items — shared facility with wheat. Confirm dedicated prep for celiac; better for preference than hyper-sensitive needs."
+      "allergy_needs": [
+        "gluten_free",
+        "vegetarian"
+      ],
+      "allergy_safety_tier": "unknown"
     },
     {
       "name": "Southern Grounds & Co.",
@@ -179,11 +321,18 @@
       "address": "3562 St Johns Ave, Jacksonville, FL 32205",
       "phone": "+19044752154",
       "website_url": "https://southerngrounds.com/",
-      "cuisine_type": ["coffee", "cafe", "bakery"],
+      "cuisine_type": [
+        "coffee",
+        "cafe",
+        "bakery"
+      ],
       "opening_hours": "Mo-Su 06:30-21:00",
-      "allergy_needs": ["dairy_free", "vegetarian", "gluten_free"],
-      "allergy_safety_tier": "shared_verify",
-      "allergy_safety_note": "Café with plant-milk and some GF items. Not an allergy kitchen — ask about steamer cross-contact and bakery case wheat."
+      "allergy_needs": [
+        "dairy_free",
+        "vegetarian",
+        "gluten_free"
+      ],
+      "allergy_safety_tier": "unknown"
     },
     {
       "name": "Taqueria Cinco",
@@ -193,11 +342,16 @@
       "address": "809 Lomax St, Jacksonville, FL 32204",
       "phone": "+19043129113",
       "website_url": "https://www.taqueria5points.com/",
-      "cuisine_type": ["mexican", "tacos"],
+      "cuisine_type": [
+        "mexican",
+        "tacos"
+      ],
       "opening_hours": "Mo-Th 11:00-21:00; Fr-Sa 11:00-22:00; Su 11:00-15:00",
-      "allergy_needs": ["gluten_free", "vegetarian"],
-      "allergy_safety_tier": "shared_verify",
-      "allergy_safety_note": "Corn tortillas help many GF diners. Busy shared kitchen — verify sauces and fryers. Not dedicated."
+      "allergy_needs": [
+        "gluten_free",
+        "vegetarian"
+      ],
+      "allergy_safety_tier": "unknown"
     }
   ]
 }

@@ -16,6 +16,8 @@
     "check:mcp-descriptions": "tsx scripts/check-mcp-descriptions.ts",
     "check:enums": "tsx scripts/check-enums.ts",
     "check:allergy-seeds": "tsx scripts/check-allergy-seeds.ts",
+    "backfill:allergy-sources": "tsx scripts/backfill-allergy-sources.ts",
+    "backfill:allergy-sources:write": "tsx scripts/backfill-allergy-sources.ts --write",
     "test:mcp-tool-filtering": "tsx scripts/mcp-tool-filter-test.ts",
     "test:x402-flows": "tsx scripts/x402-flow-test.ts",
     "demo:x402-attestation": "tsx scripts/x402-attestation-demo.ts",

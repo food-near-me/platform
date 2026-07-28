@@ -153,9 +153,12 @@ export function curatedTierLabel(tier: string): string {
   return safetyTierLabel(tier);
 }
 
-export function buildWhy(place: RankablePlace, need?: string | null): string | null {
+export function buildWhy(place: RankablePlace, need?: string | null | string[]): string | null {
+  const needs = normalizeNeeds(need);
   const note = place.allergy_safety_note?.trim();
-  if (need && place.allergy_needs?.includes(need) && note) {
+  const taggedForNeeds =
+    needs.length > 0 && needs.every((n) => (place.allergy_needs ?? []).includes(n));
+  if (taggedForNeeds && note) {
     const head = safetyTierLabel(place.allergy_safety_tier);
     // First sentence of note as the tip line
     const short = note.split(/(?<=\.)\s+/)[0] ?? note;
@@ -165,6 +168,19 @@ export function buildWhy(place: RankablePlace, need?: string | null): string | n
     return note.split(/(?<=\.)\s+/)[0] ?? note;
   }
   return null;
+}
+
+/** Normalize a single need, comma-list, or array into unique AllergyNeed ids. */
+export function normalizeNeeds(need?: string | null | string[]): AllergyNeed[] {
+  if (need == null) return [];
+  const raw = Array.isArray(need) ? need : need.split(/[,+\s]+/);
+  const out: AllergyNeed[] = [];
+  for (const part of raw) {
+    const v = part.trim().toLowerCase();
+    if (!v) continue;
+    if (isAllergyNeed(v) && !out.includes(v)) out.push(v);
+  }
+  return out;
 }
 
 function cuisineMatchBonus(cuisine: string[], query: string): number {
@@ -211,19 +227,20 @@ export function ogTierBadge(tier: string | null | undefined): string | undefined
 
 function allergyScore(
   place: RankablePlace,
-  need?: string | null,
+  need?: string | null | string[],
 ): { points: number; matches: boolean } {
-  if (!need) {
+  const needs = normalizeNeeds(need);
+  if (needs.length === 0) {
     // Mild preference for curated profiles even without a filter
     if (place.allergy_safety_tier === "dedicated") return { points: 8, matches: false };
     if (place.allergy_safety_tier === "strong_protocol") return { points: 4, matches: false };
     return { points: 0, matches: false };
   }
-  // Must be tagged for the need AND carry a real curated tier — an `unknown`
-  // (or unexpected) tier never counts as a match, even if allergy_needs is set.
+  // AND semantics: tagged for EVERY selected need AND carry a real curated tier.
+  // An `unknown` (or unexpected) tier never counts as a match.
+  const tagged = needs.every((n) => (place.allergy_needs ?? []).includes(n));
   const matches =
-    (place.allergy_needs ?? []).includes(need) &&
-    (CURATED_TIERS as readonly string[]).includes(place.allergy_safety_tier);
+    tagged && (CURATED_TIERS as readonly string[]).includes(place.allergy_safety_tier);
   if (!matches) return { points: -55, matches: false };
   if (place.allergy_safety_tier === "dedicated") return { points: 55, matches: true };
   if (place.allergy_safety_tier === "strong_protocol") return { points: 38, matches: true };
@@ -236,7 +253,8 @@ export function scorePlace(
     query?: string;
     now?: Date;
     timeZone?: string;
-    need?: string | null;
+    /** Single need, comma-list, or multi-need array (AND). */
+    need?: string | null | string[];
     openNowOnly?: boolean;
   } = {},
 ): {
@@ -253,6 +271,8 @@ export function scorePlace(
   });
   const is_chain = isMegaChain(place.name);
   const breakdown: Record<string, number> = {};
+  const needs = normalizeNeeds(opts.need);
+  const hasNeedFilter = needs.length > 0;
 
   if (opts.openNowOnly && hours.open_now === false) {
     return {
@@ -284,7 +304,7 @@ export function scorePlace(
   breakdown.cuisine = cuisineMatchBonus(place.cuisine_type ?? [], opts.query ?? "");
   breakdown.menu = place.menu_available ? 6 : 0;
 
-  const allergy = allergyScore(place, opts.need);
+  const allergy = allergyScore(place, needs);
   breakdown.allergy = allergy.points;
 
   // Vague / placeholder addresses are weaker tips
@@ -293,14 +313,14 @@ export function scorePlace(
   }
 
   // Harder chain penalty when a dietary need is active — uncurated chains are noise.
-  if (opts.need && is_chain && !allergy.matches) {
+  if (hasNeedFilter && is_chain && !allergy.matches) {
     breakdown.chain = -60;
   } else {
     breakdown.chain = is_chain ? -14 : 0;
   }
 
   // Drop unmatched mega-chains entirely when filtering by need
-  if (opts.need && is_chain && !allergy.matches) {
+  if (hasNeedFilter && is_chain && !allergy.matches) {
     return {
       score: -9999,
       breakdown: { ...breakdown, chain_drop: -9999 },
@@ -328,16 +348,22 @@ export function rankPlaces(
     query?: string;
     now?: Date;
     timeZone?: string;
-    need?: string | null;
+    /** Single need, comma-list, or multi-need array (AND). */
+    need?: string | null | string[];
     openNowOnly?: boolean;
     limit?: number;
   } = {},
 ): RankedPlace[] {
   const limit = opts.limit ?? 8;
   const scored: RankedPlace[] = [];
+  const needs = normalizeNeeds(opts.need);
+  const hasNeedFilter = needs.length > 0;
 
   for (const p of places) {
-    const { score, breakdown, hours, is_chain, matches_need, drop } = scorePlace(p, opts);
+    const { score, breakdown, hours, is_chain, matches_need, drop } = scorePlace(p, {
+      ...opts,
+      need: needs,
+    });
     if (drop) continue;
     scored.push({
       ...p,
@@ -348,13 +374,13 @@ export function rankPlaces(
       is_top_pick: false,
       distance_miles: Math.round((p.distance_meters / 1609.34) * 10) / 10,
       matches_need,
-      why: buildWhy(p, opts.need),
+      why: buildWhy(p, needs),
     });
   }
 
   // When a need is set, curated matches first; then by score
   scored.sort((a, b) => {
-    if (opts.need) {
+    if (hasNeedFilter) {
       if (a.matches_need !== b.matches_need) return a.matches_need ? -1 : 1;
     }
     if (b.score !== a.score) return b.score - a.score;
@@ -362,7 +388,7 @@ export function rankPlaces(
   });
 
   let pool = scored;
-  if (opts.need) {
+  if (hasNeedFilter) {
     const curated = scored.filter((p) => p.matches_need);
     // Prefer an allergy-relevant list: if we have curated hits, don't pad with
     // uncurated local pizza/cafes (Rey's, random OSM) — keep Also nearby on-need.
@@ -377,7 +403,7 @@ export function rankPlaces(
   const top = pool.slice(0, limit);
   if (top[0]) {
     top[0].is_top_pick = true;
-    if (opts.need && !top[0].why) {
+    if (hasNeedFilter && !top[0].why) {
       top[0].why =
         "No curated allergy matches nearby — showing listed places only. Confirm every dietary need with the restaurant.";
     }

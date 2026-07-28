@@ -26,6 +26,27 @@ function place(over: Partial<RankablePlace> & { name: string }): RankablePlace {
   };
 }
 
+test("multi-need AND filter requires every selected need", () => {
+  const ranked = rankPlaces(
+    [
+      place({
+        name: "GF Only",
+        allergy_needs: ["gluten_free"],
+        allergy_safety_tier: "dedicated",
+      }),
+      place({
+        name: "GF + Dairy",
+        allergy_needs: ["gluten_free", "dairy_free"],
+        allergy_safety_tier: "dedicated",
+      }),
+    ],
+    { need: ["gluten_free", "dairy_free"] },
+  );
+  assert.equal(ranked.length, 1, "only places tagged for ALL selected needs");
+  assert.equal(ranked[0]?.name, "GF + Dairy");
+  assert.equal(ranked[0]?.matches_need, true);
+});
+
 test("need filter drops an uncurated mega-chain (no Domino's padding)", () => {
   const ranked = rankPlaces(
     [

@@ -24,7 +24,15 @@
         "vegetarian"
       ],
       "allergy_safety_tier": "dedicated",
-      "allergy_safety_note": "100% gluten-free Brazilian café (tapioca sandwiches, açaí, pão de queijo). Dedicated GF facility — top Brickell celiac pick. Confirm dairy/nut needs with staff (not a dedicated nut-free kitchen)."
+      "allergy_safety_note": "100% gluten-free Brazilian café (tapioca sandwiches, açaí, pão de queijo). Dedicated GF facility — top Brickell celiac pick. Confirm dairy/nut needs with staff (not a dedicated nut-free kitchen).",
+      "sources": [
+        {
+          "method": "site",
+          "url": "https://www.eattap.co/",
+          "checked_at": "2026-07-27T23:25:48.854Z",
+          "curator_id": "curator:qbf"
+        }
+      ]
     },
     {
       "name": "Dora's Bakery & Bistro",
@@ -46,7 +54,15 @@
         "dairy_free"
       ],
       "allergy_safety_tier": "dedicated",
-      "allergy_safety_note": "Dedicated gluten-free bakery & bistro — the local answer for GF Cuban-style breads/pastries. Not a shared kitchen."
+      "allergy_safety_note": "Dedicated gluten-free bakery & bistro — the local answer for GF Cuban-style breads/pastries. Not a shared kitchen.",
+      "sources": [
+        {
+          "method": "site",
+          "url": "https://www.doraglutenfree.com/",
+          "checked_at": "2026-07-27T23:25:48.854Z",
+          "curator_id": "curator:qbf"
+        }
+      ]
     },
     {
       "name": "Almotti Gluten Free Italian Delicacies",
@@ -69,7 +85,15 @@
         "nut_aware"
       ],
       "allergy_safety_tier": "dedicated",
-      "allergy_safety_note": "100% dedicated gluten-free Italian bakery; also peanut-free per their FAQ. Tree nuts (almond/pistachio/hazelnut) ARE used on-site — ask before ordering if those are your concern. Dairy/eggs also present."
+      "allergy_safety_note": "100% dedicated gluten-free Italian bakery; also peanut-free per their FAQ. Tree nuts (almond/pistachio/hazelnut) ARE used on-site — ask before ordering if those are your concern. Dairy/eggs also present.",
+      "sources": [
+        {
+          "method": "site",
+          "url": "https://almotti.com/",
+          "checked_at": "2026-07-27T23:25:48.854Z",
+          "curator_id": "curator:qbf"
+        }
+      ]
     },
     {
       "name": "Archetti's Boutique Bakery",
@@ -91,7 +115,15 @@
         "vegetarian"
       ],
       "allergy_safety_tier": "dedicated",
-      "allergy_safety_note": "Dedicated zero-gluten artisan bakery (Upper Buena Vista). Owner-family celiac story; keto/vegan options exist — confirm dairy/nut handling for your need."
+      "allergy_safety_note": "Dedicated zero-gluten artisan bakery (Upper Buena Vista). Owner-family celiac story; keto/vegan options exist — confirm dairy/nut handling for your need.",
+      "sources": [
+        {
+          "method": "site",
+          "url": "https://www.archettisbakery.com/",
+          "checked_at": "2026-07-27T23:25:48.854Z",
+          "curator_id": "curator:qbf"
+        }
+      ]
     },
     {
       "name": "Peek Á Treat",
@@ -113,7 +145,15 @@
         "vegetarian"
       ],
       "allergy_safety_tier": "dedicated",
-      "allergy_safety_note": "100% gluten-free gelato/ice cream shop next to Archetti's. Designed for dietary restrictions — still ask about dairy and nut flavors."
+      "allergy_safety_note": "100% gluten-free gelato/ice cream shop next to Archetti's. Designed for dietary restrictions — still ask about dairy and nut flavors.",
+      "sources": [
+        {
+          "method": "site",
+          "url": "https://www.peekatreatbakery.com/",
+          "checked_at": "2026-07-27T23:25:48.854Z",
+          "curator_id": "curator:qbf"
+        }
+      ]
     },
     {
       "name": "Nami Nori",
@@ -133,7 +173,15 @@
         "gluten_free"
       ],
       "allergy_safety_tier": "dedicated",
-      "allergy_safety_note": "Hand-roll sushi treated as a rare dedicated celiac-friendly sushi option in Miami. Confirm soy/sauce protocols — do not assume every add-on is safe."
+      "allergy_safety_note": "Hand-roll sushi treated as a rare dedicated celiac-friendly sushi option in Miami. Confirm soy/sauce protocols — do not assume every add-on is safe.",
+      "sources": [
+        {
+          "method": "site",
+          "url": "https://www.naminori.us/",
+          "checked_at": "2026-07-27T23:25:48.854Z",
+          "curator_id": "curator:qbf"
+        }
+      ]
     },
     {
       "name": "Bolay Fresh Bold Kitchen",
@@ -156,7 +204,15 @@
         "vegetarian"
       ],
       "allergy_safety_tier": "dedicated",
-      "allergy_safety_note": "Build-your-own bowls in a dedicated gluten-free kitchen. Strong everyday pick for sensitive diners — confirm other allergens day-of."
+      "allergy_safety_note": "Build-your-own bowls in a dedicated gluten-free kitchen. Strong everyday pick for sensitive diners — confirm other allergens day-of.",
+      "sources": [
+        {
+          "method": "site",
+          "url": "https://www.bolay.com/locations/pinecrest",
+          "checked_at": "2026-07-27T23:25:48.854Z",
+          "curator_id": "curator:qbf"
+        }
+      ]
     },
     {
       "name": "Bolay Fresh Bold Kitchen",
@@ -179,7 +235,15 @@
         "vegetarian"
       ],
       "allergy_safety_tier": "dedicated",
-      "allergy_safety_note": "Same dedicated Bolay concept north of the city. Confirm with staff before ordering."
+      "allergy_safety_note": "Same dedicated Bolay concept north of the city. Confirm with staff before ordering.",
+      "sources": [
+        {
+          "method": "site",
+          "url": "https://www.bolay.com/locations/miami-lakes",
+          "checked_at": "2026-07-27T23:25:48.854Z",
+          "curator_id": "curator:qbf"
+        }
+      ]
     },
     {
       "name": "Stephanie's Crepes",
@@ -200,7 +264,15 @@
         "vegetarian"
       ],
       "allergy_safety_tier": "dedicated",
-      "allergy_safety_note": "Every crêpe made with 100% gluten-free batter (all locations). Brightline MiamiCentral — open to the public. Confirm dairy fillings if needed."
+      "allergy_safety_note": "Every crêpe made with 100% gluten-free batter (all locations). Brightline MiamiCentral — open to the public. Confirm dairy fillings if needed.",
+      "sources": [
+        {
+          "method": "site",
+          "url": "https://www.stephaniescrepes.com/",
+          "checked_at": "2026-07-27T23:25:48.854Z",
+          "curator_id": "curator:qbf"
+        }
+      ]
     },
     {
       "name": "Stephanie's Crepes",
@@ -221,7 +293,15 @@
         "vegetarian"
       ],
       "allergy_safety_tier": "dedicated",
-      "allergy_safety_note": "Same Stephanie's gluten-free batter concept near Miracle Mile. Dedicated GF batter — still ask about fillings and shared toppings."
+      "allergy_safety_note": "Same Stephanie's gluten-free batter concept near Miracle Mile. Dedicated GF batter — still ask about fillings and shared toppings.",
+      "sources": [
+        {
+          "method": "site",
+          "url": "https://www.stephaniescrepes.com/",
+          "checked_at": "2026-07-27T23:25:48.854Z",
+          "curator_id": "curator:qbf"
+        }
+      ]
     },
     {
       "name": "Stephanie's Crepes",
@@ -242,7 +322,15 @@
         "vegetarian"
       ],
       "allergy_safety_tier": "dedicated",
-      "allergy_safety_note": "South Beach Stephanie's inside The Lincoln Eatery — 100% gluten-free crêpe batter. Handy near Lincoln Road for a dedicated GF stop."
+      "allergy_safety_note": "South Beach Stephanie's inside The Lincoln Eatery — 100% gluten-free crêpe batter. Handy near Lincoln Road for a dedicated GF stop.",
+      "sources": [
+        {
+          "method": "site",
+          "url": "https://www.stephaniescrepes.com/",
+          "checked_at": "2026-07-27T23:25:48.854Z",
+          "curator_id": "curator:qbf"
+        }
+      ]
     },
     {
       "name": "Sweet Love Bakery",
@@ -266,7 +354,15 @@
         "nut_aware"
       ],
       "allergy_safety_tier": "dedicated",
-      "allergy_safety_note": "Dedicated kosher gluten-free bakery that also states soy-free and peanut-free (many vegan options). Hollywood / Broward. Confirm tree-nut handling day-of — protocols can change."
+      "allergy_safety_note": "Dedicated kosher gluten-free bakery that also states soy-free and peanut-free (many vegan options). Hollywood / Broward. Confirm tree-nut handling day-of — protocols can change.",
+      "sources": [
+        {
+          "method": "site",
+          "url": "https://www.sweetlovepastries.com/",
+          "checked_at": "2026-07-27T23:25:48.854Z",
+          "curator_id": "curator:qbf"
+        }
+      ]
     },
     {
       "name": "Burton's Grill & Bar",
@@ -287,7 +383,15 @@
         "dairy_free"
       ],
       "allergy_safety_tier": "strong_protocol",
-      "allergy_safety_note": "Allergy-trained program; restaurants are 100% peanut-free brand-wide with written allergy protocols (AllergyEats standout). Shared kitchen for other allergens — not a dedicated nut-free facility for tree nuts. Confirm tree-nut dishes day-of."
+      "allergy_safety_note": "Allergy-trained program; restaurants are 100% peanut-free brand-wide with written allergy protocols (AllergyEats standout). Shared kitchen for other allergens — not a dedicated nut-free facility for tree nuts. Confirm tree-nut dishes day-of.",
+      "sources": [
+        {
+          "method": "site",
+          "url": "https://burtonsgrill.com/locations/fl/plantation/",
+          "checked_at": "2026-07-27T23:25:48.854Z",
+          "curator_id": "curator:qbf"
+        }
+      ]
     },
     {
       "name": "True Food Kitchen",
@@ -309,7 +413,15 @@
         "dairy_free"
       ],
       "allergy_safety_tier": "strong_protocol",
-      "allergy_safety_note": "Allergy-aware national brand at The Falls (Kendall) with GF-marked plates and vegetarian options. Shared kitchen — confirm cross-contact practices for your need."
+      "allergy_safety_note": "Allergy-aware national brand at The Falls (Kendall) with GF-marked plates and vegetarian options. Shared kitchen — confirm cross-contact practices for your need.",
+      "sources": [
+        {
+          "method": "site",
+          "url": "https://www.truefoodkitchen.com/locations/miami/",
+          "checked_at": "2026-07-27T23:25:48.854Z",
+          "curator_id": "curator:qbf"
+        }
+      ]
     },
     {
       "name": "Pura Vida",
@@ -331,8 +443,7 @@
         "dairy_free",
         "gluten_free"
       ],
-      "allergy_safety_tier": "strong_protocol",
-      "allergy_safety_note": "Menu flags vegan and gluten-friendly items. Shared café kitchen — good for preference/flex needs; celiac should confirm prep and oats/granola cross-contact."
+      "allergy_safety_tier": "unknown"
     },
     {
       "name": "Pura Vida",
@@ -355,7 +466,15 @@
         "gluten_free"
       ],
       "allergy_safety_tier": "strong_protocol",
-      "allergy_safety_note": "Same Pura Vida gluten-friendly / vegan-flagged menu near Mary Brickell Village. Shared kitchen — verify if highly sensitive."
+      "allergy_safety_note": "Same Pura Vida gluten-friendly / vegan-flagged menu near Mary Brickell Village. Shared kitchen — verify if highly sensitive.",
+      "sources": [
+        {
+          "method": "site",
+          "url": "https://www.puravidamiami.com/locations/florida/brickellmillecento",
+          "checked_at": "2026-07-27T23:25:48.854Z",
+          "curator_id": "curator:qbf"
+        }
+      ]
     },
     {
       "name": "Fresh Kitchen",
@@ -377,7 +496,15 @@
         "vegetarian"
       ],
       "allergy_safety_tier": "strong_protocol",
-      "allergy_safety_note": "Fast-casual bowls frequently cited by Miami celiac community. Treat as strong protocols / verify dedicated claims per location — do not assume every franchise kitchen is identical."
+      "allergy_safety_note": "Fast-casual bowls frequently cited by Miami celiac community. Treat as strong protocols / verify dedicated claims per location — do not assume every franchise kitchen is identical.",
+      "sources": [
+        {
+          "method": "site",
+          "url": "https://www.eatfreshkitchen.com/",
+          "checked_at": "2026-07-27T23:25:48.854Z",
+          "curator_id": "curator:qbf"
+        }
+      ]
     },
     {
       "name": "Bartaco",
@@ -398,7 +525,15 @@
         "dairy_free"
       ],
       "allergy_safety_tier": "strong_protocol",
-      "allergy_safety_note": "Corn-tortilla taco concept with allergy-aware national protocols. Shared kitchen — not dedicated."
+      "allergy_safety_note": "Corn-tortilla taco concept with allergy-aware national protocols. Shared kitchen — not dedicated.",
+      "sources": [
+        {
+          "method": "site",
+          "url": "https://bartaco.com/location/coconut-grove/",
+          "checked_at": "2026-07-27T23:25:48.854Z",
+          "curator_id": "curator:qbf"
+        }
+      ]
     },
     {
       "name": "Sixty Vines",
@@ -418,8 +553,7 @@
         "gluten_free",
         "vegetarian"
       ],
-      "allergy_safety_tier": "strong_protocol",
-      "allergy_safety_note": "Wine-bar American at Miami Worldcenter with GF pizza/pasta options commonly noted by diners. Shared kitchen — confirm prep for celiac."
+      "allergy_safety_tier": "unknown"
     },
     {
       "name": "Versailles Restaurant",
@@ -437,8 +571,7 @@
       "allergy_needs": [
         "gluten_free"
       ],
-      "allergy_safety_tier": "shared_verify",
-      "allergy_safety_note": "Iconic Cuban — some plates can work gluten-free, but it is a SHARED kitchen with flour everywhere. Call ahead; higher risk for celiac. Traditional Cuban bread/croquetas are wheat — go to Dora's or Almotti for GF versions."
+      "allergy_safety_tier": "unknown"
     },
     {
       "name": "Mary's Cafe & Coin Laundry",
@@ -457,8 +590,7 @@
       "allergy_needs": [
         "gluten_free"
       ],
-      "allergy_safety_tier": "shared_verify",
-      "allergy_safety_note": "24/7 ventanita useful for late-night context only. Croquettes are floured (NOT GF). Shared kitchen — verify, higher risk."
+      "allergy_safety_tier": "unknown"
     },
     {
       "name": "Coyo Taco",
@@ -478,8 +610,7 @@
         "vegetarian",
         "nut_aware"
       ],
-      "allergy_safety_tier": "shared_verify",
-      "allergy_safety_note": "Corn tortillas help many GF diners. Nut-allergic diners on Spokin report safe visits when staff are told — still a shared kitchen / fryers. Verify sauces and prep; not a dedicated nut-free facility."
+      "allergy_safety_tier": "unknown"
     },
     {
       "name": "Panther Coffee",
@@ -498,8 +629,7 @@
         "dairy_free",
         "vegetarian"
       ],
-      "allergy_safety_tier": "shared_verify",
-      "allergy_safety_note": "Coffee shop with plant-milk options. Not an allergy kitchen — ask about milk steamer cross-contact if dairy-allergic."
+      "allergy_safety_tier": "unknown"
     },
     {
       "name": "Jajaja Mexicana",
@@ -520,8 +650,7 @@
         "dairy_free",
         "gluten_free"
       ],
-      "allergy_safety_tier": "shared_verify",
-      "allergy_safety_note": "Plant-based Mexican — strong for vegetarian/dairy-free. Shared kitchen; vegan ≠ dedicated gluten-free — confirm tortillas and fryers."
+      "allergy_safety_tier": "unknown"
     },
     {
       "name": "Bodega Taqueria y Tequila",
@@ -542,8 +671,7 @@
         "dairy_free",
         "gluten_free"
       ],
-      "allergy_safety_tier": "strong_protocol",
-      "allergy_safety_note": "Nut-allergic diners report kitchen has no nuts except Nutella. Corn tortillas; many tacos modifiable dairy-free. Shared kitchen — disclose peanut/tree-nut allergy and avoid Nutella items."
+      "allergy_safety_tier": "unknown"
     },
     {
       "name": "Bodega Taqueria y Tequila",
@@ -564,8 +692,7 @@
         "dairy_free",
         "gluten_free"
       ],
-      "allergy_safety_tier": "strong_protocol",
-      "allergy_safety_note": "Same Bodega concept as South Beach — nut-allergic diners cite no nuts in-house except Nutella. Shared kitchen; disclose allergy and skip Nutella desserts/sauces."
+      "allergy_safety_tier": "unknown"
     },
     {
       "name": "Mister O1 Extraordinary Pizza",
@@ -585,7 +712,15 @@
         "vegetarian"
       ],
       "allergy_safety_tier": "strong_protocol",
-      "allergy_safety_note": "Nut-allergic diners report savory pizzas are free of peanut/tree nuts; Nutella appears only on dessert pizza. Shared kitchen — tell staff and skip Nutella pies. Not a dedicated nut-free facility."
+      "allergy_safety_note": "Nut-allergic diners report savory pizzas are free of peanut/tree nuts; Nutella appears only on dessert pizza. Shared kitchen — tell staff and skip Nutella pies. Not a dedicated nut-free facility.",
+      "sources": [
+        {
+          "method": "site",
+          "url": "https://www.mistero1.com/",
+          "checked_at": "2026-07-27T23:25:48.854Z",
+          "curator_id": "curator:qbf"
+        }
+      ]
     },
     {
       "name": "Aubi & Ramsa",
@@ -605,8 +740,7 @@
         "dairy_free",
         "vegetarian"
       ],
-      "allergy_safety_tier": "strong_protocol",
-      "allergy_safety_note": "21+ alcoholic ice cream; servings individually packaged with clear nut labeling. Strong cross-contact control vs scoop shops — still read labels; some flavors contain nuts. Vegan/sorbet options exist."
+      "allergy_safety_tier": "unknown"
     },
     {
       "name": "Barton G. The Restaurant",
@@ -626,8 +760,7 @@
         "nut_aware",
         "dairy_free"
       ],
-      "allergy_safety_tier": "strong_protocol",
-      "allergy_safety_note": "Repeat Spokin praise for multi-allergy accommodation; diners note no nuts in the fryer. Shared kitchen with dairy cross-contact risk on desserts. Disclose peanut/tree-nut needs — not a dedicated facility."
+      "allergy_safety_tier": "unknown"
     },
     {
       "name": "Carrot Express",
@@ -651,7 +784,15 @@
         "dairy_free"
       ],
       "allergy_safety_tier": "shared_verify",
-      "allergy_safety_note": "Fast-casual healthy bowls; Spokin diners with tree-nut allergies report accommodation. Shared prep / toppings bar risk — tell staff and watch granola/nut toppings. Not dedicated."
+      "allergy_safety_note": "Fast-casual healthy bowls; Spokin diners with tree-nut allergies report accommodation. Shared prep / toppings bar risk — tell staff and watch granola/nut toppings. Not dedicated.",
+      "sources": [
+        {
+          "method": "site",
+          "url": "https://carrotexpress.com/allergens",
+          "checked_at": "2026-07-27T23:25:48.854Z",
+          "curator_id": "curator:qbf"
+        }
+      ]
     },
     {
       "name": "Chipotle Mexican Grill",
@@ -674,7 +815,15 @@
         "gluten_free"
       ],
       "allergy_safety_tier": "strong_protocol",
-      "allergy_safety_note": "Corporate allergen statement: peanuts and tree nuts are not used as ingredients. Shared line / cross-contact still possible — use in-app allergen tools and tell the crew. Not a medical guarantee."
+      "allergy_safety_note": "Corporate allergen statement: peanuts and tree nuts are not used as ingredients. Shared line / cross-contact still possible — use in-app allergen tools and tell the crew. Not a medical guarantee.",
+      "sources": [
+        {
+          "method": "site",
+          "url": "https://www.chipotle.com/",
+          "checked_at": "2026-07-27T23:25:48.854Z",
+          "curator_id": "curator:qbf"
+        }
+      ]
     },
     {
       "name": "Bella Cuba Restaurant",
@@ -693,8 +842,7 @@
         "nut_aware",
         "gluten_free"
       ],
-      "allergy_safety_tier": "shared_verify",
-      "allergy_safety_note": "Spokin diner report: staff said no nuts in the kitchen; peanut-free Cuban plates worked for them. Shared kitchen — verify oils and desserts day-of. Not dedicated."
+      "allergy_safety_tier": "unknown"
     }
   ]
 }
