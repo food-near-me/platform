@@ -177,6 +177,7 @@ async function main() {
               120
             )
           )
+       ORDER BY CASE WHEN slug = $1 THEN 0 ELSE 1 END
        LIMIT 1`,
       [p.slug, p.name, p.lng, p.lat],
     )) as { id: string; slug: string }[];
